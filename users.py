@@ -1,9 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, Blueprint
-from database import init_db, get_db
+from flask import render_template, request, redirect, url_for, flash, session, Blueprint
+from database import get_db
 from werkzeug.security import generate_password_hash, check_password_hash
+
 from functools import wraps
-import socket
-from datetime import datetime
+from requirements import admin_required, login_required
 
 bluprint_user_routes = Blueprint("users", __name__)
 
@@ -38,7 +38,7 @@ def logout():
 # ========== МАРШРУТЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ ==========
 
 @bluprint_user_routes.route('/users')
-#@admin_required
+@admin_required
 def users():
     db = get_db()
     users_list = db.execute('SELECT id, username, role, created_at FROM users').fetchall()
@@ -46,7 +46,7 @@ def users():
 
 
 @bluprint_user_routes.route('/create_user', methods=['GET', 'POST'])
-#@admin_required
+@admin_required
 def create_user():
     if request.method == 'POST':
         username = request.form['username']
@@ -84,7 +84,7 @@ def create_user():
 
 
 @bluprint_user_routes.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
-#@admin_required
+@admin_required
 def edit_user(user_id):
     db = get_db()
     
@@ -119,8 +119,8 @@ def edit_user(user_id):
     user = db.execute('SELECT id, username, role FROM users WHERE id = ?', (user_id,)).fetchone()
     return render_template('edit_user.html', user=user)
 
-#@admin_required
 @bluprint_user_routes.route('/delete_user/<int:user_id>')
+@admin_required
 def delete_user(user_id):
     # Запрещаем удаление самого себя
     if user_id == session.get('user_id'):
@@ -138,7 +138,7 @@ def delete_user(user_id):
     return redirect(url_for('users.users'))
 
 @bluprint_user_routes.route('/change_password', methods=['GET', 'POST'])
-#@login_required
+@login_required
 def change_password():
     if request.method == 'POST':
         current_password = request.form['current_password']

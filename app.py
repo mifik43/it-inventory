@@ -1,39 +1,19 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from database import init_db, get_db
 from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
+
 import socket
 from datetime import datetime
 
 from users import bluprint_user_routes
 
+from functools import wraps
+from requirements import admin_required, login_required
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
 
 app.register_blueprint(bluprint_user_routes)
-
-# Декоратор для проверки авторизации
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            flash('Пожалуйста, войдите в систему', 'error')
-            return redirect(url_for('users.login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-# Декоратор для проверки прав администратора
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            flash('Пожалуйста, войдите в систему', 'error')
-            return redirect(url_for('users.login'))
-        if session.get('role') != 'admin':
-            flash('Недостаточно прав для выполнения этого действия', 'error')
-            return redirect(url_for('index'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 # Инициализация БД при запуске приложения
 with app.app_context():
