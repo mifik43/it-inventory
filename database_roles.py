@@ -5,11 +5,31 @@ import permissions
 
 from database_helper import get_db
 
+def find_role_by_name(name:str, db = get_db()):
+    return db.execute(
+        f"select id, name, description from roles where name=\"{name}\""
+    ).fetchone()
+
 def save_role(role : permissions.Role, db = get_db(), commit = True):
     print(f"Сохраняем роль {role}")
-    db.execute(
-        f"INSERT INTO roles (id, name, description) VALUES ({role.id}, '{role.name}', '{role.description}')"
-    )
+
+    existing_role = find_role_by_name(role.name, db)
+    if existing_role is not None:
+        raise ValueError(f"Роль с именем \"{role.name}\" уже существует")
+
+    if role.id is None:
+        db.execute(
+            f"INSERT INTO roles (name, description) VALUES ('{role.name}', '{role.description}')"
+        )
+
+        existing_role = find_role_by_name(role.name, db)
+        if existing_role is None:
+            raise ValueError(f"Во время сохранения роли \"{role.name}\" произошла ошибка")
+        role.id = existing_role["id"]
+    else:
+        db.execute(
+            f"INSERT INTO roles (id, name, description) VALUES ({role.id}, '{role.name}', '{role.description}')"
+        )
     
     # наполняем её разрешениями
     for p in role.permissions:
