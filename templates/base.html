@@ -20,8 +20,14 @@
         <a class="nav-link" href="{{ url_for('providers') }}">Провайдеры</a>
         <a class="nav-link" href="{{ url_for('cubes') }}">Кубик</a>
         {% if session.role == 'admin' %}
-            <!--<a class="nav-link" href="{{ url_for('add_device') }}">Добавить устройство</a>-->
-            <a class="nav-link" href="{{ url_for('users') }}">Пользователи</a>
+        <li class="nav-item">
+    <a class="nav-link {% if request.endpoint == 'todo_list' %}active{% endif %}" 
+       href="{{ url_for('todo_list') }}">
+        <i class="bi bi-check-square"></i>
+        <span>Задачи</span>
+    </a>
+</li>
+        <a class="nav-link" href="{{ url_for('users') }}">Пользователи</a>
         {% endif %}
     {% endif %}
 </div>

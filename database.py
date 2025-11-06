@@ -84,57 +84,40 @@ def init_db():
         )
     ''')
     
-    # Добавляем тестовые устройства, если таблица пустая
-    cursor = db.execute('SELECT COUNT(*) as count FROM devices')
-    count = cursor.fetchone()['count']
-    
-    if count == 0:
-        sample_devices = [
-            ('Ноутбук Dell XPS 13', 'XPS 13 9310', 'Ноутбук', 'SN-DELL-001', '00:1B:44:11:3A:B7', '192.168.1.100', 'Офис 101', 'В использовании', 'Иванов Иван', 'Intel i7, 16GB RAM, 512GB SSD'),
-            ('Монитор Samsung', 'S24F350', 'Монитор', 'SN-SAMS-001', '', '', 'Офис 101', 'В использовании', 'Иванов Иван', '24 дюйма, 1920x1080'),
-            ('Сервер HP ProLiant', 'DL380 Gen10', 'Сервер', 'SN-HP-001', '00:1B:44:11:3A:B8', '192.168.1.10', 'Серверная', 'В использовании', '', 'Xeon E5, 32GB RAM, 1TB HDD'),
-        ]
-        
-        db.executemany('''
-            INSERT INTO devices 
-            (name, model, type, serial_number, mac_address, ip_address, location, status, assigned_to, specifications)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', sample_devices)
-    
-    # Добавляем тестовых провайдеров
-    cursor = db.execute('SELECT COUNT(*) as count FROM providers')
-    count = cursor.fetchone()['count']
-    
-    if count == 0:
-        sample_providers = [
-            ('Ростелеком', 'Интернет', 'ДГ-2023-001', '2023-01-15', '192.168.1.0/24', '100 Мбит/с', 5000.00, 'Петров А.С.', '+7-999-123-45-67', 'petrov@rostelecom.ru', 'Офис на Ленина 25', 'Москва', 'Активен', 'Основной провайдер'),
-            ('МТС', 'Интернет + Телефония', 'ДГ-2023-002', '2023-02-20', '192.168.2.0/24', '50 Мбит/с', 3500.00, 'Сидорова М.В.', '+7-999-765-43-21', 'sidorova@mts.ru', 'Складской комплекс', 'Санкт-Петербург', 'Активен', 'Резервный канал'),
-        ]
-        
-        db.executemany('''
-            INSERT INTO providers 
-            (name, service_type, contract_number, contract_date, ip_range, speed, price, contact_person, phone, email, object_location, city, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', sample_providers)
-    
-    # Добавляем тестовые кубики
-    cursor = db.execute('SELECT COUNT(*) as count FROM software_cubes')
-    count = cursor.fetchone()['count']
-    
-    if count == 0:
-        sample_cubes = [
-            ('Microsoft 365', 'Офисный пакет', 'Корпоративная', 'MS-365-KEY-001', 'ЛЦ-2023-001', '2023-01-10', 15000.00, 25, 'Смирнов А.В.', '+7-999-111-22-33', 'smirnov@microsoft.com', 'Головной офис', 'Москва', 'Активен', '2024-01-10', 'Лицензия на 25 пользователей'),
-            ('1C:Бухгалтерия', 'Бухгалтерская система', 'Профессиональная', '1C-BUH-KEY-001', 'ЛЦ-2023-002', '2023-02-15', 50000.00, 1, 'Кузнецова М.И.', '+7-999-444-55-66', 'kuznetsova@1c.ru', 'Бухгалтерия', 'Москва', 'Активен', '2024-02-15', 'Основная бухгалтерская система'),
-            ('Kaspersky Endpoint Security', 'Антивирус', 'Корпоративная', 'KES-KEY-001', 'ЛЦ-2023-003', '2023-03-20', 30000.00, 50, 'Орлов Д.С.', '+7-999-777-88-99', 'orlov@kaspersky.ru', 'Все рабочие станции', 'Москва', 'Активен', '2024-03-20', 'Защита всех рабочих станций'),
-            ('Confluence', 'Корпоративный портал', 'Enterprise', 'CONF-KEY-001', 'ЛЦ-2023-004', '2023-04-05', 120000.00, 100, 'Техподдержка Atlassian', '+7-800-555-35-35', 'support@atlassian.com', 'Все филиалы', 'Москва', 'Активен', '2024-04-05', 'Корпоративная вики и документация'),
-        ]
-        
-        db.executemany('''
-            INSERT INTO software_cubes 
-            (name, software_type, license_type, license_key, contract_number, contract_date, price, users_count, support_contact, phone, email, object_location, city, status, renewal_date, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', sample_cubes)
-    
+    # Таблица логов
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT NOT NULL,
+            user TEXT NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    # Таблица организаций
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS organizations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );''')
+    # Таблица задач
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS todos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'новая',
+            priority TEXT DEFAULT 'средний',
+            organization_id INTEGER,
+            due_date DATE,
+            completed_at TIMESTAMP,
+            is_completed BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (organization_id) REFERENCES organizations (id)
+        )
+    ''')
+
     # Добавляем администратора по умолчанию
     cursor = db.execute('SELECT COUNT(*) as count FROM users')
     count = cursor.fetchone()['count']
@@ -152,5 +135,7 @@ def init_db():
             'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
             ('user', user_password, 'user')
         )
+    
+        
     
     db.commit()
