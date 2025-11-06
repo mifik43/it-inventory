@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 from database import get_db
-from database_roles import read_all_roles, save_role, update_role, find_role_by_id
+from database_roles import read_all_roles, save_role, update_role, find_role_by_id, remove_role
 from permissions import Role
 
 
@@ -41,3 +41,10 @@ def edit_role(role_id):
     role = find_role_by_id(role_id)
     return render_template('edit_role.html', role=role)
         
+
+@bluprint_roles_routes.route('/delete_role/<int:role_id>')
+def delete_role(role_id):
+    
+    remove_role(role_id)
+        
+    return redirect(url_for('roles.roles'))

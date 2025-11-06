@@ -56,6 +56,17 @@ def save_role(role : permissions.Role, db = get_db(), commit = True):
     if commit:
         db.commit()
 
+def remove_role(id:int, db = get_db(), commit = True):
+    print(f"Удаляем роль с id={id}")
+    db.execute(
+        f"DELETE FROM roles WHERE id={id}"
+    )
+    db.execute(
+        f"DELETE FROM roles_to_permissions WHERE role_id={id}"
+    )
+    if commit:
+        db.commit()
+
 def read_role_permissions(id, db = get_db()):
     rows = db.execute(f"""
             select role_id, permission 
