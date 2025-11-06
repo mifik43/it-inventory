@@ -5,12 +5,12 @@ from functools import wraps
 import socket
 from datetime import datetime
 
-from users import Users
+from users import bluprint_user_routes
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
 
-all_users = Users()
+app.register_blueprint(bluprint_user_routes)
 
 # Декоратор для проверки авторизации
 def login_required(f):
@@ -18,7 +18,7 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if not session.get('logged_in'):
             flash('Пожалуйста, войдите в систему', 'error')
-            return redirect(url_for('login'))
+            return redirect(url_for('users.login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -28,7 +28,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not session.get('logged_in'):
             flash('Пожалуйста, войдите в систему', 'error')
-            return redirect(url_for('login'))
+            return redirect(url_for('users.login'))
         if session.get('role') != 'admin':
             flash('Недостаточно прав для выполнения этого действия', 'error')
             return redirect(url_for('index'))
@@ -126,20 +126,6 @@ def index():
                          cost_by_service=cost_by_service,
                          cubes_list=cubes_list,
                          total_cubes_price=total_cubes_price)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
-        return all_users.login(username, password)
-        
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    return all_users.logout()
 
 # ========== МАРШРУТЫ ДЛЯ УСТРОЙСТВ ==========
 
@@ -243,49 +229,6 @@ def search():
     ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
     
     return render_template('devices.html', devices=devices, search_query=query)
-
-# ========== МАРШРУТЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ ==========
-
-@app.route('/users')
-@admin_required
-def users():
-    return all_users.users()
-
-@app.route('/create_user', methods=['GET', 'POST'])
-@admin_required
-def create_user():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        role = request.form['role']
-        
-        return all_users.create_user(username, password, role)
-    
-    return render_template('create_user.html')
-
-@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
-@admin_required
-def edit_user(user_id):
-    db = get_db()
-    
-    if request.method == 'POST':
-        return all_users.edit_user(user_id)
-    
-    user = db.execute('SELECT id, username, role FROM users WHERE id = ?', (user_id,)).fetchone()
-    return render_template('edit_user.html', user=user)
-
-@app.route('/delete_user/<int:user_id>')
-@admin_required
-def delete_user(user_id):
-    return all_users.delete_user(user_id)
-
-@app.route('/change_password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    if request.method == 'POST':
-        return all_users.change_password()
-    
-    return render_template('change_password.html')
 
 # ========== МАРШРУТЫ ДЛЯ ПРОВАЙДЕРОВ ==========
 
