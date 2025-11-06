@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <h2>Создать новую статью</h2>
+        
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Заголовок статьи *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Категория *</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="Общее">Общее</option>
+                            <option value="Инструкции">Инструкции</option>
+                            <option value="Проблемы">Проблемы</option>
+                            <option value="Решения">Решения</option>
+                            <option value="Оборудование">Оборудование</option>
+                            <option value="ПО">ПО</option>
+                            <option value="Сеть">Сеть</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="tags" class="form-label">Теги</label>
+                <input type="text" class="form-control" id="tags" name="tags" 
+                       placeholder="тег1,тег2,тег3">
+                <div class="form-text">Укажите теги через запятую</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="content" class="form-label">Содержание статьи *</label>
+                <textarea class="form-control" id="content" name="content" rows="15" required></textarea>
+            </div>
+
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="is_published" name="is_published" value="1" checked>
+                <label class="form-check-label" for="is_published">Опубликовать статью</label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Опубликовать статью</button>
+            <a href="{{ url_for('articles_list') }}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

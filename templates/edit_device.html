@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Редактировать устройство</h2>
+        
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Название устройства *</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ device.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="model" class="form-label">Модель</label>
+                        <input type="text" class="form-control" id="model" name="model" 
+                               value="{{ device.model or '' }}" placeholder="Например: XPS 13 9310">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="type" class="form-label">Тип устройства *</label>
+                        <select class="form-select" id="type" name="type" required>
+                            <option value="Ноутбук" {% if device.type == 'Ноутбук' %}selected{% endif %}>Ноутбук</option>
+                            <option value="ПК" {% if device.type == 'ПК' %}selected{% endif %}>Стационарный ПК</option>
+                            <option value="Монитор" {% if device.type == 'Монитор' %}selected{% endif %}>Монитор</option>
+                            <option value="Принтер" {% if device.type == 'Принтер' %}selected{% endif %}>Принтер</option>
+                            <option value="Сканер" {% if device.type == 'Сканер' %}selected{% endif %}>Сканер</option>
+                            <option value="Сервер" {% if device.type == 'Сервер' %}selected{% endif %}>Сервер</option>
+                            <option value="Сетевое оборудование" {% if device.type == 'Сетевое оборудование' %}selected{% endif %}>Сетевое оборудование</option>
+                            <option value="Телефон" {% if device.type == 'Телефон' %}selected{% endif %}>IP-телефон</option>
+                            <option value="ИБП" {% if device.type == 'ИБП' %}selected{% endif %}>Источник бесперебойного питания</option>
+                            <option value="Другое" {% if device.type == 'Другое' %}selected{% endif %}>Другое</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="serial_number" class="form-label">Серийный номер *</label>
+                        <input type="text" class="form-control" id="serial_number" name="serial_number" 
+                               value="{{ device.serial_number }}" required>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="mac_address" class="form-label">MAC-адрес</label>
+                        <input type="text" class="form-control" id="mac_address" name="mac_address" 
+                               value="{{ device.mac_address or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="ip_address" class="form-label">IP-адрес</label>
+                        <input type="text" class="form-control" id="ip_address" name="ip_address" 
+                               value="{{ device.ip_address or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Местоположение *</label>
+                        <input type="text" class="form-control" id="location" name="location" 
+                               value="{{ device.location }}" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Статус *</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="В использовании" {% if device.status == 'В использовании' %}selected{% endif %}>В использовании</option>
+                            <option value="На складе" {% if device.status == 'На складе' %}selected{% endif %}>На складе</option>
+                            <option value="В ремонте" {% if device.status == 'В ремонте' %}selected{% endif %}>В ремонте</option>
+                            <option value="Списано" {% if device.status == 'Списано' %}selected{% endif %}>Списано</option>
+                            <option value="Резерв" {% if device.status == 'Резерв' %}selected{% endif %}>Резерв</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Закреплено за</label>
+                        <input type="text" class="form-control" id="assigned_to" name="assigned_to" 
+                               value="{{ device.assigned_to or '' }}" placeholder="ФИО сотрудника">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="specifications" class="form-label">Характеристики</label>
+                <textarea class="form-control" id="specifications" name="specifications" rows="3">{{ device.specifications or '' }}</textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            <a href="{{ url_for('devices') }}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

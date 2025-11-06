@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2>Добавить новую задачу</h2>
+        
+        <form method="POST" action="{{ url_for('add_todo') }}">
+            <div class="mb-3">
+                <label for="title" class="form-label">Название задачи *</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">Описание</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Статус</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="новая">Новая</option>
+                            <option value="в работе">В работе</option>
+                            <option value="выполнена">Выполнена</option>
+                            <option value="отложена">Отложена</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">Приоритет</label>
+                        <select class="form-select" id="priority" name="priority">
+                            <option value="низкий">Низкий</option>
+                            <option value="средний" selected>Средний</option>
+                            <option value="высокий">Высокий</option>
+                            <option value="критичный">Критичный</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="organization_id" class="form-label">Организация</label>
+                        <select class="form-select" id="organization_id" name="organization_id">
+                            <option value="">Выберите организацию</option>
+                            {% for org in organizations %}
+                            <option value="{{ org.id }}">{{ org.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">Срок выполнения</label>
+                        <input type="date" class="form-control" id="due_date" name="due_date">
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Создать задачу</button>
+            <a href="{{ url_for('todo') }}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

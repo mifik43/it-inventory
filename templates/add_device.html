@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Добавить новое устройство</h2>
+        
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Название устройства *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="model" class="form-label">Модель</label>
+                        <input type="text" class="form-control" id="model" name="model" placeholder="Например: XPS 13 9310">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="type" class="form-label">Тип устройства *</label>
+                        <select class="form-select" id="type" name="type" required>
+                            <option value="">Выберите тип</option>
+                            <option value="Ноутбук">Ноутбук</option>
+                            <option value="ПК">Стационарный ПК</option>
+                            <option value="Монитор">Монитор</option>
+                            <option value="Принтер">Принтер</option>
+                            <option value="Сканер">Сканер</option>
+                            <option value="Сервер">Сервер</option>
+                            <option value="Сетевое оборудование">Сетевое оборудование</option>
+                            <option value="Телефон">IP-телефон</option>
+                            <option value="Телефон">Мини ПК</option>
+                            <option value="Телефон">малина</option>
+                            <option value="ИБП">Источник бесперебойного питания</option>
+                            <option value="Другое">Другое</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="serial_number" class="form-label">Серийный номер *</label>
+                        <input type="text" class="form-control" id="serial_number" name="serial_number" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="mac_address" class="form-label">MAC-адрес</label>
+                        <input type="text" class="form-control" id="mac_address" name="mac_address" placeholder="00:1B:44:11:3A:B7">
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="ip_address" class="form-label">IP-адрес</label>
+                        <input type="text" class="form-control" id="ip_address" name="ip_address" placeholder="192.168.1.100">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Местоположение *</label>
+                        <input type="text" class="form-control" id="location" name="location" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Статус *</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="В использовании">В использовании</option>
+                            <option value="На складе">На складе</option>
+                            <option value="В ремонте">В ремонте</option>
+                            <option value="Списано">Списано</option>
+                            <option value="Резерв">Резерв</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Закреплено за</label>
+                        <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="ФИО сотрудника">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="specifications" class="form-label">Характеристики</label>
+                <textarea class="form-control" id="specifications" name="specifications" rows="3" placeholder="Процессор, RAM, HDD, особенности конфигурации..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Добавить устройство</button>
+            <a href="{{ url_for('devices') }}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

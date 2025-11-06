@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Редактировать кубик (ПО)</h2>
+        
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Название программы *</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ cube.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="software_type" class="form-label">Тип программного обеспечения *</label>
+                        <select class="form-select" id="software_type" name="software_type" required>
+                            <option value="Офисный пакет" {% if cube.software_type == 'Офисный пакет' %}selected{% endif %}>Офисный пакет</option>
+                            <option value="Операционная система" {% if cube.software_type == 'Операционная система' %}selected{% endif %}>Операционная система</option>
+                            <option value="Антивирус" {% if cube.software_type == 'Антивирус' %}selected{% endif %}>Антивирус</option>
+                            <option value="Бухгалтерская система" {% if cube.software_type == 'Бухгалтерская система' %}selected{% endif %}>Бухгалтерская система</option>
+                            <option value="CRM система" {% if cube.software_type == 'CRM система' %}selected{% endif %}>CRM система</option>
+                            <option value="ERP система" {% if cube.software_type == 'ERP система' %}selected{% endif %}>ERP система</option>
+                            <option value="Система документооборота" {% if cube.software_type == 'Система документооборота' %}selected{% endif %}>Система документооборота</option>
+                            <option value="Библиотека компонентов" {% if cube.software_type == 'Библиотека компонентов' %}selected{% endif %}>Библиотека компонентов</option>
+                            <option value="Серверное ПО" {% if cube.software_type == 'Серверное ПО' %}selected{% endif %}>Серверное ПО</option>
+                            <option value="Музыкальное ПО" {% if cube.software_type == 'Музыкальное ПО' %}selected{% endif %}>Музыкальное ПО</option>
+                            <option value="Система мониторинга" {% if cube.software_type == 'Система мониторинга' %}selected{% endif %}>Система мониторинга</option>
+                            <option value="Другое" {% if cube.software_type == 'Другое' %}selected{% endif %}>Другое</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="license_type" class="form-label">Тип лицензии *</label>
+                        <select class="form-select" id="license_type" name="license_type" required>
+                            <option value="Корпоративная" {% if cube.license_type == 'Корпоративная' %}selected{% endif %}>Корпоративная</option>
+                            <option value="Профессиональная" {% if cube.license_type == 'Профессиональная' %}selected{% endif %}>Профессиональная</option>
+                            <option value="Стандартная" {% if cube.license_type == 'Стандартная' %}selected{% endif %}>Стандартная</option>
+                            <option value="Базовая" {% if cube.license_type == 'Базовая' %}selected{% endif %}>Базовая</option>
+                            <option value="Enterprise" {% if cube.license_type == 'Enterprise' %}selected{% endif %}>Enterprise</option>
+                            <option value="Free" {% if cube.license_type == 'Free' %}selected{% endif %}>Бесплатная</option>
+                            <option value="Open Source" {% if cube.license_type == 'Open Source' %}selected{% endif %}>Open Source</option>
+                            <option value="Подписка" {% if cube.license_type == 'Подписка' %}selected{% endif %}>Подписка</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="license_key" class="form-label">Ключ лицензии</label>
+                        <input type="text" class="form-control" id="license_key" name="license_key" value="{{ cube.license_key or '' }}">
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="contract_number" class="form-label">Номер договора</label>
+                        <input type="text" class="form-control" id="contract_number" name="contract_number" value="{{ cube.contract_number or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contract_date" class="form-label">Дата договора</label>
+                        <input type="date" class="form-control" id="contract_date" name="contract_date" value="{{ cube.contract_date or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Стоимость (₽)</label>
+                        <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ cube.price or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="users_count" class="form-label">Площадь объекта</label>
+                        <input type="number" class="form-control" id="users_count" name="users_count" value="{{ cube.users_count or 1 }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="object_location" class="form-label">Объект использования *</label>
+                        <input type="text" class="form-control" id="object_location" name="object_location" value="{{ cube.object_location }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="city" class="form-label">Город *</label>
+                        <input type="text" class="form-control" id="city" name="city" value="{{ cube.city }}" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Статус *</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="Активен" {% if cube.status == 'Активен' %}selected{% endif %}>Активен</option>
+                            <option value="Приостановлен" {% if cube.status == 'Приостановлен' %}selected{% endif %}>Приостановлен</option>
+                            <option value="Истек" {% if cube.status == 'Истек' %}selected{% endif %}>Истек</option>
+                            <option value="Тестирование" {% if cube.status == 'Тестирование' %}selected{% endif %}>Тестирование</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="renewal_date" class="form-label">Дата обновления/окончания</label>
+                        <input type="date" class="form-control" id="renewal_date" name="renewal_date" value="{{ cube.renewal_date or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="support_contact" class="form-label">Контакт поддержки</label>
+                        <input type="text" class="form-control" id="support_contact" name="support_contact" value="{{ cube.support_contact or '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Телефон</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ cube.phone or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ cube.email or '' }}">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Примечания</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3">{{ cube.notes or '' }}</textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            <a href="{{ url_for('cubes') }}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

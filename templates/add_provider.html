@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Добавить нового провайдера</h2>
+        
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Название провайдера *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="service_type" class="form-label">Тип услуги *</label>
+                        <select class="form-select" id="service_type" name="service_type" required>
+                            <option value="">Выберите тип услуги</option>
+                            <option value="Интернет">Интернет</option>
+                            <option value="Интернет + Телефония">Интернет + Телефония</option>
+                            <option value="Телефония">Телефония</option>
+                            <option value="IP-TV">IP-TV</option>
+                            <option value="Облачные услуги">Облачные услуги</option>
+                            <option value="Другое">Другое</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contract_number" class="form-label">Номер договора</label>
+                        <input type="text" class="form-control" id="contract_number" name="contract_number">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contract_date" class="form-label">Дата договора</label>
+                        <input type="date" class="form-control" id="contract_date" name="contract_date">
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="ip_range" class="form-label">IP-диапазон</label>
+                        <input type="text" class="form-control" id="ip_range" name="ip_range" placeholder="192.168.1.0/24">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="speed" class="form-label">Скорость</label>
+                        <input type="text" class="form-control" id="speed" name="speed" placeholder="100 Мбит/с">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Стоимость в месяц (₽)</label>
+                        <input type="number" step="0.01" class="form-control" id="price" name="price" placeholder="5000.00">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="object_location" class="form-label">Объект *</label>
+                        <input type="text" class="form-control" id="object_location" name="object_location" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="city" class="form-label">Город *</label>
+                        <input type="text" class="form-control" id="city" name="city" required 
+                               placeholder="Москва, Санкт-Петербург, и т.д.">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Статус *</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="Активен">Активен</option>
+                            <option value="Приостановлен">Приостановлен</option>
+                            <option value="Расторгнут">Расторгнут</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="contact_person" class="form-label">Контактное лицо</label>
+                        <input type="text" class="form-control" id="contact_person" name="contact_person">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Телефон</label>
+                        <input type="tel" class="form-control" id="phone" name="phone">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Примечания</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Дополнительная информация..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Добавить провайдера</button>
+            <a href="{{ url_for('providers') }}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
