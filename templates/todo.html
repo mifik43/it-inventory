@@ -24,12 +24,12 @@
     </a>
     
     {% if show_completed %}
-        <a href="{{ url_for('todo_list', show_completed='false') }}" 
+        <a href="{{ url_for('todo', show_completed='false') }}" 
            class="btn btn-outline-secondary">
             <i class="bi bi-eye-slash"></i> Скрыть выполненные
         </a>
     {% else %}
-        <a href="{{ url_for('todo_list', show_completed='true') }}" 
+        <a href="{{ url_for('todo', show_completed='true') }}" 
            class="btn btn-outline-secondary">
             <i class="bi bi-eye"></i> Показать выполненные
         </a>
@@ -291,7 +291,7 @@
                     {% endif %}
                     
                     <!-- Информация о выполненных задачах -->
-                    {% if not show_completed  > 0 %}
+                    {% if not show_completed   > 0 %}
                     <div class="alert alert-info mt-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -299,7 +299,7 @@
                                 <strong>Есть выполненные задачи:</strong> 
                                 Сейчас скрыто {{ all_tasks_completed }} выполненных задач
                             </div>
-<a href="{{ url_for('todo_list', show_completed='true') }}" class="btn btn-sm btn-info">
+<a href="{{ url_for('todo', show_completed='true') }}" class="btn btn-sm btn-info">
     Показать все задачи
 </a>
                         </div>

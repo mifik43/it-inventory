@@ -647,7 +647,7 @@ def cube_search():
 
 @app.route('/todo')
 @login_required
-def todo_list():
+def todo():
     db = get_db()
     
     # Получаем параметр показа выполненных задач
@@ -770,7 +770,7 @@ def add_todo():
             ''', (title, description, status, priority, organization_id, due_date))
             db.commit()
             flash('Задача успешно добавлена!', 'success')
-            return redirect(url_for('todo_list'))
+            return redirect(url_for('todo'))
         except Exception as e:
             flash(f'Ошибка при добавлении задачи: {str(e)}', 'error')
     
@@ -792,7 +792,7 @@ def edit_todo(todo_id):
     
     if not task:
         flash('Задача не найдена', 'error')
-        return redirect(url_for('todo_list'))
+        return redirect(url_for('todo'))
     
     # Обрабатываем дату для формы
     task_dict = dict(task)
@@ -845,7 +845,7 @@ def edit_todo(todo_id):
                   is_completed, completed_at, todo_id))
             db.commit()
             flash('Задача успешно обновлена!', 'success')
-            return redirect(url_for('todo_list'))
+            return redirect(url_for('todo'))
         except Exception as e:
             flash(f'Ошибка при обновлении задачи: {str(e)}', 'error')
     
@@ -862,7 +862,7 @@ def delete_todo(todo_id):
     except Exception as e:
         flash(f'Ошибка при удалении задачи: {str(e)}', 'error')
     
-    return redirect(url_for('todo_list'))
+    return redirect(url_for('todo'))
 
 @app.route('/complete_todo/<int:todo_id>')
 @login_required
@@ -883,7 +883,7 @@ def complete_todo(todo_id):
     except Exception as e:
         flash(f'Ошибка при выполнении задачи: {str(e)}', 'error')
     
-    return redirect(url_for('todo_list'))
+    return redirect(url_for('todo'))
 
 @app.route('/reopen_todo/<int:todo_id>')
 @login_required
@@ -904,14 +904,125 @@ def reopen_todo(todo_id):
     except Exception as e:
         flash(f'Ошибка при возврате задачи: {str(e)}', 'error')
     
-    return redirect(url_for('todo_list'))
+    return redirect(url_for('todo'))
 
 @app.route('/toggle_completed')
 @login_required
 def toggle_completed():
     """Переключить отображение выполненных задач"""
     show_completed = request.args.get('show_completed', 'false') == 'true'
-    return redirect(url_for('todo_list', show_completed=show_completed))
+    return redirect(url_for('todo', show_completed=show_completed))
+
+# ========== МАРШРУТЫ ДЛЯ ОРГАНИЗАЦИЙ ==========
+
+@app.route('/organizations')
+@login_required
+def organizations():
+    db = get_db()
+    organizations_list = db.execute('''
+        SELECT * FROM organizations 
+        ORDER BY 
+            CASE type
+                WHEN 'ООО' THEN 1
+                WHEN 'ИП' THEN 2
+                WHEN 'Самозанятый' THEN 3
+                ELSE 4
+            END,
+            name
+    ''').fetchall()
+    return render_template('organizations.html', organizations=organizations_list)
+
+@app.route('/add_organization', methods=['GET', 'POST'])
+@admin_required
+def add_organization():
+    if request.method == 'POST':
+        name = request.form['name']
+        org_type = request.form['type']
+        inn = request.form.get('inn', '')
+        contact_person = request.form.get('contact_person', '')
+        phone = request.form.get('phone', '')
+        email = request.form.get('email', '')
+        address = request.form.get('address', '')
+        notes = request.form.get('notes', '')
+        
+        # Валидация
+        if not name:
+            flash('Название организации обязательно для заполнения', 'error')
+            return render_template('add_organization.html')
+        
+        db = get_db()
+        try:
+            db.execute('''
+                INSERT INTO organizations (name, type, inn, contact_person, phone, email, address, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (name, org_type, inn, contact_person, phone, email, address, notes))
+            db.commit()
+            flash('Организация успешно добавлена!', 'success')
+            return redirect(url_for('organizations'))
+        except Exception as e:
+            flash(f'Ошибка при добавлении организации: {str(e)}', 'error')
+    
+    return render_template('add_organization.html')
+
+@app.route('/edit_organization/<int:org_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_organization(org_id):
+    db = get_db()
+    
+    org = db.execute('SELECT * FROM organizations WHERE id = ?', (org_id,)).fetchone()
+    if not org:
+        flash('Организация не найдена', 'error')
+        return redirect(url_for('organizations'))
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        org_type = request.form['type']
+        inn = request.form.get('inn', '')
+        contact_person = request.form.get('contact_person', '')
+        phone = request.form.get('phone', '')
+        email = request.form.get('email', '')
+        address = request.form.get('address', '')
+        notes = request.form.get('notes', '')
+        
+        # Валидация
+        if not name:
+            flash('Название организации обязательно для заполнения', 'error')
+            return render_template('edit_organization.html', org=org)
+        
+        try:
+            db.execute('''
+                UPDATE organizations SET 
+                name=?, type=?, inn=?, contact_person=?, phone=?, email=?, address=?, notes=?
+                WHERE id=?
+            ''', (name, org_type, inn, contact_person, phone, email, address, notes, org_id))
+            db.commit()
+            flash('Данные организации успешно обновлены!', 'success')
+            return redirect(url_for('organizations'))
+        except Exception as e:
+            flash(f'Ошибка при обновлении организации: {str(e)}', 'error')
+    
+    return render_template('edit_organization.html', org=org)
+
+@app.route('/delete_organization/<int:org_id>')
+@admin_required
+def delete_organization(org_id):
+    db = get_db()
+    
+    # Проверяем, используется ли организация в задачах
+    tasks_count = db.execute('SELECT COUNT(*) as count FROM todos WHERE organization_id = ?', (org_id,)).fetchone()['count']
+    
+    if tasks_count > 0:
+        flash('Невозможно удалить организацию, так как она используется в задачах', 'error')
+        return redirect(url_for('organizations'))
+    
+    try:
+        db.execute('DELETE FROM organizations WHERE id = ?', (org_id,))
+        db.commit()
+        flash('Организация успешно удалена!', 'success')
+    except Exception as e:
+        flash(f'Ошибка при удалении организации: {str(e)}', 'error')
+    
+    return redirect(url_for('organizations'))
 
 # ========== ЗАПУСК ПРИЛОЖЕНИЯ С СЕТЕВЫМ ДОСТУПОМ ==========
 
@@ -932,8 +1043,8 @@ if __name__ == '__main__':
     print("=" * 60)
     print("🚀 IT Inventory System запущен!")
     print("=" * 60)
-    print(f"📍 Локальный доступ:  http://localhost:5000")
-    print(f"🌐 Сетевой доступ:    http://{local_ip}:5000")
+    print(f"📍 Локальный доступ:  http://localhost:8000")
+    print(f"🌐 Сетевой доступ:    http://{local_ip}:8000")
     print("=" * 60)
     print("📱 Для доступа с других устройств в сети используйте сетевой URL")
     print("⏹️  Для остановки сервера нажмите Ctrl+C")

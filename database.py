@@ -98,8 +98,16 @@ def init_db():
         CREATE TABLE IF NOT EXISTS organizations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'ООО',
+            inn TEXT,
+            contact_person TEXT,
+            phone TEXT,
+            email TEXT,
+            address TEXT,
+            notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );''')
+        )
+    ''')
     # Таблица задач
     db.execute('''
         CREATE TABLE IF NOT EXISTS todos (

@@ -18,11 +18,18 @@
         <a class="nav-link" href="{{ url_for('index') }}">Главная</a>
         <a class="nav-link" href="{{ url_for('devices') }}">Устройства</a>
         <a class="nav-link" href="{{ url_for('providers') }}">Провайдеры</a>
+        <li class="nav-item">
+    <a class="nav-link {% if request.endpoint == 'organizations' %}active{% endif %}" 
+       href="{{ url_for('organizations') }}">
+        <i class="bi bi-building"></i>
+        <span>Организации</span>
+    </a>
+</li>
         <a class="nav-link" href="{{ url_for('cubes') }}">Кубик</a>
         {% if session.role == 'admin' %}
         <li class="nav-item">
-    <a class="nav-link {% if request.endpoint == 'todo_list' %}active{% endif %}" 
-       href="{{ url_for('todo_list') }}">
+    <a class="nav-link {% if request.endpoint == 'todo' %}active{% endif %}" 
+       href="{{ url_for('todo') }}">
         <i class="bi bi-check-square"></i>
         <span>Задачи</span>
     </a>
