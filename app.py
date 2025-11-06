@@ -6,6 +6,7 @@ import socket
 from datetime import datetime
 
 from users import bluprint_user_routes
+from roles_page import bluprint_roles_routes
 
 from functools import wraps
 from requirements import admin_required, login_required
@@ -14,6 +15,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
 
 app.register_blueprint(bluprint_user_routes)
+app.register_blueprint(bluprint_roles_routes)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
