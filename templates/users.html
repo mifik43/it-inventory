@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Управление пользователями</h2>
-    <a href="{{ url_for('create_user') }}" class="btn btn-primary">Создать пользователя</a>
+    <a href="{{ url_for('users.create_user') }}" class="btn btn-primary">Создать пользователя</a>
 </div>
 
 <div class="table-responsive">
@@ -20,8 +20,8 @@
         <tbody>
             {% for user in users %}
             <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
+                <td></a>{{ user.id }}</td>
+                <td><a href="{{ url_for('users.edit_user', user_id=user.id) }}">{{ user.username }}</a></td>
                 <td>
                     <span class="badge bg-{% if user.role == 'admin' %}danger{% else %}secondary{% endif %}">
                         {{ user.role }}
@@ -29,9 +29,9 @@
                 </td>
                 <td>{{ user.created_at }}</td>
                 <td>
-                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">Редактировать</a>
+                    <a href="{{ url_for('users.edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">Редактировать</a>
                     {% if user.id != session.user_id %}
-                        <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-sm btn-outline-danger" 
+                        <a href="{{ url_for('users.delete_user', user_id=user.id) }}" class="btn btn-sm btn-outline-danger" 
                            onclick="return confirm('Вы уверены, что хотите удалить пользователя {{ user.username }}?')">Удалить</a>
                     {% else %}
                         <button class="btn btn-sm btn-outline-secondary" disabled>Удалить</button>

@@ -34,7 +34,7 @@
         <span>Задачи</span>
     </a>
 </li>
-        <a class="nav-link" href="{{ url_for('users') }}">Пользователи</a>
+        <a class="nav-link" href="{{ url_for('users.users') }}">Пользователи</a>
         {% endif %}
     {% endif %}
 </div>
@@ -48,13 +48,13 @@
                             </span>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('change_password') }}">Сменить пароль</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('users.change_password') }}">Сменить пароль</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Выйти</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('users.logout') }}">Выйти</a></li>
                         </ul>
                     </div>
                 {% else %}
-                    <a class="nav-link" href="{{ url_for('login') }}">Войти</a>
+                    <a class="nav-link" href="{{ url_for('users.login') }}">Войти</a>
                 {% endif %}
             </div>
 
