@@ -10,6 +10,22 @@ def find_role_by_name(name:str, db = get_db()):
         f"select id, name, description from roles where name=\"{name}\""
     ).fetchone()
 
+def find_role_by_id(id:int, db = get_db()):
+    return db.execute(
+        f"select id, name, description from roles where id={id}"
+    ).fetchone()
+
+def update_role(role : permissions.Role, db = get_db(), commit = True):
+    print(f"Обновляем роль {role}")
+
+    db.execute(
+        f"UPDATE roles SET name = \"{role.name}\", description = \"{role.description}\" WHERE id={role.id}"
+    )
+
+    if commit:
+        db.commit()
+
+
 def save_role(role : permissions.Role, db = get_db(), commit = True):
     print(f"Сохраняем роль {role}")
 

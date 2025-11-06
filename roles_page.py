@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 from database import get_db
-from database_roles import read_all_roles, save_role
+from database_roles import read_all_roles, save_role, update_role, find_role_by_id
 from permissions import Role
 
 
@@ -26,4 +26,18 @@ def create_role():
         return redirect(url_for('roles.roles'))
     
     return render_template('create_role.html')
+
+@bluprint_roles_routes.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
+def edit_role(role_id):
+    if request.method == 'POST':
+        role_name = request.form['name']
+        role_desc = request.form['description']
+
+        role = Role(id=role_id, name=role_name, description=role_desc)
+        update_role(role)
+        
+        return redirect(url_for('roles.roles'))
+    
+    role = find_role_by_id(role_id)
+    return render_template('edit_role.html', role=role)
         

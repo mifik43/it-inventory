@@ -20,10 +20,9 @@
             {% for role in roles %}
             <tr>
                 <td>{{ role.id }}</td>
-                <td>{{ role.name }}</td>
+                <td><a href="{{ url_for('roles.edit_role', role_id=role.id) }}">{{ role.name }}</a></td>
                 <td>{{ role.description }}</td>
-                <td>
-                </td>
+                <td></td>
             </tr>
             {% else %}
             <tr>
