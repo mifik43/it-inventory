@@ -17,11 +17,14 @@ def roles():
 @bluprint_roles_routes.route('/create_role', methods=['GET', 'POST'])
 def create_role():
     if request.method == 'POST':
-        role_name = request.form['name']
-        role_desc = request.form['description']
+        try:
+            role_name = request.form['name']
+            role_desc = request.form['description']
 
-        role = Role(id=None, name=role_name, description=role_desc)
-        save_role(role)
+            role = Role(id=None, name=role_name, description=role_desc)
+            save_role(role)
+        except Exception as e:
+            flash(f"{e}", 'error')
         
         return redirect(url_for('roles.roles'))
     
