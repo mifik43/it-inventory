@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2>Добавить новую смену</h2>
+        
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">Сотрудник *</label>
+                        <select class="form-select" id="user_id" name="user_id" required>
+                            <option value="">Выберите сотрудника</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="shift_date" class="form-label">Дата смены *</label>
+                        <input type="date" class="form-control" id="shift_date" name="shift_date" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="shift_type" class="form-label">Тип смены *</label>
+                        <select class="form-select" id="shift_type" name="shift_type" required>
+                            <option value="Утро">Утро (08:00 - 16:00)</option>
+                            <option value="День">День (12:00 - 20:00)</option>
+                            <option value="Вечер">Вечер (16:00 - 00:00)</option>
+                            <option value="Ночь">Ночь (00:00 - 08:00)</option>
+                            <option value="Индивидуально">Индивидуально</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="start_time" class="form-label">Время начала</label>
+                        <input type="time" class="form-control" id="start_time" name="start_time">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="end_time" class="form-label">Время окончания</label>
+                        <input type="time" class="form-control" id="end_time" name="end_time">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="notes" class="form-label">Примечания</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3" 
+                          placeholder="Дополнительная информация о смене..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Добавить смену</button>
+            <a href="{{ url_for('shifts_list') }}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shiftTypeSelect = document.getElementById('shift_type');
+    const startTimeInput = document.getElementById('start_time');
+    const endTimeInput = document.getElementById('end_time');
+    
+    // Автоматическое заполнение времени при выборе типа смены
+    shiftTypeSelect.addEventListener('change', function() {
+        const shiftType = this.value;
+        
+        switch(shiftType) {
+            case 'Утро':
+                startTimeInput.value = '08:00';
+                endTimeInput.value = '16:00';
+                break;
+            case 'День':
+                startTimeInput.value = '12:00';
+                endTimeInput.value = '20:00';
+                break;
+            case 'Вечер':
+                startTimeInput.value = '16:00';
+                endTimeInput.value = '00:00';
+                break;
+            case 'Ночь':
+                startTimeInput.value = '00:00';
+                endTimeInput.value = '08:00';
+                break;
+            case 'Индивидуально':
+                startTimeInput.value = '';
+                endTimeInput.value = '';
+                break;
+        }
+    });
+    
+    // Установка минимальной даты на сегодня
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('shift_date').min = today;
+});
+</script>
+{% endblock %}
