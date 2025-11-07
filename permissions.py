@@ -7,11 +7,29 @@ import database_roles as db_helper
 class Permissions(enum.Enum):
     users_read = 1
     users_manage = 2
-    permissions_read = 3
-    permissions_manage = 4
-    roles_read = 5
-    roles_manage = 6
+    roles_read = 3
+    roles_manage = 4
 
+    def to_name(p:Permissions):
+        if p == Permissions.users_read:
+            return "Чтение списка пользователей и их настроек"
+        elif p == Permissions.users_manage:
+            return "Управление списком пользователей и их настройками"
+        elif p == Permissions.roles_read:
+            return "Чтение списка ролей и разрешений"
+        elif p == Permissions.roles_manage:
+            return "Управление списком ролей и разрешений"
+
+
+    def get_names():
+        names = dict()
+        for p in Permissions:
+            nested = dict()
+            nested['name'] = Permissions.to_name(p)
+            nested['checked'] = '' 
+            names[p] = nested
+        
+        return names
 
 # класс для работы с ролями
 # каждая роль имеет уникальный id, имя и список разрешений

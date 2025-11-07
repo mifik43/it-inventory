@@ -11,9 +11,32 @@ def find_role_by_name(name:str, db = get_db()):
     ).fetchone()
 
 def find_role_by_id(id:int, db = get_db()):
-    return db.execute(
+    row = db.execute(
         f"select id, name, description from roles where id={id}"
     ).fetchone()
+
+    return permissions.Role(id=row["id"], name=row["name"], description=row["description"], permissions=read_role_permissions(row["id"], db))
+
+
+
+def remove_permissions_for_role(id:int, db = get_db(), commit = True):
+    print(f"Удаляем разрешения для роли с id={id}")
+    db.execute(
+        f"DELETE FROM roles_to_permissions WHERE role_id={id}"
+    )
+    if commit:
+        db.commit()
+
+
+def save_role_permissions(role : permissions.Role, db = get_db(), commit = True):
+    remove_permissions_for_role(role.id, db, False)
+    print(f"Удаляем разрешения для роли с id={role.id} ({role.name})")
+    for p in role.permissions:
+        db.execute(
+            f"INSERT INTO roles_to_permissions (role_id, permission) VALUES ({role.id}, {p.value}) ON CONFLICT(role_id, permission) DO UPDATE SET permission={p.value}"
+        )
+
+
 
 def update_role(role : permissions.Role, db = get_db(), commit = True):
     print(f"Обновляем роль {role}")
@@ -21,6 +44,8 @@ def update_role(role : permissions.Role, db = get_db(), commit = True):
     db.execute(
         f"UPDATE roles SET name = \"{role.name}\", description = \"{role.description}\" WHERE id={role.id}"
     )
+
+    save_role_permissions(role, db, False)
 
     if commit:
         db.commit()
@@ -48,10 +73,7 @@ def save_role(role : permissions.Role, db = get_db(), commit = True):
         )
     
     # наполняем её разрешениями
-    for p in role.permissions:
-        db.execute(
-            f"INSERT INTO roles_to_permissions (role_id, permission) VALUES ({role.id}, {p.value})"
-        )
+    save_role_permissions(role, db, False)
 
     if commit:
         db.commit()
@@ -61,6 +83,7 @@ def remove_role(id:int, db = get_db(), commit = True):
     db.execute(
         f"DELETE FROM roles WHERE id={id}"
     )
+    remove_permissions_for_role(id, db, False)
     db.execute(
         f"DELETE FROM roles_to_permissions WHERE role_id={id}"
     )
@@ -121,7 +144,9 @@ def create_roles_tables(db:sqlite3.Connection):
     db.execute('''
         CREATE TABLE IF NOT EXISTS roles_to_permissions (
                role_id INTEGER,
-               permission INTEGER
+               permission INTEGER,
+
+               PRIMARY KEY (role_id, permission)
             )
     ''')
 

@@ -11,16 +11,28 @@
                 <form method="POST">
                     <div class="mb-3">
                         <label for="name" class="form-label">Имя роли *</label>
-                        <input type="text" class="form-control" id="name" name="name" value="{{ role.name }}" required />
+                        <input type="text" class="form-control" id="name"
+                            name="name" value="{{ role.name }}" required />
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label for="description" class="form-label">Описание роли *</label>
-                        <input type="text" class="form-control" id="description" name="description" value="{{ role.description }}" />
+                        <label for="description" class="form-label">Описание
+                            роли *</label>
+                        <input type="text" class="form-control" id="description"
+                            name="description" value="{{ role.description }}" />
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
-                    <a href="{{ url_for('roles.roles') }}" class="btn btn-secondary">Отмена</a>
+                    {% for perm in permissions %}
+                    <div>
+                        <input type="checkbox" id="{{perm.name}}" name="{{perm.name}}"
+                            value="{{perm.value}}" {{permissions[perm]['checked']}}/>
+                        <label for="{{perm.name}}">{{permissions[perm]['name']}}</label>
+                    </div>
+                    {% endfor %}
+
+                    <button type="submit"
+                        class="btn btn-primary">Сохранить</button>
+                    <a href="{{ url_for('roles.roles') }}"
+                        class="btn btn-secondary">Отмена</a>
                 </form>
             </div>
         </div>

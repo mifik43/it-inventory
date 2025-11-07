@@ -18,6 +18,13 @@
                         <label for="description" class="form-label">Описание роли *</label>
                         <input type="text" class="form-control" id="description" name="description" />
                     </div>
+                    {% for perm in permissions %}
+                    <div>
+                        <input type="checkbox" id="{{perm.name}}" name="{{perm.name}}"
+                            value="{{perm.value}}" {{permissions[perm]['checked']}}/>
+                        <label for="{{perm.name}}">{{permissions[perm]['name']}}</label>
+                    </div>
+                    {% endfor %}
                     
                     <button type="submit" class="btn btn-primary">Создать роль</button>
                     <a href="{{ url_for('roles.roles') }}" class="btn btn-secondary">Отмена</a>
