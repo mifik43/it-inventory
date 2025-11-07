@@ -42,7 +42,7 @@ def edit_role(role_id):
         role_desc = request.form['description']
 
         role = Role(id=role_id, name=role_name, description=role_desc)
-
+        role.permissions.clear()
         for p in Permissions:
             if p.name in request.form.keys():
                 role.add_permission(p)
