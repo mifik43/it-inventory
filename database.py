@@ -1,10 +1,29 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
 
-def get_db():
-    conn = sqlite3.connect('it_inventory.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+from database_roles import create_roles_tables
+from database_helper import get_db
+
+def init_default_admin(db:sqlite3.Connection):
+
+    # Добавляем администратора по умолчанию
+    cursor = db.execute('SELECT COUNT(*) as count FROM users')
+    count = cursor.fetchone()['count']
+    
+    if count == 0:
+        print("Админ по умолчанию не найден. Создаём")
+        admin_password = generate_password_hash('admin123')
+        db.execute(
+            'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+            ('admin', admin_password, 'admin')
+        )
+        
+        # Добавляем тестового пользователя
+        user_password = generate_password_hash('user123')
+        db.execute(
+            'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+            ('user', user_password, 'user')
+        )
 
 def init_db():
     db = get_db()
@@ -175,5 +194,7 @@ def init_db():
         )
     
         
+    create_roles_tables(db)
+    init_default_admin(db)
     
     db.commit()
