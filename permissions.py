@@ -10,7 +10,7 @@ class Permissions(enum.Enum):
     roles_read = 3
     roles_manage = 4
 
-    def to_name(p:Permissions):
+    def to_name(p):
         if p == Permissions.users_read:
             return "Чтение списка пользователей и их настроек"
         elif p == Permissions.users_manage:
