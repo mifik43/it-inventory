@@ -144,6 +144,21 @@ def init_db():
             FOREIGN KEY (organization_id) REFERENCES organizations (id)
         )
     ''')
+    # Таблица смен
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS shifts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            shift_date DATE NOT NULL,
+            shift_type TEXT NOT NULL,
+            start_time TIME,
+            end_time TIME,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
     # Таблица статей
     db.execute('''
         CREATE TABLE IF NOT EXISTS articles (

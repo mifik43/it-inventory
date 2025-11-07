@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2>Редактировать смену</h2>
+        
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">Сотрудник *</label>
+                        <select class="form-select" id="user_id" name="user_id" required>
+                            <option value="">Выберите сотрудника</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if shift.user_id == user.id %}selected{% endif %}>
+                                {{ user.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="shift_date" class="form-label">Дата смены *</label>
+                        <input type="date" class="form-control" id="shift_date" name="shift_date" 
+                               value="{{ shift.shift_date }}" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="shift_type" class="form-label">Тип смены *</label>
+                        <select class="form-select" id="shift_type" name="shift_type" required>
+                            <option value="Утро" {% if shift.shift_type == 'Утро' %}selected{% endif %}>Утро (08:00 - 16:00)</option>
+                            <option value="День" {% if shift.shift_type == 'День' %}selected{% endif %}>День (12:00 - 20:00)</option>
+                            <option value="Вечер" {% if shift.shift_type == 'Вечер' %}selected{% endif %}>Вечер (16:00 - 00:00)</option>
+                            <option value="Ночь" {% if shift.shift_type == 'Ночь' %}selected{% endif %}>Ночь (00:00 - 08:00)</option>
+                            <option value="Индивидуально" {% if shift.shift_type == 'Индивидуально' %}selected{% endif %}>Индивидуально</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="start_time" class="form-label">Время начала</label>
+                        <input type="time" class="form-control" id="start_time" name="start_time" 
+                               value="{{ shift.start_time or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="end_time" class="form-label">Время окончания</label>
+                        <input type="time" class="form-control" id="end_time" name="end_time" 
+                               value="{{ shift.end_time or '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="notes" class="form-label">Примечания</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3" 
+                          placeholder="Дополнительная информация о смене...">{{ shift.notes or '' }}</textarea>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <div>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <a href="{{ url_for('shifts_list') }}" class="btn btn-secondary">Отмена</a>
+                </div>
+                <a href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
+                   class="btn btn-danger"
+                   onclick="return confirm('Удалить смену для {{ shift.username }} на {{ shift.shift_date }}?')">
+                    <i class="bi bi-trash"></i> Удалить смену
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shiftTypeSelect = document.getElementById('shift_type');
+    const startTimeInput = document.getElementById('start_time');
+    const endTimeInput = document.getElementById('end_time');
+    
+    // Автоматическое заполнение времени при выборе типа смены
+    shiftTypeSelect.addEventListener('change', function() {
+        const shiftType = this.value;
+        
+        switch(shiftType) {
+            case 'Утро':
+                startTimeInput.value = '08:00';
+                endTimeInput.value = '16:00';
+                break;
+            case 'День':
+                startTimeInput.value = '12:00';
+                endTimeInput.value = '20:00';
+                break;
+            case 'Вечер':
+                startTimeInput.value = '16:00';
+                endTimeInput.value = '00:00';
+                break;
+            case 'Ночь':
+                startTimeInput.value = '00:00';
+                endTimeInput.value = '08:00';
+                break;
+            case 'Индивидуально':
+                // Не меняем значения, если уже установлены
+                if (!startTimeInput.value) startTimeInput.value = '';
+                if (!endTimeInput.value) endTimeInput.value = '';
+                break;
+        }
+    });
+});
+</script>
+{% endblock %}
