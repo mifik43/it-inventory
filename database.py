@@ -125,7 +125,37 @@ def init_db():
             FOREIGN KEY (organization_id) REFERENCES organizations (id)
         )
     ''')
+    # Таблица статей
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS articles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'Общее',
+            tags TEXT,
+            author_id INTEGER NOT NULL,
+            is_published BOOLEAN DEFAULT 1,
+            views INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (author_id) REFERENCES users (id)
+        )
+    ''')
 
+    # Таблица заметок
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            color TEXT DEFAULT '#ffffff',
+            is_pinned BOOLEAN DEFAULT 0,
+            author_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (author_id) REFERENCES users (id)
+        )
+    ''')
     # Добавляем администратора по умолчанию
     cursor = db.execute('SELECT COUNT(*) as count FROM users')
     count = cursor.fetchone()['count']

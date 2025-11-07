@@ -1,2 +1,4 @@
-*.db
-__pycache__/*
+.db
+.venv
+.idea
+__pycache_

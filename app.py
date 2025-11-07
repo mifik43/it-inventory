@@ -850,6 +850,279 @@ def delete_organization(org_id):
     
     return redirect(url_for('organizations'))
 
+# ========== МАРШРУТЫ ДЛЯ СТАТЕЙ И ЗАМЕТОК ==========
+
+@app.route('/articles')
+@login_required
+def articles_list():
+    db = get_db()
+    articles = db.execute('''
+        SELECT a.*, u.username as author_name 
+        FROM articles a 
+        JOIN users u ON a.author_id = u.id 
+        WHERE a.is_published = 1
+        ORDER BY a.updated_at DESC
+    ''').fetchall()
+    
+    # Получаем уникальные категории для фильтра
+    categories = db.execute('SELECT DISTINCT category FROM articles ORDER BY category').fetchall()
+    category_list = [cat['category'] for cat in categories]
+    
+    # Статистика для сегодня
+    today = datetime.now().strftime('%Y-%m-%d')
+    today_updated = db.execute('''
+        SELECT COUNT(*) as count FROM articles 
+        WHERE DATE(updated_at) = ? AND is_published = 1
+    ''', (today,)).fetchone()['count']
+    
+    return render_template('articles.html', 
+                         articles=articles, 
+                         categories=category_list,
+                         today_updated=today_updated)
+
+@app.route('/articles/<int:article_id>')
+@login_required
+def view_article(article_id):
+    db = get_db()
+    
+    # Увеличиваем счетчик просмотров
+    db.execute('UPDATE articles SET views = views + 1 WHERE id = ?', (article_id,))
+    db.commit()
+    
+    article = db.execute('''
+        SELECT a.*, u.username as author_name 
+        FROM articles a 
+        JOIN users u ON a.author_id = u.id 
+        WHERE a.id = ?
+    ''', (article_id,)).fetchone()
+    
+    if not article:
+        flash('Статья не найдена', 'error')
+        return redirect(url_for('articles_list'))
+    
+    return render_template('view_article.html', article=article)
+
+@app.route('/add_article', methods=['GET', 'POST'])
+@login_required
+def add_article():
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        category = request.form['category']
+        tags = request.form.get('tags', '')
+        is_published = request.form.get('is_published') == '1'
+        
+        if not title or not content:
+            flash('Заголовок и содержание обязательны для заполнения', 'error')
+            return render_template('add_article.html')
+        
+        db = get_db()
+        try:
+            db.execute('''
+                INSERT INTO articles (title, content, category, tags, author_id, is_published)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (title, content, category, tags, session['user_id'], is_published))
+            db.commit()
+            flash('Статья успешно создана!', 'success')
+            return redirect(url_for('articles_list'))
+        except Exception as e:
+            flash(f'Ошибка при создании статьи: {str(e)}', 'error')
+    
+    return render_template('add_article.html')
+
+
+@app.route('/delete_article/<int:article_id>')
+@login_required
+def delete_article(article_id):
+    db = get_db()
+    article = db.execute('SELECT * FROM articles WHERE id = ?', (article_id,)).fetchone()
+    
+    if not article:
+        flash('Статья не найдена', 'error')
+        return redirect(url_for('articles_list'))
+    
+    # Проверяем права доступа
+    if article['author_id'] != session['user_id'] and session['role'] != 'admin':
+        flash('У вас нет прав для удаления этой статьи', 'error')
+        return redirect(url_for('articles_list'))
+    
+    try:
+        db.execute('DELETE FROM articles WHERE id = ?', (article_id,))
+        db.commit()
+        flash('Статья успешно удалена!', 'success')
+    except Exception as e:
+        flash(f'Ошибка при удалении статьи: {str(e)}', 'error')
+    
+    return redirect(url_for('articles_list'))
+
+@app.route('/edit_article/<int:article_id>', methods=['GET', 'POST'])
+@login_required
+def edit_article(article_id):
+    db = get_db()
+    article = db.execute('SELECT * FROM articles WHERE id = ?', (article_id,)).fetchone()
+    
+    if not article:
+        flash('Статья не найдена', 'error')
+        return redirect(url_for('articles_list'))
+    
+    # Проверяем права доступа
+    if article['author_id'] != session['user_id'] and session['role'] != 'admin':
+        flash('У вас нет прав для редактирования этой статьи', 'error')
+        return redirect(url_for('articles_list'))
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        category = request.form['category']
+        tags = request.form.get('tags', '')
+        is_published = request.form.get('is_published') == '1'
+        
+        if not title or not content:
+            flash('Заголовок и содержание обязательны для заполнения', 'error')
+            return render_template('edit_article.html', article=article)
+        
+        try:
+            db.execute('''
+                UPDATE articles SET 
+                title=?, content=?, category=?, tags=?, is_published=?, updated_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            ''', (title, content, category, tags, is_published, article_id))
+            db.commit()
+            flash('Статья успешно обновлена!', 'success')
+            return redirect(url_for('view_article', article_id=article_id))
+        except Exception as e:
+            flash(f'Ошибка при обновлении статьи: {str(e)}', 'error')
+    
+    return render_template('edit_article.html', article=article)
+
+# ========== МАРШРУТЫ ДЛЯ ЗАМЕТОК ==========
+
+@app.route('/notes')
+@login_required
+def notes_list():
+    db = get_db()
+    notes = db.execute('''
+        SELECT n.*, u.username as author_name 
+        FROM notes n 
+        JOIN users u ON n.author_id = u.id 
+        WHERE n.author_id = ?
+        ORDER BY n.is_pinned DESC, n.updated_at DESC
+    ''', (session['user_id'],)).fetchall()
+    
+    # Статистика для сегодня
+    today = datetime.now().strftime('%Y-%m-%d')
+    today_created = db.execute('''
+        SELECT COUNT(*) as count FROM notes 
+        WHERE DATE(created_at) = ? AND author_id = ?
+    ''', (today, session['user_id'])).fetchone()['count']
+    
+    return render_template('notes.html', notes=notes, today_created=today_created)
+
+@app.route('/add_note', methods=['GET', 'POST'])
+@login_required
+def add_note():
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        color = request.form.get('color', '#ffffff')
+        is_pinned = request.form.get('is_pinned') == '1'
+        
+        if not title or not content:
+            flash('Заголовок и содержание обязательны для заполнения', 'error')
+            return render_template('add_note.html')
+        
+        db = get_db()
+        try:
+            db.execute('''
+                INSERT INTO notes (title, content, color, is_pinned, author_id)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (title, content, color, is_pinned, session['user_id']))
+            db.commit()
+            flash('Заметка успешно создана!', 'success')
+            return redirect(url_for('notes_list'))
+        except Exception as e:
+            flash(f'Ошибка при создании заметки: {str(e)}', 'error')
+    
+    return render_template('add_note.html')
+
+# ========== МАРШРУТЫ ДЛЯ УДАЛЕНИЯ И РЕДАКТИРОВАНИЯ СТАТЕЙ И ЗАМЕТОК ==========
+
+
+@app.route('/delete_note/<int:note_id>')
+@login_required
+def delete_note(note_id):
+    db = get_db()
+    note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 
+                     (note_id, session['user_id'])).fetchone()
+    
+    if not note:
+        flash('Заметка не найдена', 'error')
+        return redirect(url_for('notes_list'))
+    
+    try:
+        db.execute('DELETE FROM notes WHERE id = ?', (note_id,))
+        db.commit()
+        flash('Заметка успешно удалена!', 'success')
+    except Exception as e:
+        flash(f'Ошибка при удалении заметки: {str(e)}', 'error')
+    
+    return redirect(url_for('notes_list'))
+
+@app.route('/edit_note/<int:note_id>', methods=['GET', 'POST'])
+@login_required
+def edit_note(note_id):
+    db = get_db()
+    note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 
+                     (note_id, session['user_id'])).fetchone()
+    
+    if not note:
+        flash('Заметка не найдена', 'error')
+        return redirect(url_for('notes_list'))
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        color = request.form.get('color', '#ffffff')
+        is_pinned = request.form.get('is_pinned') == '1'
+        
+        if not title or not content:
+            flash('Заголовок и содержание обязательны для заполнения', 'error')
+            return render_template('edit_note.html', note=note)
+        
+        try:
+            db.execute('''
+                UPDATE notes SET 
+                title=?, content=?, color=?, is_pinned=?, updated_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            ''', (title, content, color, is_pinned, note_id))
+            db.commit()
+            flash('Заметка успешно обновлена!', 'success')
+            return redirect(url_for('notes_list'))
+        except Exception as e:
+            flash(f'Ошибка при обновлении заметки: {str(e)}', 'error')
+    
+    return render_template('edit_note.html', note=note)
+
+@app.route('/toggle_pin_note/<int:note_id>')
+@login_required
+def toggle_pin_note(note_id):
+    db = get_db()
+    note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 
+                     (note_id, session['user_id'])).fetchone()
+    
+    if not note:
+        flash('Заметка не найдена', 'error')
+        return redirect(url_for('notes_list'))
+    
+    try:
+        db.execute('UPDATE notes SET is_pinned = NOT is_pinned WHERE id = ?', (note_id,))
+        db.commit()
+        flash('Статус закрепления изменен!', 'success')
+    except Exception as e:
+        flash(f'Ошибка при изменении статуса: {str(e)}', 'error')
+    
+    return redirect(url_for('notes_list'))
+
 # ========== ЗАПУСК ПРИЛОЖЕНИЯ С СЕТЕВЫМ ДОСТУПОМ ==========
 
 def get_local_ip():

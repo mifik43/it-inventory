@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и кнопки -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Мои заметки</h1>
+                    <p class="text-muted">Быстрые заметки и идеи</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('add_note') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Новая заметка
+                    </a>
+                    <a href="{{ url_for('articles_list') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-journal-text"></i> Статьи
+                    </a>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Всего заметок</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ notes|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-sticky fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Закрепленные</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ notes|selectattr("is_pinned", "equalto", 1)|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-pin-angle fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-4 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Создано сегодня</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ today_created }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-plus-square fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Список заметок -->
+            <div class="row">
+                {% for note in notes %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card shadow h-100" style="border-left: 4px solid {{ note.color }}; background-color: {{ note.color }}20;">
+                        {% if note.is_pinned %}
+                        <div class="card-header py-2 bg-warning bg-opacity-25">
+                            <small class="text-warning">
+                                <i class="bi bi-pin-angle-fill"></i> Закреплено
+                            </small>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ note.title }}</h5>
+                            <p class="card-text">{{ note.content|replace('\n', '<br>')|safe }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+    <div class="btn-group w-100">
+        <a href="{{ url_for('edit_note', note_id=note.id) }}" 
+           class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil"></i>
+        </a>
+        <a href="{{ url_for('toggle_pin_note', note_id=note.id) }}" 
+           class="btn btn-outline-warning btn-sm">
+            {% if note.is_pinned %}
+                <i class="bi bi-pin-angle"></i>
+            {% else %}
+                <i class="bi bi-pin-angle-fill"></i>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('delete_note', note_id=note.id) }}" 
+           class="btn btn-outline-danger btn-sm"
+           onclick="return confirm('Удалить заметку \"{{ note.title }}\"?')">
+            <i class="bi bi-trash"></i>
+        </a>
+    </div>
+    <small class="text-muted d-block mt-2">
+        Создано: {{ note.created_at[:10] }}
+    </small>
+</div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="bi bi-sticky display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">Заметки не найдены</h4>
+                        <p class="text-muted">Создайте первую заметку</p>
+                        <a href="{{ url_for('add_note') }}" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-circle"></i> Создать заметку
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
