@@ -28,7 +28,14 @@
                         <input type="password" class="form-control" id="new_password" name="new_password">
                         <div class="form-text">Оставьте пустым, если не хотите менять пароль</div>
                     </div>
-                    
+                    {% for role in roles %}
+                    <div>
+                        <input type="checkbox" name="{{role.id}}"
+                            value="{{role.id}}" />
+                        <label for="{{role.name}}">{{role.name}}</label>
+                        <label for="{{role.name}}">{{role.description}}</label>
+                    </div>
+                    {% endfor %}
                     <button type="submit" class="btn btn-primary">Сохранить изменения</button>
                     <a href="{{ url_for('users.users') }}" class="btn btn-secondary">Отмена</a>
                 </form>

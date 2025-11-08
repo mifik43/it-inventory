@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from functools import wraps
 from requirements import admin_required, login_required
+from database_roles import read_all_roles
 
 bluprint_user_routes = Blueprint("users", __name__)
 
@@ -87,12 +88,20 @@ def create_user():
 @admin_required
 def edit_user(user_id):
     db = get_db()
+
+    roles = read_all_roles(db)
     
     if request.method == 'POST':
         username = request.form['username']
         role = request.form['role']
         new_password = request.form.get('new_password', '')
-        
+
+        selected_roles = set()
+        for r in roles:
+            if str(k) in request.form.keys():
+                selected_roles.add(r)
+                print(f"Для пользователя {username} добавлена роль {r.name}")
+
         try:
             # Обновляем основные данные пользователя
             if new_password:
@@ -117,7 +126,7 @@ def edit_user(user_id):
             flash(f'Ошибка при обновлении пользователя: {str(e)}', 'error')
     
     user = db.execute('SELECT id, username, role FROM users WHERE id = ?', (user_id,)).fetchone()
-    return render_template('auth/edit_user.html', user=user)
+    return render_template('edit_user.html', user=user, roles=roles)
 
 @bluprint_user_routes.route('/delete_user/<int:user_id>')
 @admin_required
