@@ -27,7 +27,7 @@ def login():
         else:
             flash('Неверное имя пользователя или пароль', 'error')
     
-    return render_template('login.html')
+    return render_template('auth/login.html')
 
 @bluprint_user_routes.route('/logout')
 def logout():
@@ -42,7 +42,7 @@ def logout():
 def users():
     db = get_db()
     users_list = db.execute('SELECT id, username, role, created_at FROM users').fetchall()
-    return render_template('users.html', users=users_list)
+    return render_template('auth/users.html', users=users_list)
 
 
 @bluprint_user_routes.route('/create_user', methods=['GET', 'POST'])
@@ -61,7 +61,7 @@ def create_user():
         
         if existing_user:
             flash('Пользователь с таким именем уже существует', 'error')
-            return render_template('create_user.html')
+            return render_template('auth/create_user.html')
         
         # Хешируем пароль и создаем пользователя
         password_hash = generate_password_hash(password)
@@ -77,9 +77,9 @@ def create_user():
         except Exception as e:
             flash(f'Ошибка при создании пользователя: {str(e)}', 'error')
         
-        return render_template('create_user.html')
+        return render_template('auth/create_user.html')
 
-    return render_template('create_user.html')
+    return render_template('auth/create_user.html')
 
 
 
@@ -117,7 +117,7 @@ def edit_user(user_id):
             flash(f'Ошибка при обновлении пользователя: {str(e)}', 'error')
     
     user = db.execute('SELECT id, username, role FROM users WHERE id = ?', (user_id,)).fetchone()
-    return render_template('edit_user.html', user=user)
+    return render_template('auth/edit_user.html', user=user)
 
 @bluprint_user_routes.route('/delete_user/<int:user_id>')
 @admin_required

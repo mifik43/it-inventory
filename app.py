@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from database import init_db, get_db
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 
 import socket
+import os
 from datetime import datetime
 
 from users import bluprint_user_routes
@@ -16,6 +18,18 @@ app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
 
 app.register_blueprint(bluprint_user_routes)
 app.register_blueprint(bluprint_roles_routes)
+
+# Настройки для загрузки файлов
+UPLOAD_FOLDER = 'static/uploads'
+SCREENSHOTS_FOLDER = 'static/uploads/screenshots'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SCREENSHOTS_FOLDER'] = SCREENSHOTS_FOLDER
+
+# Создаем папки для загрузок при запуске
+os.makedirs(SCREENSHOTS_FOLDER, exist_ok=True)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
@@ -39,8 +53,24 @@ def index():
     active_providers_count = db.execute('SELECT COUNT(*) as count FROM providers WHERE status = "Активен"').fetchone()['count']
     total_monthly_cost = db.execute('SELECT SUM(price) as total FROM providers WHERE status = "Активен"').fetchone()['total'] or 0
     users_count = db.execute('SELECT COUNT(*) as count FROM users').fetchone()['count']
-  
-   
+
+    # Статистика по статьям и заметкам
+    articles_count = db.execute('SELECT COUNT(*) as count FROM articles WHERE is_published = 1').fetchone()['count']
+    notes_count = db.execute('SELECT COUNT(*) as count FROM notes').fetchone()['count']
+    
+    # Ближайшие смены (на сегодня и завтра)
+    from datetime import datetime, timedelta
+    today = datetime.now().date()
+    tomorrow = today + timedelta(days=1)
+    
+    upcoming_shifts = db.execute('''
+        SELECT s.*, u.username 
+        FROM shifts s 
+        JOIN users u ON s.user_id = u.id 
+        WHERE s.shift_date BETWEEN ? AND ?
+        ORDER BY s.shift_date, s.shift_type
+        LIMIT 10
+    ''', (today, tomorrow)).fetchall()
 
     # Статистика по устройствам
     devices_by_type = db.execute('''
@@ -95,11 +125,14 @@ def index():
     for c in cubes_list:
         total_cubes_price += c['price']
     
-    return render_template('index.html',
+    return render_template('dashboard/index.html',
                          devices_count=devices_count,
                          active_providers_count=active_providers_count,
                          total_monthly_cost=total_monthly_cost,
                          users_count=users_count,
+                         articles_count=articles_count,
+                         notes_count=notes_count,
+                         upcoming_shifts=upcoming_shifts,
                          devices_by_type=devices_by_type,
                          devices_by_status=devices_by_status,
                          recent_devices=recent_devices,
@@ -107,7 +140,9 @@ def index():
                          providers_by_city=providers_by_city,
                          cost_by_service=cost_by_service,
                          cubes_list=cubes_list,
-                         total_cubes_price=total_cubes_price)
+                         total_cubes_price=total_cubes_price,
+                         today=today,
+                         tomorrow=tomorrow)
 
 # ========== МАРШРУТЫ ДЛЯ УСТРОЙСТВ ==========
 
@@ -119,7 +154,7 @@ def devices():
         SELECT * FROM devices 
         ORDER BY created_at DESC
     ''').fetchall()
-    return render_template('devices.html', devices=devices)
+    return render_template('devices/devices.html', devices=devices)
 
 @app.route('/add_device', methods=['GET', 'POST'])
 @admin_required
@@ -149,7 +184,7 @@ def add_device():
         except Exception as e:
             flash(f'Ошибка при добавлении устройства: {str(e)}', 'error')
     
-    return render_template('add_device.html')
+    return render_template('devices/add_device.html')
 
 @app.route('/edit_device/<int:device_id>', methods=['GET', 'POST'])
 @admin_required
@@ -183,7 +218,7 @@ def edit_device(device_id):
             flash(f'Ошибка при обновлении устройства: {str(e)}', 'error')
     
     device = db.execute('SELECT * FROM devices WHERE id=?', (device_id,)).fetchone()
-    return render_template('edit_device.html', device=device)
+    return render_template('devices/edit_device.html', device=device)
 
 @app.route('/delete_device/<int:device_id>')
 @admin_required
@@ -210,7 +245,7 @@ def search():
         ORDER BY created_at DESC
     ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
     
-    return render_template('devices.html', devices=devices, search_query=query)
+    return render_template('devices/devices.html', devices=devices, search_query=query)
 
 # ========== МАРШРУТЫ ДЛЯ ПРОВАЙДЕРОВ ==========
 
@@ -222,7 +257,7 @@ def providers():
         SELECT * FROM providers 
         ORDER BY created_at DESC
     ''').fetchall()
-    return render_template('providers.html', providers=providers_list)
+    return render_template('providers/providers.html', providers=providers_list)
 
 @app.route('/add_provider', methods=['GET', 'POST'])
 @admin_required
@@ -266,7 +301,7 @@ def add_provider():
         except Exception as e:
             flash(f'Ошибка при добавлении провайдера: {str(e)}', 'error')
     
-    return render_template('add_provider.html')
+    return render_template('providers/add_provider.html')
 
 @app.route('/edit_provider/<int:provider_id>', methods=['GET', 'POST'])
 @admin_required
@@ -312,7 +347,7 @@ def edit_provider(provider_id):
             flash(f'Ошибка при обновлении провайдера: {str(e)}', 'error')
     
     provider = db.execute('SELECT * FROM providers WHERE id=?', (provider_id,)).fetchone()
-    return render_template('edit_provider.html', provider=provider)
+    return render_template('providers/edit_provider.html', provider=provider)
 
 @app.route('/delete_provider/<int:provider_id>')
 @admin_required
@@ -339,7 +374,7 @@ def provider_search():
         ORDER BY created_at DESC
     ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
     
-    return render_template('providers.html', providers=providers_list, search_query=query)
+    return render_template('providers/providers.html', providers=providers_list, search_query=query)
 
 # ========== МАРШРУТЫ ДЛЯ КУБИКОВ (ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ) ==========
 
@@ -350,7 +385,7 @@ def provider_search():
 @login_required
 def cubes():
     cubes_list = get_cubes()
-    return render_template('cubes.html', cubes=cubes_list)
+    return render_template('cubes/cubes.html', cubes=cubes_list)
 
 @app.route('/add_cube', methods=['GET', 'POST'])
 @admin_required
@@ -396,7 +431,7 @@ def add_cube():
         except Exception as e:
             flash(f'Ошибка при добавлении кубика: {str(e)}', 'error')
     
-    return render_template('add_cube.html')
+    return render_template('cubes/add_cube.html')
 
 @app.route('/edit_cube/<int:cube_id>', methods=['GET', 'POST'])
 @admin_required
@@ -444,7 +479,7 @@ def edit_cube(cube_id):
             flash(f'Ошибка при обновлении кубика: {str(e)}', 'error')
     
     cube = db.execute('SELECT * FROM software_cubes WHERE id=?', (cube_id,)).fetchone()
-    return render_template('edit_cube.html', cube=cube)
+    return render_template('cubes/edit_cube.html', cube=cube)
 
 @app.route('/delete_cube/<int:cube_id>')
 @admin_required
@@ -471,7 +506,7 @@ def cube_search():
         ORDER BY created_at DESC
     ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
     
-    return render_template('cubes.html', cubes=cubes_list, search_query=query)
+    return render_template('cubes/cubes.html', cubes=cubes_list, search_query=query)
 
 @app.route('/todo')
 @login_required
@@ -553,7 +588,7 @@ def todo():
     in_progress = len([t for t in processed_todos if t['status'] == 'в работе'])
     completed_count = len([t for t in processed_todos if t['is_completed'] == 1])
     
-    return render_template('todo.html', 
+    return render_template('todo/todo.html', 
                          todos=processed_todos, 
                          total_tasks=total_tasks,
                          in_progress=in_progress,
@@ -589,7 +624,7 @@ def add_todo():
                 due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
             except ValueError:
                 flash('Неверный формат даты', 'error')
-                return render_template('add_todo.html', organizations=organizations)
+                return render_template('todo/add_todo.html', organizations=organizations)
         
         try:
             db.execute('''
@@ -602,7 +637,7 @@ def add_todo():
         except Exception as e:
             flash(f'Ошибка при добавлении задачи: {str(e)}', 'error')
     
-    return render_template('add_todo.html', organizations=organizations)
+    return render_template('todo/add_todo.html', organizations=organizations)
 
 @app.route('/edit_todo/<int:todo_id>', methods=['GET', 'POST'])
 @login_required
@@ -645,7 +680,7 @@ def edit_todo(todo_id):
         # Валидация
         if not title:
             flash('Название задачи обязательно для заполнения', 'error')
-            return render_template('edit_todo.html', task=task_dict, organizations=organizations)
+            return render_template('todo/todo/edit_todo.html', task=task_dict, organizations=organizations)
         
         # Преобразуем дату
         due_date = None
@@ -654,7 +689,7 @@ def edit_todo(todo_id):
                 due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
             except ValueError:
                 flash('Неверный формат даты', 'error')
-                return render_template('edit_todo.html', task=task_dict, organizations=organizations)
+                return render_template('todo/edit_todo.html', task=task_dict, organizations=organizations)
         
         # Определяем completed_at
         completed_at = None
@@ -677,7 +712,7 @@ def edit_todo(todo_id):
         except Exception as e:
             flash(f'Ошибка при обновлении задачи: {str(e)}', 'error')
     
-    return render_template('edit_todo.html', task=task_dict, organizations=organizations)
+    return render_template('todo/edit_todo.html', task=task_dict, organizations=organizations)
 
 @app.route('/delete_todo/<int:todo_id>')
 @login_required
@@ -758,7 +793,7 @@ def organizations():
             END,
             name
     ''').fetchall()
-    return render_template('organizations.html', organizations=organizations_list)
+    return render_template('organizations/organizations.html', organizations=organizations_list)
 
 @app.route('/add_organization', methods=['GET', 'POST'])
 @admin_required
@@ -790,7 +825,7 @@ def add_organization():
         except Exception as e:
             flash(f'Ошибка при добавлении организации: {str(e)}', 'error')
     
-    return render_template('add_organization.html')
+    return render_template('organizations/add_organization.html')
 
 @app.route('/edit_organization/<int:org_id>', methods=['GET', 'POST'])
 @admin_required
@@ -815,7 +850,7 @@ def edit_organization(org_id):
         # Валидация
         if not name:
             flash('Название организации обязательно для заполнения', 'error')
-            return render_template('edit_organization.html', org=org)
+            return render_template('organizations/edit_organization.html', org=org)
         
         try:
             db.execute('''
@@ -829,7 +864,7 @@ def edit_organization(org_id):
         except Exception as e:
             flash(f'Ошибка при обновлении организации: {str(e)}', 'error')
     
-    return render_template('edit_organization.html', org=org)
+    return render_template('organizations/edit_organization.html', org=org)
 
 @app.route('/delete_organization/<int:org_id>')
 @admin_required
@@ -877,32 +912,12 @@ def articles_list():
         WHERE DATE(updated_at) = ? AND is_published = 1
     ''', (today,)).fetchone()['count']
     
-    return render_template('articles.html', 
+    return render_template('knowledge/articles/articles.html', 
                          articles=articles, 
                          categories=category_list,
                          today_updated=today_updated)
 
-@app.route('/articles/<int:article_id>')
-@login_required
-def view_article(article_id):
-    db = get_db()
-    
-    # Увеличиваем счетчик просмотров
-    db.execute('UPDATE articles SET views = views + 1 WHERE id = ?', (article_id,))
-    db.commit()
-    
-    article = db.execute('''
-        SELECT a.*, u.username as author_name 
-        FROM articles a 
-        JOIN users u ON a.author_id = u.id 
-        WHERE a.id = ?
-    ''', (article_id,)).fetchone()
-    
-    if not article:
-        flash('Статья не найдена', 'error')
-        return redirect(url_for('articles_list'))
-    
-    return render_template('view_article.html', article=article)
+
 
 @app.route('/add_article', methods=['GET', 'POST'])
 @login_required
@@ -914,23 +929,49 @@ def add_article():
         tags = request.form.get('tags', '')
         is_published = request.form.get('is_published') == '1'
         
+        # Валидация
         if not title or not content:
             flash('Заголовок и содержание обязательны для заполнения', 'error')
-            return render_template('add_article.html')
+            return render_template('knowledge/articles/add_article.html')
         
         db = get_db()
         try:
-            db.execute('''
+            # Создаем статью
+            cursor = db.execute('''
                 INSERT INTO articles (title, content, category, tags, author_id, is_published)
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (title, content, category, tags, session['user_id'], is_published))
+            article_id = cursor.lastrowid
+            
+            # Обработка загруженных скриншотов
+            if 'screenshots' in request.files:
+                files = request.files.getlist('screenshots')
+                uploaded_count = 0
+                
+                for file in files:
+                    if file and file.filename:  # Проверяем, что файл выбран
+                        screenshot_info = save_screenshot(file, article_id)
+                        if screenshot_info:
+                            db.execute('''
+                                INSERT INTO article_screenshots (article_id, filename, original_filename, file_size)
+                                VALUES (?, ?, ?, ?)
+                            ''', (article_id, screenshot_info['filename'], 
+                                  screenshot_info['original_filename'], screenshot_info['file_size']))
+                            uploaded_count += 1
+                
+                if uploaded_count > 0:
+                    flash(f'Статья успешно создана! Загружено {uploaded_count} скриншотов.', 'success')
+                else:
+                    flash('Статья успешно создана!', 'success')
+            
             db.commit()
-            flash('Статья успешно создана!', 'success')
-            return redirect(url_for('articles_list'))
+            return redirect(url_for('view_article', article_id=article_id))
+            
         except Exception as e:
+            db.rollback()
             flash(f'Ошибка при создании статьи: {str(e)}', 'error')
     
-    return render_template('add_article.html')
+    return render_template('knowledge/articles/add_article.html')
 
 
 @app.route('/delete_article/<int:article_id>')
@@ -949,13 +990,21 @@ def delete_article(article_id):
         return redirect(url_for('articles_list'))
     
     try:
+        # Удаляем связанные скриншоты
+        screenshots = db.execute('SELECT * FROM article_screenshots WHERE article_id = ?', (article_id,)).fetchall()
+        for screenshot in screenshots:
+            delete_screenshot(screenshot['id'])
+        
+        # Удаляем статью
         db.execute('DELETE FROM articles WHERE id = ?', (article_id,))
         db.commit()
-        flash('Статья успешно удалена!', 'success')
+        flash('Статья и все связанные скриншоты успешно удалены!', 'success')
     except Exception as e:
         flash(f'Ошибка при удалении статьи: {str(e)}', 'error')
     
     return redirect(url_for('articles_list'))
+
+# ========== МАРШРУТЫ ДЛЯ СКРИНШОТОВ СТАТЕЙ ==========
 
 @app.route('/edit_article/<int:article_id>', methods=['GET', 'POST'])
 @login_required
@@ -981,7 +1030,7 @@ def edit_article(article_id):
         
         if not title or not content:
             flash('Заголовок и содержание обязательны для заполнения', 'error')
-            return render_template('edit_article.html', article=article)
+            return render_template('knowledge/articles/edit_article.html', article=article, screenshots=get_article_screenshots(article_id))
         
         try:
             db.execute('''
@@ -990,12 +1039,174 @@ def edit_article(article_id):
                 WHERE id=?
             ''', (title, content, category, tags, is_published, article_id))
             db.commit()
+            
+            # Обработка загруженных скриншотов
+            if 'screenshots' in request.files:
+                files = request.files.getlist('screenshots')
+                for file in files:
+                    if file and file.filename:  # Проверяем, что файл выбран
+                        screenshot_info = save_screenshot(file, article_id)
+                        if screenshot_info:
+                            db.execute('''
+                                INSERT INTO article_screenshots (article_id, filename, original_filename, file_size)
+                                VALUES (?, ?, ?, ?)
+                            ''', (article_id, screenshot_info['filename'], 
+                                  screenshot_info['original_filename'], screenshot_info['file_size']))
+                            db.commit()
+            
             flash('Статья успешно обновлена!', 'success')
             return redirect(url_for('view_article', article_id=article_id))
         except Exception as e:
             flash(f'Ошибка при обновлении статьи: {str(e)}', 'error')
     
-    return render_template('edit_article.html', article=article)
+    return render_template('knowledge/articles/edit_article.html', 
+                         article=article, 
+                         screenshots=get_article_screenshots(article_id))
+
+@app.route('/articles/screenshot/<int:screenshot_id>/description', methods=['POST'])
+@login_required
+def update_screenshot_description(screenshot_id):
+    """Обновляет описание скриншота"""
+    db = get_db()
+    data = request.get_json()
+    
+    if not data or 'description' not in data:
+        return jsonify({'success': False, 'error': 'Неверные данные'})
+    
+    screenshot = db.execute('SELECT * FROM article_screenshots WHERE id = ?', (screenshot_id,)).fetchone()
+    if not screenshot:
+        return jsonify({'success': False, 'error': 'Скриншот не найден'})
+    
+    # Проверяем права доступа
+    article = db.execute('SELECT * FROM articles WHERE id = ?', (screenshot['article_id'],)).fetchone()
+    if article['author_id'] != session['user_id'] and session['role'] != 'admin':
+        return jsonify({'success': False, 'error': 'Нет прав доступа'})
+    
+    try:
+        db.execute('''
+            UPDATE article_screenshots SET description = ? WHERE id = ?
+        ''', (data['description'], screenshot_id))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/delete_screenshot/<int:screenshot_id>')
+@login_required
+def delete_screenshot(screenshot_id):
+    """Удаляет скриншот"""
+    db = get_db()
+    screenshot = db.execute('SELECT * FROM article_screenshots WHERE id = ?', (screenshot_id,)).fetchone()
+    
+    if not screenshot:
+        flash('Скриншот не найден', 'error')
+        return redirect(url_for('articles_list'))
+    
+    # Проверяем права доступа
+    article = db.execute('SELECT * FROM articles WHERE id = ?', (screenshot['article_id'],)).fetchone()
+    if article['author_id'] != session['user_id'] and session['role'] != 'admin':
+        flash('У вас нет прав для удаления этого скриншота', 'error')
+        return redirect(url_for('view_article', article_id=article['id']))
+    
+    if delete_screenshot(screenshot_id):
+        flash('Скриншот успешно удален!', 'success')
+    else:
+        flash('Ошибка при удалении скриншота', 'error')
+    
+    return redirect(url_for('edit_article', article_id=article['id']))
+
+@app.route('/articles/<int:article_id>')
+@login_required
+def view_article(article_id):
+    db = get_db()
+    
+    # Увеличиваем счетчик просмотров
+    db.execute('UPDATE articles SET views = views + 1 WHERE id = ?', (article_id,))
+    db.commit()
+    
+    article = db.execute('''
+        SELECT a.*, u.username as author_name 
+        FROM articles a 
+        JOIN users u ON a.author_id = u.id 
+        WHERE a.id = ?
+    ''', (article_id,)).fetchone()
+    
+    if not article:
+        flash('Статья не найдена', 'error')
+        return redirect(url_for('articles_list'))
+    
+    return render_template('knowledge/articles/view_article.html', 
+                         article=article, 
+                         screenshots=get_article_screenshots(article_id))
+
+def allowed_file(filename):
+    """Проверяет, разрешено ли расширение файла"""
+    if not '.' in filename:
+        return False
+    
+    ext = filename.rsplit('.', 1)[1].lower()
+    
+    # Проверяем расширение
+    if ext not in ALLOWED_EXTENSIONS:
+        return False
+    
+    return True
+
+def save_screenshot(file, article_id):
+    """Сохраняет скриншот и возвращает информацию о файле"""
+    if file and file.filename and allowed_file(file.filename):
+        # Проверяем размер файла
+        file.seek(0, 2)  # Перемещаемся в конец файла
+        file_size = file.tell()
+        file.seek(0)  # Возвращаемся в начало
+        
+        if file_size > MAX_FILE_SIZE:
+            raise ValueError(f"Файл слишком большой. Максимальный размер: {MAX_FILE_SIZE // (1024*1024)}MB")
+        
+        filename = secure_filename(file.filename)
+        # Создаем уникальное имя файла
+        import uuid
+        unique_filename = f"{article_id}_{uuid.uuid4().hex[:8]}_{filename}"
+        filepath = os.path.join(app.config['SCREENSHOTS_FOLDER'], unique_filename)
+        
+        # Сохраняем файл
+        file.save(filepath)
+        
+        return {
+            'filename': unique_filename,
+            'original_filename': filename,
+            'file_size': file_size,
+            'filepath': filepath
+        }
+    return None
+
+def get_article_screenshots(article_id):
+    """Получает все скриншоты для статьи"""
+    db = get_db()
+    return db.execute('''
+        SELECT * FROM article_screenshots 
+        WHERE article_id = ? 
+        ORDER BY upload_order, created_at
+    ''', (article_id,)).fetchall()
+
+def delete_screenshot(screenshot_id):
+    """Удаляет скриншот"""
+    db = get_db()
+    screenshot = db.execute('SELECT * FROM article_screenshots WHERE id = ?', (screenshot_id,)).fetchone()
+    
+    if screenshot:
+        # Удаляем файл
+        try:
+            os.remove(os.path.join(app.config['SCREENSHOTS_FOLDER'], screenshot['filename']))
+        except OSError:
+            pass  # Файл уже удален или не существует
+        
+        # Удаляем запись из БД
+        db.execute('DELETE FROM article_screenshots WHERE id = ?', (screenshot_id,))
+        db.commit()
+        return True
+    return False
+
 
 # ========== МАРШРУТЫ ДЛЯ ЗАМЕТОК ==========
 
@@ -1018,7 +1229,7 @@ def notes_list():
         WHERE DATE(created_at) = ? AND author_id = ?
     ''', (today, session['user_id'])).fetchone()['count']
     
-    return render_template('notes.html', notes=notes, today_created=today_created)
+    return render_template('knowledge/notes/notes.html', notes=notes, today_created=today_created)
 
 @app.route('/add_note', methods=['GET', 'POST'])
 @login_required
@@ -1031,7 +1242,7 @@ def add_note():
         
         if not title or not content:
             flash('Заголовок и содержание обязательны для заполнения', 'error')
-            return render_template('add_note.html')
+            return render_template('knowledge/notes/add_note.html')
         
         db = get_db()
         try:
@@ -1045,7 +1256,7 @@ def add_note():
         except Exception as e:
             flash(f'Ошибка при создании заметки: {str(e)}', 'error')
     
-    return render_template('add_note.html')
+    return render_template('knowledge/notes/add_note.html')
 
 # ========== МАРШРУТЫ ДЛЯ УДАЛЕНИЯ И РЕДАКТИРОВАНИЯ СТАТЕЙ И ЗАМЕТОК ==========
 
@@ -1089,7 +1300,7 @@ def edit_note(note_id):
         
         if not title or not content:
             flash('Заголовок и содержание обязательны для заполнения', 'error')
-            return render_template('edit_note.html', note=note)
+            return render_template('knowledge/notes/edit_note.html', note=note)
         
         try:
             db.execute('''
@@ -1103,7 +1314,7 @@ def edit_note(note_id):
         except Exception as e:
             flash(f'Ошибка при обновлении заметки: {str(e)}', 'error')
     
-    return render_template('edit_note.html', note=note)
+    return render_template('knowledge/notes/edit_note.html', note=note)
 
 @app.route('/toggle_pin_note/<int:note_id>')
 @login_required
@@ -1215,7 +1426,7 @@ def shifts_list():
     # Пользователи для календаря
     calendar_users = all_users
     
-    return render_template('shifts.html', 
+    return render_template('shifts/shifts.html', 
                          shifts=shifts,
                          all_users=all_users,
                          selected_user=int(user_id) if user_id else None,
@@ -1252,7 +1463,7 @@ def add_shift():
         
         if existing_shift:
             flash('У этого сотрудника уже есть смена на указанную дату', 'error')
-            return render_template('add_shift.html', users=users)
+            return render_template('shifts/add_shift.html', users=users)
         
         try:
             db.execute('''
@@ -1265,7 +1476,7 @@ def add_shift():
         except Exception as e:
             flash(f'Ошибка при добавлении смены: {str(e)}', 'error')
     
-    return render_template('add_shift.html', users=users)
+    return render_template('shifts/add_shift.html', users=users)
 
 @app.route('/edit_shift/<int:shift_id>', methods=['GET', 'POST'])
 @admin_required
@@ -1306,7 +1517,7 @@ def edit_shift(shift_id):
         
         if existing_shift:
             flash('У этого сотрудника уже есть смена на указанную дату', 'error')
-            return render_template('edit_shift.html', shift=shift, users=users)
+            return render_template('shifts/edit_shift.html', shift=shift, users=users)
         
         try:
             db.execute('''
@@ -1320,7 +1531,7 @@ def edit_shift(shift_id):
         except Exception as e:
             flash(f'Ошибка при обновлении смены: {str(e)}', 'error')
     
-    return render_template('edit_shift.html', shift=shift, users=users)
+    return render_template('shifts/edit_shift.html', shift=shift, users=users)
 
 @app.route('/delete_shift/<int:shift_id>')
 @admin_required
@@ -1351,16 +1562,6 @@ def get_local_ip():
 
 if __name__ == '__main__':
     local_ip = get_local_ip()
-    
-    print("=" * 60)
-    print("🚀 IT Inventory System запущен!")
-    print("=" * 60)
-    print(f"📍 Локальный доступ:  http://localhost:8000")
-    print(f"🌐 Сетевой доступ:    http://{local_ip}:8000")
-    print("=" * 60)
-    print("📱 Для доступа с других устройств в сети используйте сетевой URL")
-    print("⏹️  Для остановки сервера нажмите Ctrl+C")
-    print("=" * 60)
     
     # Запускаем сервер с доступом из локальной сети
     app.run(

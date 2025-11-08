@@ -1,0 +1,281 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и кнопки -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">График смен</h1>
+                    <p class="text-muted">Управление рабочими сменами сотрудников</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('add_shift') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Добавить смену
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-calendar"></i> Период
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('shifts_list', period='week') }}">Неделя</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('shifts_list', period='month') }}">Месяц</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('shifts_list', period='all') }}">Все смены</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Смен в этом месяце</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.month_shifts }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-calendar-month fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Утренние смены</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.morning_shifts }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-sun fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Вечерние смены</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.evening_shifts }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-moon fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Ночные смены</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.night_shifts }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-stars fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="user_filter" class="form-label">Сотрудник</label>
+                            <select class="form-select" id="user_filter" name="user_id">
+                                <option value="">Все сотрудники</option>
+                                {% for user in all_users %}
+                                <option value="{{ user.id }}" {% if selected_user == user.id %}selected{% endif %}>
+                                    {{ user.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">С даты</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                                   value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">По дату</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" 
+                                   value="{{ date_to }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Применить фильтр</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Таблица смен -->
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        График смен 
+                        <span class="badge bg-primary ms-2">{{ shifts|length }}</span>
+                    </h6>
+                    <small class="text-muted">
+                        Показаны смены с {{ date_from }} по {{ date_to }}
+                    </small>
+                </div>
+                <div class="card-body">
+                    {% if shifts %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Сотрудник</th>
+                                    <th>Дата</th>
+                                    <th>Тип смены</th>
+                                    <th>Время</th>
+                                    <th>Примечания</th>
+                                    <th>Дата создания</th>
+                                    <th width="15%">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for shift in shifts %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ shift.username }}</strong>
+                                        {% if session.role == 'admin' %}
+                                            <br><small class="text-muted">ID: {{ shift.user_id }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ shift.shift_date }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if shift.shift_type == 'Утро' %}bg-warning
+                                            {% elif shift.shift_type == 'День' %}bg-success
+                                            {% elif shift.shift_type == 'Вечер' %}bg-primary
+                                            {% else %}bg-dark{% endif %}">
+                                            {{ shift.shift_type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if shift.start_time and shift.end_time %}
+                                            {{ shift.start_time[:5] }} - {{ shift.end_time[:5] }}
+                                        {% else %}
+                                            <span class="text-muted">Не указано</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ shift.notes or '-' }}</td>
+                                    <td>
+                                        <small class="text-muted">{{ shift.created_at[:10] }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('edit_shift', shift_id=shift.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
+                                               class="btn btn-outline-danger" 
+                                               title="Удалить"
+                                               onclick="return confirm('Удалить смену для {{ shift.username }} на {{ shift.shift_date }}?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">Смены не найдены</h4>
+                        <p class="text-muted">Добавьте первую смену для начала работы</p>
+                        <a href="{{ url_for('add_shift') }}" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-circle"></i> Добавить смену
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Календарный вид (дополнительно) -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Календарь смен</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Сотрудник</th>
+                                    {% for date in calendar_dates %}
+                                    <th class="text-center {% if date.is_weekend %}table-secondary{% endif %}">
+                                        <small>{{ date.date }}</small><br>
+                                        <small class="text-muted">{{ date.day_name }}</small>
+                                    </th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in calendar_users %}
+                                <tr>
+                                    <td><strong>{{ user.username }}</strong></td>
+                                    {% for date in calendar_dates %}
+                                    <td class="text-center {% if date.is_weekend %}table-secondary{% endif %}">
+                                        {% set user_shift = namespace(found=false) %}
+                                        {% for shift in shifts %}
+                                            {% if shift.user_id == user.id and shift.shift_date == date.date %}
+                                                {% set user_shift.found = true %}
+                                                <span class="badge 
+                                                    {% if shift.shift_type == 'Утро' %}bg-warning
+                                                    {% elif shift.shift_type == 'День' %}bg-success
+                                                    {% elif shift.shift_type == 'Вечер' %}bg-primary
+                                                    {% else %}bg-dark{% endif %}"
+                                                    title="{{ shift.start_time }} - {{ shift.end_time }}">
+                                                    {{ shift.shift_type }}
+                                                </span>
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if not user_shift.found %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

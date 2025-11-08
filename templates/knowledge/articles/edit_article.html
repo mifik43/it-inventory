@@ -1,0 +1,319 @@
+{% extends "base/base.html" %}
+
+{% block title %}Редактировать статью{% endblock %}
+
+{% block styles %}
+<style>
+.screenshot-preview {
+    max-height: 150px;
+    object-fit: cover;
+}
+.screenshot-card {
+    transition: transform 0.2s;
+}
+.screenshot-card:hover {
+    transform: translateY(-2px);
+}
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.375rem;
+    padding: 2rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.upload-area:hover {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+}
+.upload-area.dragover {
+    border-color: #0d6efd;
+    background-color: #d4e6ff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('articles_list') }}">Статьи</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('view_article', article_id=article.id) }}">{{ article.title }}</a></li>
+                <li class="breadcrumb-item active">Редактирование</li>
+            </ol>
+        </nav>
+
+        <h2>Редактировать статью</h2>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Заголовок статьи *</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               value="{{ article.title }}" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Категория *</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="Общее" {% if article.category == 'Общее' %}selected{% endif %}>Общее</option>
+                            <option value="Инструкции" {% if article.category == 'Инструкции' %}selected{% endif %}>Инструкции</option>
+                            <option value="Проблемы" {% if article.category == 'Проблемы' %}selected{% endif %}>Проблемы</option>
+                            <option value="Решения" {% if article.category == 'Решения' %}selected{% endif %}>Решения</option>
+                            <option value="Оборудование" {% if article.category == 'Оборудование' %}selected{% endif %}>Оборудование</option>
+                            <option value="ПО" {% if article.category == 'ПО' %}selected{% endif %}>ПО</option>
+                            <option value="Сеть" {% if article.category == 'Сеть' %}selected{% endif %}>Сеть</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="tags" class="form-label">Теги</label>
+                <input type="text" class="form-control" id="tags" name="tags" 
+                       value="{{ article.tags or '' }}" placeholder="тег1,тег2,тег3">
+                <div class="form-text">Укажите теги через запятую</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="content" class="form-label">Содержание статьи *</label>
+                <textarea class="form-control" id="content" name="content" rows="15" required>{{ article.content }}</textarea>
+            </div>
+
+            <!-- Блок загрузки скриншотов -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-images"></i> Скриншоты
+                        <span class="badge bg-primary ms-2">{{ screenshots|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Область загрузки -->
+                    <div class="upload-area mb-4" id="uploadArea">
+                        <i class="bi bi-cloud-arrow-up display-4 text-muted mb-3"></i>
+                        <h5>Перетащите скриншоты сюда</h5>
+                        <p class="text-muted">или нажмите для выбора файлов</p>
+                        <input type="file" id="screenshots" name="screenshots" 
+                               multiple accept="image/*" class="d-none">
+                        <div class="form-text">
+                            Поддерживаемые форматы: PNG, JPG, JPEG, GIF, BMP, WEBP. Максимальный размер: 16MB
+                        </div>
+                    </div>
+
+                    <!-- Прелоадер -->
+                    <div id="uploadProgress" class="d-none">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            <span>Загрузка файлов...</span>
+                        </div>
+                    </div>
+
+                    <!-- Список загруженных скриншотов -->
+                    <div id="screenshotsList" class="row">
+                        {% for screenshot in screenshots %}
+                        <div class="col-md-4 col-lg-3 mb-3 screenshot-item" data-id="{{ screenshot.id }}">
+                            <div class="card screenshot-card">
+                                <img src="{{ url_for('static', filename='uploads/screenshots/' + screenshot.filename) }}" 
+                                     class="card-img-top screenshot-preview" 
+                                     alt="{{ screenshot.original_filename }}"
+                                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGVlMmU2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmW0aXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPs6Vz4HOv8+Fzr/PgiDQu9C10YbQuNCw0LvRjNC90YvQuTwvdGV4dD48L3N2Zz4='">
+                                <div class="card-body p-2">
+                                    <small class="card-text d-block text-truncate" title="{{ screenshot.original_filename }}">
+                                        {{ screenshot.original_filename }}
+                                    </small>
+                                    <small class="text-muted">
+                                        {{ "%.1f"|format(screenshot.file_size / 1024) }} KB
+                                    </small>
+                                    {% if screenshot.description %}
+                                    <div class="mt-1">
+                                        <small class="text-info">{{ screenshot.description }}</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer p-2">
+                                    <div class="btn-group w-100">
+                                        <button type="button" class="btn btn-outline-primary btn-sm edit-description"
+                                                data-bs-toggle="modal" data-bs-target="#descriptionModal"
+                                                data-id="{{ screenshot.id }}"
+                                                data-description="{{ screenshot.description or '' }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <a href="{{ url_for('delete_screenshot', screenshot_id=screenshot.id) }}" 
+                                           class="btn btn-outline-danger btn-sm"
+                                           onclick="return confirm('Удалить этот скриншот?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Сообщение, если скриншотов нет -->
+                    {% if not screenshots %}
+                    <div class="text-center py-4" id="noScreenshots">
+                        <i class="bi bi-image display-1 text-muted"></i>
+                        <p class="text-muted mt-2">Скриншоты не добавлены</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="is_published" name="is_published" value="1" 
+                       {% if article.is_published %}checked{% endif %}>
+                <label class="form-check-label" for="is_published">Опубликовать статью</label>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <div>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <a href="{{ url_for('view_article', article_id=article.id) }}" class="btn btn-secondary">Отмена</a>
+                </div>
+                <a href="{{ url_for('delete_article', article_id=article.id) }}" 
+                   class="btn btn-danger"
+                   onclick="return confirm('Вы уверены, что хотите удалить статью \"{{ article.title }}\"?')">
+                    <i class="bi bi-trash"></i> Удалить статью
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования описания -->
+<div class="modal fade" id="descriptionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать описание скриншота</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="descriptionForm">
+                    <input type="hidden" id="screenshotId" name="screenshot_id">
+                    <div class="mb-3">
+                        <label for="screenshotDescription" class="form-label">Описание</label>
+                        <textarea class="form-control" id="screenshotDescription" name="description" 
+                                  rows="3" placeholder="Введите описание скриншота..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="saveDescription">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('screenshots');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const screenshotsList = document.getElementById('screenshotsList');
+    const noScreenshots = document.getElementById('noScreenshots');
+
+    // Обработка клика по области загрузки
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // Обработка перетаскивания файлов
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        fileInput.files = e.dataTransfer.files;
+        handleFiles(fileInput.files);
+    });
+
+    // Обработка выбора файлов через input
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            uploadProgress.classList.remove('d-none');
+            
+            // Здесь можно добавить AJAX-загрузку файлов
+            // Пока просто показываем прелоадер
+            setTimeout(() => {
+                uploadProgress.classList.add('d-none');
+                alert(`Выбрано ${files.length} файлов. Они будут загружены при сохранении статьи.`);
+            }, 1000);
+        }
+    }
+
+    // Обработка редактирования описания
+    const descriptionModal = document.getElementById('descriptionModal');
+    descriptionModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const screenshotId = button.getAttribute('data-id');
+        const description = button.getAttribute('data-description');
+        
+        document.getElementById('screenshotId').value = screenshotId;
+        document.getElementById('screenshotDescription').value = description;
+    });
+
+    // Сохранение описания
+    document.getElementById('saveDescription').addEventListener('click', function() {
+        const screenshotId = document.getElementById('screenshotId').value;
+        const description = document.getElementById('screenshotDescription').value;
+        
+        // Здесь можно добавить AJAX-запрос для сохранения описания
+        fetch(`/articles/screenshot/${screenshotId}/description`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                description: description
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Обновляем описание в карточке
+                const card = document.querySelector(`.screenshot-item[data-id="${screenshotId}"]`);
+                const descriptionElement = card.querySelector('.text-info');
+                if (descriptionElement) {
+                    descriptionElement.textContent = description;
+                } else {
+                    const newDescription = document.createElement('div');
+                    newDescription.className = 'mt-1';
+                    newDescription.innerHTML = `<small class="text-info">${description}</small>`;
+                    card.querySelector('.card-body').appendChild(newDescription);
+                }
+                
+                bootstrap.Modal.getInstance(descriptionModal).hide();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при сохранении описания');
+        });
+    });
+
+    // Скрываем сообщение "нет скриншотов" если они есть
+    if (screenshotsList.children.length > 0 && noScreenshots) {
+        noScreenshots.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

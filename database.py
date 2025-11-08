@@ -190,6 +190,20 @@ def init_db():
             FOREIGN KEY (author_id) REFERENCES users (id)
         )
     ''')
+    # Таблица для скриншотов статей
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS article_screenshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            article_id INTEGER NOT NULL,
+            filename TEXT NOT NULL,
+            original_filename TEXT NOT NULL,
+            file_size INTEGER,
+            description TEXT,
+            upload_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
+        )
+    ''')
     # Добавляем администратора по умолчанию
     cursor = db.execute('SELECT COUNT(*) as count FROM users')
     count = cursor.fetchone()['count']

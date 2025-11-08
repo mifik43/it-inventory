@@ -1,0 +1,169 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block styles %}
+<style>
+.article-content {
+    line-height: 1.6;
+    font-size: 1.1rem;
+}
+.article-content br {
+    margin-bottom: 1rem;
+}
+.screenshot-gallery img {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.screenshot-gallery img:hover {
+    transform: scale(1.02);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Навигация -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('articles_list') }}">Статьи</a></li>
+                    <li class="breadcrumb-item active">{{ article.title }}</li>
+                </ol>
+            </nav>
+
+            <!-- Заголовок статьи -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h3 mb-1">{{ article.title }}</h1>
+                        <div class="text-muted">
+                            <span class="badge bg-primary">{{ article.category }}</span>
+                            <span class="ms-2"><i class="bi bi-eye"></i> {{ article.views }} просмотров</span>
+                            <span class="ms-2"><i class="bi bi-person"></i> {{ article.author_name }}</span>
+                            <span class="ms-2"><i class="bi bi-clock"></i> {{ article.updated_at[:10] }}</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <a href="{{ url_for('edit_article', article_id=article.id) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil"></i> Редактировать
+                        </a>
+                        <a href="{{ url_for('delete_article', article_id=article.id) }}" 
+                           class="btn btn-outline-danger btn-sm"
+                           onclick="return confirm('Вы уверены, что хотите удалить статью \"{{ article.title }}\"?')">
+                            <i class="bi bi-trash"></i> Удалить
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if article.tags %}
+                    <div class="mb-4">
+                        {% for tag in article.tags.split(',') %}
+                        <span class="badge bg-light text-dark me-1">{{ tag.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="article-content">
+                        {{ article.content|replace('\n', '<br>')|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Скриншоты -->
+            {% if screenshots %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-images"></i> Скриншоты
+                        <span class="badge bg-primary ms-2">{{ screenshots|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row screenshot-gallery">
+                        {% for screenshot in screenshots %}
+                        <div class="col-md-4 col-lg-3 mb-4">
+                            <div class="card h-100">
+                                <img src="{{ url_for('static', filename='uploads/screenshots/' + screenshot.filename) }}" 
+                                     class="card-img-top" 
+                                     alt="{{ screenshot.original_filename }}"
+                                     data-bs-toggle="modal" 
+                                     data-bs-target="#screenshotModal"
+                                     data-bs-image="{{ url_for('static', filename='uploads/screenshots/' + screenshot.filename) }}"
+                                     data-bs-description="{{ screenshot.description or '' }}"
+                                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGVlMmU2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmW0aXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPs6Vz4HOv8+Fzr/PgiDQu9C10YbQuNCw0LvRjNC90YvQuTwvdGV4dD48L3N2Zz4='">
+                                <div class="card-body">
+                                    {% if screenshot.description %}
+                                    <p class="card-text">{{ screenshot.description }}</p>
+                                    {% endif %}
+                                    <small class="text-muted">
+                                        {{ "%.1f"|format(screenshot.file_size / 1024) }} KB
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Действия -->
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('articles_list') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к списку
+                </a>
+                <div class="btn-group">
+                    <a href="{{ url_for('edit_article', article_id=article.id) }}" 
+                       class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </a>
+                    <a href="{{ url_for('delete_article', article_id=article.id) }}" 
+                       class="btn btn-danger"
+                       onclick="return confirm('Вы уверены, что хотите удалить статью \"{{ article.title }}\"?')">
+                        <i class="bi bi-trash"></i> Удалить
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра скриншота -->
+<div class="modal fade" id="screenshotModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Просмотр скриншота</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="" class="img-fluid">
+                <div id="modalDescription" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Инициализация модального окна для скриншотов
+const screenshotModal = document.getElementById('screenshotModal');
+if (screenshotModal) {
+    screenshotModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const imageSrc = button.getAttribute('data-bs-image');
+        const description = button.getAttribute('data-bs-description');
+        
+        const modalImage = screenshotModal.querySelector('#modalImage');
+        const modalDescription = screenshotModal.querySelector('#modalDescription');
+        
+        modalImage.src = imageSrc;
+        modalDescription.textContent = description;
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и кнопки -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Управление организациями</h1>
+                    <p class="text-muted">ООО, ИП и самозанятые</p>
+                </div>
+                <a href="{{ url_for('add_organization') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Добавить организацию
+                </a>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Всего организаций</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ organizations|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-building fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        ООО</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ organizations|selectattr("type", "equalto", "ООО")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-briefcase fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        ИП</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ organizations|selectattr("type", "equalto", "ИП")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-person-badge fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Самозанятые</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ organizations|selectattr("type", "equalto", "Самозанятый")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-person fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Список организаций -->
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        Список организаций 
+                        <span class="badge bg-primary ms-2">{{ organizations|length }}</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if organizations %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Тип</th>
+                                    <th>ИНН</th>
+                                    <th>Контактное лицо</th>
+                                    <th>Телефон</th>
+                                    <th>Email</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for org in organizations %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ org.name }}</strong>
+                                        {% if org.address %}
+                                            <br><small class="text-muted">{{ org.address }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if org.type == 'ООО' %}bg-primary
+                                            {% elif org.type == 'ИП' %}bg-warning
+                                            {% else %}bg-info{% endif %}">
+                                            {{ org.type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ org.inn or '-' }}</td>
+                                    <td>{{ org.contact_person or '-' }}</td>
+                                    <td>
+                                        {% if org.phone %}
+                                            <a href="tel:{{ org.phone }}" class="text-decoration-none">
+                                                {{ org.phone }}
+                                            </a>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if org.email %}
+                                            <a href="mailto:{{ org.email }}" class="text-decoration-none">
+                                                {{ org.email }}
+                                            </a>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('edit_organization', org_id=org.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{{ url_for('delete_organization', org_id=org.id) }}" 
+                                               class="btn btn-outline-danger" 
+                                               title="Удалить"
+                                               onclick="return confirm('Вы уверены, что хотите удалить организацию \"{{ org.name }}\"?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-building display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">Организации не найдены</h4>
+                        <p class="text-muted">Добавьте первую организацию для начала работы</p>
+                        <a href="{{ url_for('add_organization') }}" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-circle"></i> Добавить организацию
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

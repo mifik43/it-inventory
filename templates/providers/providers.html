@@ -1,0 +1,147 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Провайдеры на объектах</h2>
+    {% if session.role == 'admin' %}
+        <a href="{{ url_for('add_provider') }}" class="btn btn-primary">Добавить провайдера</a>
+    {% endif %}
+</div>
+
+<form method="GET" action="{{ url_for('provider_search') }}" class="mb-4">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Поиск по названию, договору, объекту, городу или контактному лицу..." 
+               value="{{ search_query or '' }}">
+        <button class="btn btn-outline-secondary" type="submit">Найти</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Провайдер</th>
+                <th>Услуга</th>
+                <th>Договор</th>
+                <th>Скорость</th>
+                <th>Стоимость</th>
+                <th>Объект</th>
+                <th>Город</th>
+                <th>Статус</th>
+                <th>Контакты</th>
+                {% if session.role == 'admin' %}
+                    <th>Действия</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for provider in providers %}
+            <tr>
+                <td>
+                    <strong>{{ provider.name }}</strong>
+                    {% if provider.notes %}
+                        <br><small class="text-muted">{{ provider.notes }}</small>
+                    {% endif %}
+                </td>
+                <td>{{ provider.service_type }}</td>
+                <td>
+                    {% if provider.contract_number %}
+                        {{ provider.contract_number }}
+                        {% if provider.contract_date %}
+                            <br><small class="text-muted">от {{ provider.contract_date }}</small>
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ provider.speed or '-' }}</td>
+                <td>
+                    {% if provider.price and provider.price > 0 %}
+                        {{ "₽{:,.2f}".format(provider.price).replace(',', ' ') }} / мес
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ provider.object_location }}</td>
+                <td>
+                    <span class="badge bg-info text-dark">{{ provider.city }}</span>
+                </td>
+                <td>
+                    <span class="badge 
+                        {% if provider.status == 'Активен' %}bg-success
+                        {% elif provider.status == 'Приостановлен' %}bg-warning
+                        {% else %}bg-secondary{% endif %}">
+                        {{ provider.status }}
+                    </span>
+                </td>
+                <td>
+                    {% if provider.contact_person %}
+                        <strong>{{ provider.contact_person }}</strong><br>
+                    {% endif %}
+                    {% if provider.phone %}
+                        📞 {{ provider.phone }}<br>
+                    {% endif %}
+                    {% if provider.email %}
+                        ✉️ {{ provider.email }}
+                    {% endif %}
+                </td>
+                {% if session.role == 'admin' %}
+                    <td>
+                        <a href="{{ url_for('edit_provider', provider_id=provider.id) }}" class="btn btn-sm btn-outline-primary">Редактировать</a>
+                        <a href="{{ url_for('delete_provider', provider_id=provider.id) }}" class="btn btn-sm btn-outline-danger" 
+                           onclick="return confirm('Удалить провайдера?')">Удалить</a>
+                    </td>
+                {% endif %}
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{% if session.role == 'admin' %}10{% else %}9{% endif %}" class="text-center">Провайдеры не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Статистика по провайдерам -->
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Статистика по провайдерам</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><strong>Всего провайдеров:</strong> {{ providers|length }}</li>
+                    <li><strong>Активных:</strong> {{ providers|selectattr('status', 'equalto', 'Активен')|list|length }}</li>
+                    <li><strong>Городов:</strong> {{ providers|map(attribute='city')|unique|list|length }}</li>
+                    <li><strong>Ежемесячная стоимость:</strong> 
+                        {{ "₽{:,.2f}".format(providers|sum(attribute='price')).replace(',', ' ') }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Провайдеры по городам</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    {% set cities = {} %}
+                    {% for provider in providers %}
+                        {% if provider.city in cities %}
+                            {% set _ = cities.update({provider.city: cities[provider.city] + 1}) %}
+                        {% else %}
+                            {% set _ = cities.update({provider.city: 1}) %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for city, count in cities.items() %}
+                        <li><strong>{{ city }}:</strong> {{ count }} провайдеров</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

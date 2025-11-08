@@ -1,0 +1,540 @@
+{% extends "base/base.html" %}
+
+{% block title %}Главная панель{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if not session.logged_in %}
+        <!-- Гостьовой контент без изменений -->
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-lg">
+                    <div class="card-body text-center py-5">
+                        <h1 class="display-4">IT Inventory System</h1>
+                        <p class="lead text-muted mb-4">Комплексная система учета IT-оборудования и провайдеров</p>
+                        <div class="alert alert-info">
+                            <h5>Для доступа к системе необходимо войти</h5>
+                            <p class="mb-3">Используйте тестовые учетные записи или обратитесь к администратору</p>
+                            <a href="{{ url_for('users.login') }}" class="btn btn-primary btn-lg">Войти в систему</a>
+                        </div>
+                        <div class="mt-4">
+                            <h6>Тестовые учетные записи:</h6>
+                            <div class="row justify-content-center">
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <strong>Администратор:</strong><br>admin / admin123
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <strong>Пользователь:</strong><br>user / user123
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        
+
+        <!-- Заголовок и быстрые действия -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-1">Дашборд IT Inventory</h1>
+                <p class="text-muted">Обзор системы учета IT-активов</p>
+            </div>
+
+        </div>
+
+        <!-- Основные метрики -->
+        <div class="row mb-4">
+            <!-- Устройства -->
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Всего устройств</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ devices_count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-laptop fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Провайдеры -->
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Активные провайдеры</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_providers_count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-wifi fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Стоимость -->
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Стоимость услуг/мес</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                    {{ "₽{:,.0f}".format(total_monthly_cost + (total_cubes_price or 0)) }}
+                                </div>
+                                <!--<div class="text-xs text-muted">
+                                    Интернет: {{ "₽{:,.0f}".format(total_monthly_cost) }}<br>
+                                    ПО: {{ "₽{:,.0f}".format(total_cubes_price or 0) }}
+                                </div>0-->
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-ruble-sign fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Пользователи -->
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Пользователей</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ users_count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статьи -->
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card border-left-danger shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                    Статьи</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ articles_count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-journal-text fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                        <!--<div class="mt-2 text-center">
+                            <a href="{{ url_for('articles_list') }}" class="btn btn-sm btn-outline-danger">Перейти</a>
+                        </div>-->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Заметки -->
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card border-left-secondary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                    Заметки</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ notes_count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-sticky fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                        <!--<div class="mt-2 text-center">
+                            <a href="{{ url_for('notes_list') }}" class="btn btn-sm btn-outline-secondary">Перейти</a>
+                        </div>-->
+                    </div>
+                </div>
+            </div>
+        </div>
+<!-- Ближайшие смены - в самом верху -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-calendar-week"></i> Ближайшие смены
+                        </h5>
+                        <a href="{{ url_for('shifts_list') }}" class="btn btn-sm btn-outline-primary">
+                            Все смены <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if upcoming_shifts %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Сотрудник</th>
+                                        <th>Дата</th>
+                                        <th>Тип смены</th>
+                                        <th>Время</th>
+                                        <th>Примечания</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for shift in upcoming_shifts %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ shift.username }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if shift.shift_date == today.strftime('%Y-%m-%d') %}
+                                                <span class="badge bg-success">Сегодня</span>
+                                            {% elif shift.shift_date == tomorrow.strftime('%Y-%m-%d') %}
+                                                <span class="badge bg-warning">Завтра</span>
+                                            {% else %}
+                                                {{ shift.shift_date }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if shift.shift_type == 'Утро' %}bg-warning
+                                                {% elif shift.shift_type == 'День' %}bg-success
+                                                {% elif shift.shift_type == 'Вечер' %}bg-primary
+                                                {% else %}bg-dark{% endif %}">
+                                                {{ shift.shift_type }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if shift.start_time and shift.end_time %}
+                                                {{ shift.start_time[:5] }} - {{ shift.end_time[:5] }}
+                                            {% else %}
+                                                <span class="text-muted">Не указано</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ shift.notes or '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-calendar-x display-1 text-muted"></i>
+                            <p class="text-muted mt-2">На ближайшие дни смен не запланировано</p>
+                            <a href="{{ url_for('add_shift') }}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> Добавить смену
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Остальной контент дашборда (устройства, провайдеры и т.д.) -->
+        <div class="row">
+            <!-- Левая колонка: Устройства -->
+            <div class="col-lg-8">
+                <!-- Последние устройства -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">Последние добавленные устройства</h6>
+                        <a href="{{ url_for('devices') }}" class="btn btn-sm btn-primary">Все устройства</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Название</th>
+                                        <th>Модель</th>
+                                        <th>Тип</th>
+                                        <th>Статус</th>
+                                        <th>Местоположение</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for device in recent_devices %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ device.name }}</strong>
+                                            {% if device.serial_number %}
+                                                <br><small class="text-muted">SN: {{ device.serial_number }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ device.model or '-' }}</td>
+                                        <td>{{ device.type }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if device.status == 'В использовании' %}bg-success
+                                                {% elif device.status == 'На складе' %}bg-primary
+                                                {% elif device.status == 'В ремонте' %}bg-warning
+                                                {% elif device.status == 'Резерв' %}bg-info
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ device.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ device.location }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">Устройства не найдены</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Распределение по типам и статусам -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Устройства по типам</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-pie pt-4 pb-2">
+                                    {% for item in devices_by_type %}
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span>{{ item.type }}</span>
+                                            <span class="font-weight-bold">{{ item.count }}</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-primary" 
+                                                 style="width: {{ (item.count / devices_count * 100) if devices_count > 0 else 0 }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-success">Устройства по статусам</h6>
+                            </div>
+                            <div class="card-body">
+                                {% for item in devices_by_status %}
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>{{ item.status }}</span>
+                                        <span class="font-weight-bold">{{ item.count }}</span>
+                                    </div>
+                                    <div class="progress" style="height: 12px;">
+                                        <div class="progress-bar 
+                                            {% if item.status == 'В использовании' %}bg-success
+                                            {% elif item.status == 'На складе' %}bg-primary
+                                            {% elif item.status == 'В ремонте' %}bg-warning
+                                            {% elif item.status == 'Резерв' %}bg-info
+                                            {% else %}bg-secondary{% endif %}" 
+                                            style="width: {{ (item.count / devices_count * 100) if devices_count > 0 else 0 }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая колонка: Провайдеры -->
+            <div class="col-lg-4">
+                <!-- Активные провайдеры -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-success">Активные провайдеры</h6>
+                        <a href="{{ url_for('providers') }}" class="btn btn-sm btn-success">Все провайдеры</a>
+                    </div>
+                    <div class="card-body">
+                        {% for provider in active_providers %}
+                        <div class="card border-left-success mb-3">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="font-weight-bold text-success mb-1">{{ provider.name }}</h6>
+                                    <span class="badge bg-success">{{ provider.service_type }}</span>
+                                </div>
+                                <p class="mb-1 small">{{ provider.object_location }}</p>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">{{ provider.city }}</small>
+                                    <strong class="text-success">{{ "₽{:,.0f}".format(provider.price or 0) }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted">Активные провайдеры не найдены</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Распределение по городам -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-info">Провайдеры по городам</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for item in providers_by_city %}
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>{{ item.city }}</span>
+                                <span class="font-weight-bold">{{ item.count }}</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-info" 
+                                     style="width: {{ (item.count / active_providers_count * 100) if active_providers_count > 0 else 0 }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Стоимость по услугам -->
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-warning">Стоимость по интернету {{"₽{:,.0f}".format(total_monthly_cost or 0)}}</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for item in cost_by_service %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>{{ item.service_type }}</span>
+                                <strong class="text-warning">{{ "₽{:,.0f}".format(item.total_cost or 0) }}</strong>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-warning" 
+                                     style="width: {{ (item.total_cost / total_monthly_cost * 100) if (total_monthly_cost) > 0 else 0 }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Cтоимость по кубику-->
+                   <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-warning">Стоимость по кубику {{"₽{:,.0f}".format(total_cubes_price or 0)}}</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for item in cubes_list %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>{{ item.name }}</span>
+                                <strong class="text-warning">{{ "₽{:,.0f}".format(item.price or 0) }}</strong>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-warning" 
+                                     style="width: {{ (item.price / total_cubes_price * 100) if total_cubes_price > 0 else 0 }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div> 
+            </div>
+        </div>
+
+        <!-- Информация о правах доступа -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-secondary">Ваши права доступа</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Основные права:</h6>
+                                <ul class="list-unstyled">
+                                    <li>✅ Просмотр устройств и провайдеров</li>
+                                    <li>✅ Поиск и фильтрация</li>
+                                    <li>✅ Просмотр статистики</li>
+                                    <li>✅ Чтение статей и заметок</li>
+                                    <li>✅ Просмотр графика смен</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Административные права:</h6>
+                                <ul class="list-unstyled">
+                                    {% if session.role == 'admin' %}
+                                        <li>✅ Добавление и редактирование устройств</li>
+                                        <li>✅ Управление провайдерами</li>
+                                        <li>✅ Управление пользователями</li>
+                                        <li>✅ Управление статьями и заметками</li>
+                                        <li>✅ Управление графиком смен</li>
+                                        <li>✅ Удаление записей</li>
+                                    {% else %}
+                                        <li>❌ Добавление и редактирование устройств</li>
+                                        <li>❌ Управление провайдерами</li>
+                                        <li>❌ Управление пользователями</li>
+                                        <li>❌ Управление статьями и заметками</li>
+                                        <li>❌ Управление графиком смен</li>
+                                        <li>❌ Удаление записей</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Пример простого графика распределения устройств по типам
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('devicesChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [{% for item in devices_by_type %}'{{ item.type }}',{% endfor %}],
+                datasets: [{
+                    data: [{% for item in devices_by_type %}{{ item.count }},{% endfor %}],
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', 
+                        '#e74a3b', '#858796', '#5a5c69'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

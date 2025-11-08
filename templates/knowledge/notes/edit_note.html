@@ -1,0 +1,61 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('notes_list') }}">Заметки</a></li>
+                <li class="breadcrumb-item active">Редактирование</li>
+            </ol>
+        </nav>
+
+        <h2>Редактировать заметку</h2>
+        
+        <form method="POST">
+            <div class="mb-3">
+                <label for="title" class="form-label">Заголовок заметки *</label>
+                <input type="text" class="form-control" id="title" name="title" 
+                       value="{{ note.title }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="content" class="form-label">Содержание *</label>
+                <textarea class="form-control" id="content" name="content" rows="8" 
+                          placeholder="Можно использовать переносы строк..." required>{{ note.content }}</textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="color" class="form-label">Цвет заметки</label>
+                        <input type="color" class="form-control form-control-color" id="color" 
+                               name="color" value="{{ note.color or '#ffffff' }}" title="Выберите цвет">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <div class="form-check mt-4">
+                            <input type="checkbox" class="form-check-input" id="is_pinned" 
+                                   name="is_pinned" value="1" {% if note.is_pinned %}checked{% endif %}>
+                            <label class="form-check-label" for="is_pinned">Закрепить заметку</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <div>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <a href="{{ url_for('notes_list') }}" class="btn btn-secondary">Отмена</a>
+                </div>
+                <a href="{{ url_for('delete_note', note_id=note.id) }}" 
+                   class="btn btn-danger"
+                   onclick="return confirm('Вы уверены, что хотите удалить заметку \"{{ note.title }}\"?')">
+                    <i class="bi bi-trash"></i> Удалить заметку
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Программное обеспечение</h2>
+    {% if session.role == 'admin' %}
+        <a href="{{ url_for('add_cube') }}" class="btn btn-primary">Добавить программу</a>
+    {% endif %}
+</div>
+
+<form method="GET" action="{{ url_for('cube_search') }}" class="mb-4">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Поиск по названию, лицензии, договору, объекту или контактному лицу..." 
+               value="{{ search_query or '' }}">
+        <button class="btn btn-outline-secondary" type="submit">Найти</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Программа</th>
+                <th>Услуга</th>
+                <th>Договор</th>
+                <th>Стоимость</th>
+                <th>Объект</th>
+                <th>Город</th>
+                <th>Статус</th>
+                <th>Контакты</th>
+                {% if session.role == 'admin' %}
+                    <th>Действия</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for cube in cubes %}
+            <tr>
+                <td>
+                    <strong>{{ cube.name }}</strong>
+                    {% if cube.notes %}
+                        <br><small class="text-muted">{{ cube.notes }}</small>
+                    {% endif %}
+                </td>
+                <td>{{ cube.software_type }}</td>
+                <td>
+                    <span class="badge bg-secondary">{{ cube.license_type }}</span>
+                </td>
+                <td>
+                    {% if cube.license_key %}
+                        <strong>Ключ:</strong> {{ cube.license_key }}<br>
+                    {% endif %}
+                    {% if cube.contract_number %}
+                        <strong>Дог.:</strong> {{ cube.contract_number }}
+                        {% if cube.contract_date %}
+                            <br><small class="text-muted">от {{ cube.contract_date }}</small>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge bg-info">{{ cube.users_count }} </span>
+                </td>
+                <td>
+                    {% if cube.price and cube.price > 0 %}
+                        {{ "₽{:,.2f}".format(cube.price).replace(',', ' ') }}
+                    {% else %}
+                        Бесплатно
+                    {% endif %}
+                </td>
+                <td>{{ cube.object_location }}</td>
+                <td>
+                    <span class="badge bg-info text-dark">{{ cube.city }}</span>
+                </td>
+                <td>
+                    <span class="badge 
+                        {% if cube.status == 'Активен' %}bg-success
+                        {% elif cube.status == 'Приостановлен' %}bg-warning
+                        {% else %}bg-secondary{% endif %}">
+                        {{ cube.status }}
+                    </span>
+                </td>
+    
+                <td>
+                    {% if cube.support_contact %}
+                        <strong>{{ cube.support_contact }}</strong><br>
+                    {% endif %}
+                    {% if cube.phone %}
+                        📞 {{ cube.phone }}<br>
+                    {% endif %}
+                    {% if cube.email %}
+                        ✉️ {{ cube.email }}
+                    {% endif %}
+                </td>
+                {% if session.role == 'admin' %}
+                    <td>
+                        <a href="{{ url_for('edit_cube', cube_id=cube.id) }}" class="btn btn-sm btn-outline-primary">Редактировать</a>
+                        <a href="{{ url_for('delete_cube', cube_id=cube.id) }}" class="btn btn-sm btn-outline-danger" 
+                           onclick="return confirm('Удалить программу?')">Удалить</a>
+                    </td>
+                {% endif %}
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{% if session.role == 'admin' %}12{% else %}11{% endif %}" class="text-center">Программа не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Статистика по программам -->
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Статистика по ПО</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><strong>Всего программ:</strong> {{ cubes|length }}</li>
+                    <li><strong>Активных:</strong> {{ cubes|selectattr('status', 'equalto', 'Активен')|list|length }}</li>
+                    <li><strong>Общая стоимость:</strong> 
+                        {{ "₽{:,.2f}".format(cubes|sum(attribute='price')).replace(',', ' ') }}
+                    </li>
+                    <!--<li><strong>Всего лицензий:</strong> {{ cubes|sum(attribute='users_count') }}</li>-->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
