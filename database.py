@@ -204,6 +204,32 @@ def init_db():
             FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
         )
     ''')
+
+    # Таблица по гостевому WIFI
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS guest_wifi (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            city TEXT NOT NULL,
+            price DECIMAL(10,2),
+            organization TEXT,
+            status TEXT DEFAULT 'Активен',
+            ssid TEXT,
+            password TEXT,
+            ip_range TEXT,
+            speed TEXT,
+            contract_number TEXT,
+            contract_date TEXT,
+            contact_person TEXT,
+            phone TEXT,
+            email TEXT,
+            installation_date TEXT,
+            renewal_date TEXT,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+    ''')
+    
     # Добавляем администратора по умолчанию
     cursor = db.execute('SELECT COUNT(*) as count FROM users')
     count = cursor.fetchone()['count']

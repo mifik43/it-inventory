@@ -1,0 +1,194 @@
+{% extends "base/base.html" %}
+
+{% block title %}Импорт гостевого WiFi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-router me-2"></i>Импорт гостевого WiFi</h2>
+    <a href="{{ url_for('guest_wifi') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-cloud-upload me-2"></i>Загрузка данных гостевого WiFi
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Инструкция по импорту:</h6>
+                    <ul class="mb-0">
+                        <li>Используйте шаблон для правильного формата данных</li>
+                        <li>Обязательное поле: <strong>Город</strong></li>
+                        <li>Поддерживаются файлы .xlsx и .xls</li>
+                        <li>Максимальное количество строк: 1000</li>
+                        <li>Даты в формате: ГГГГ-ММ-ДД</li>
+                    </ul>
+                </div>
+
+                <div class="text-center mb-4">
+                    <a href="{{ url_for('download_wifi_template_route') }}" class="btn btn-success">
+                        <i class="bi bi-download me-2"></i>Скачать шаблон Excel
+                    </a>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="excel_file" class="form-label">Выберите Excel файл:</label>
+                        <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
+                        <div class="form-text">Поддерживаются файлы .xlsx и .xls</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('guest_wifi') }}" class="btn btn-secondary me-md-2">Отмена</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload me-1"></i> Импортировать данные
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-list-check me-2"></i>Структура данных
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Поле в Excel</th>
+                                <th>Тип</th>
+                                <th>Обязательно</th>
+                                <th>Описание</th>
+                                <th>Пример</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Город</strong></td>
+                                <td>текст</td>
+                                <td><span class="badge bg-danger">ДА</span></td>
+                                <td>Город расположения точки WiFi</td>
+                                <td>Москва</td>
+                            </tr>
+                            <tr>
+                                <td>Стоимость</td>
+                                <td>число</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Стоимость обслуживания в руб/мес</td>
+                                <td>1500.50</td>
+                            </tr>
+                            <tr>
+                                <td>Организация</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Обслуживающая организация</td>
+                                <td>ООО "Телеком"</td>
+                            </tr>
+                            <tr>
+                                <td>Статус</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Статус точки WiFi</td>
+                                <td>Активен</td>
+                            </tr>
+                            <tr>
+                                <td>SSID</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Название WiFi сети</td>
+                                <td>Guest_WiFi</td>
+                            </tr>
+                            <tr>
+                                <td>Пароль</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Пароль от WiFi сети</td>
+                                <td>password123</td>
+                            </tr>
+                            <tr>
+                                <td>IP диапазон</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Диапазон IP адресов</td>
+                                <td>192.168.1.0/24</td>
+                            </tr>
+                            <tr>
+                                <td>Скорость</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Скорость подключения</td>
+                                <td>100 Мбит/с</td>
+                            </tr>
+                            <tr>
+                                <td>Номер договора</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Номер договора с провайдером</td>
+                                <td>ДГ-2024-001</td>
+                            </tr>
+                            <tr>
+                                <td>Дата договора</td>
+                                <td>дата</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Дата заключения договора</td>
+                                <td>2024-01-15</td>
+                            </tr>
+                            <tr>
+                                <td>Контактное лицо</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Контактное лицо</td>
+                                <td>Иванов Иван</td>
+                            </tr>
+                            <tr>
+                                <td>Телефон</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Контактный телефон</td>
+                                <td>+79991234567</td>
+                            </tr>
+                            <tr>
+                                <td>Email</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Электронная почта</td>
+                                <td>ivanov@mail.com</td>
+                            </tr>
+                            <tr>
+                                <td>Дата установки</td>
+                                <td>дата</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Дата установки оборудования</td>
+                                <td>2024-01-20</td>
+                            </tr>
+                            <tr>
+                                <td>Дата продления</td>
+                                <td>дата</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Дата продления договора</td>
+                                <td>2025-01-20</td>
+                            </tr>
+                            <tr>
+                                <td>Примечания</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Дополнительная информация</td>
+                                <td>Основная точка доступа</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -90,6 +90,26 @@
                 </div>
             </div>
 
+            <!-- Гостевой WiFi -->
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Гостевой WiFi</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_wifi_count }}/{{ total_wifi_count }}</div>
+                                <div class="text-xs text-muted mt-1">
+                                    {{ wifi_cities_count }} городов
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-router fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Стоимость -->
             <div class="col-xl-2 col-md-4 mb-4">
                 <div class="card border-left-info shadow h-100 py-2">
@@ -361,7 +381,7 @@
                 </div>
             </div>
 
-            <!-- Правая колонка: Провайдеры -->
+            <!-- Правая колонка: Провайдеры и WIFI -->
             <div class="col-lg-4">
                 <!-- Активные провайдеры -->
                 <div class="card shadow mb-4">
@@ -389,7 +409,47 @@
                         {% endfor %}
                     </div>
                 </div>
-
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-info">Последние точки WiFi</h6>
+                        <a href="{{ url_for('guest_wifi') }}" class="btn btn-sm btn-info">Все точки</a>
+                    </div>
+                    <div class="card-body">
+                        {% for wifi in recent_wifi %}
+                        <div class="card border-left-info mb-3">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="font-weight-bold text-info mb-1">{{ wifi.city }}</h6>
+                                    <span class="badge 
+                                        {% if wifi.status == 'Активен' %}bg-success
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ wifi.status }}
+                                    </span>
+                                </div>
+                                <p class="mb-1 small">
+                                    {% if wifi.organization %}
+                                        {{ wifi.organization }}
+                                    {% else %}
+                                        <span class="text-muted">Без организации</span>
+                                    {% endif %}
+                                </p>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">
+                                        {% if wifi.ssid %}
+                                            {{ wifi.ssid }}
+                                        {% else %}
+                                            Без SSID
+                                        {% endif %}
+                                    </small>
+                                    <strong class="text-info">{{ "₽{:,.0f}".format(wifi.price or 0) }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted">Точки WiFi не найдены</p>
+                        {% endfor %}
+                    </div>
+                </div>
                 <!-- Распределение по городам -->
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
@@ -411,7 +471,33 @@
                         {% endfor %}
                     </div>
                 </div>
-                
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-info">WiFi по городам</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for item in wifi_by_city %}
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>{{ item.city }}</span>
+                                <span class="font-weight-bold">
+                                    {{ item.count }} точек
+                                    {% if item.total_price %}
+                                    <br><small class="text-success">{{ "₽{:,.0f}".format(item.total_price) }}/мес</small>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-info" 
+                                     style="width: {{ (item.count / active_wifi_count * 100) if active_wifi_count > 0 else 0 }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted">Нет данных по городам</p>
+                        {% endfor %}
+                    </div>
+                </div>
                 <!-- Стоимость по услугам -->
                 <div class="card shadow">
                     <div class="card-header py-3">
