@@ -12,7 +12,7 @@ def roles():
 
     roles = read_all_roles()
 
-    return render_template('roles.html', roles=roles)
+    return render_template('roles/roles.html', roles=roles)
 
 @bluprint_roles_routes.route('/create_role', methods=['GET', 'POST'])
 def create_role():
@@ -33,7 +33,7 @@ def create_role():
         
         return redirect(url_for('roles.roles'))
     
-    return render_template('create_role.html', permissions=Permissions.get_names())
+    return render_template('roles/create_role.html', permissions=Permissions.get_names())
 
 @bluprint_roles_routes.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
 def edit_role(role_id):
@@ -57,7 +57,7 @@ def edit_role(role_id):
     for p in role.permissions:
         permissions[p]['checked'] = "checked"
 
-    return render_template('edit_role.html', role=role, permissions=permissions)
+    return render_template('roles/edit_role.html', role=role, permissions=permissions)
         
 
 @bluprint_roles_routes.route('/delete_role/<int:role_id>')

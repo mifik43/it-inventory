@@ -83,7 +83,14 @@
             График смен
         </a>
     </li>
-    
+        <!-- roles -->
+    <li class="nav-item">
+        <a class="nav-link {% if request.endpoint in ['roles', 'create_role', 'edir_role'] %}active{% endif %}" 
+           href="{{ url_for('roles.roles') }}">
+            <i class="bi bi-calendar-week"></i>
+            Роли юзеров
+        </a>
+    </li>
     <!-- Admin Only -->
     {% if session.role == 'admin' %}
     <li class="nav-item">

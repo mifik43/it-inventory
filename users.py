@@ -147,7 +147,7 @@ def change_password():
         
         if new_password != confirm_password:
             flash('Новый пароль и подтверждение не совпадают', 'error')
-            return render_template('change_password.html')
+            return render_template('auth/change_password.html')
         
         db = get_db()
         user = db.execute(
@@ -166,4 +166,4 @@ def change_password():
         else:
             flash('Текущий пароль указан неверно', 'error')
     
-    return render_template('change_password.html')
+    return render_template('auth/change_password.html')
