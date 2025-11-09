@@ -13,6 +13,11 @@ from roles_page import bluprint_roles_routes
 from functools import wraps
 from requirements import admin_required, login_required
 
+from excel_utils import (
+    export_devices, export_providers, export_cubes, 
+    export_organizations, export_todos, import_from_excel
+)
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
 
@@ -143,6 +148,106 @@ def index():
                          total_cubes_price=total_cubes_price,
                          today=today,
                          tomorrow=tomorrow)
+
+
+# ========== МАРШРУТЫ ДЛЯ ЭКСПОРТА/ИМПОРТА EXCEL ==========
+
+@app.route('/export/<data_type>')
+@login_required
+def export_data(data_type):
+    """Экспорт данных в Excel"""
+    try:
+        if data_type == 'devices':
+            excel_file = export_devices()
+            filename = f'devices_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        elif data_type == 'providers':
+            excel_file = export_providers()
+            filename = f'providers_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        elif data_type == 'cubes':
+            excel_file = export_cubes()
+            filename = f'cubes_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        elif data_type == 'organizations':
+            excel_file = export_organizations()
+            filename = f'organizations_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        elif data_type == 'todos':
+            excel_file = export_todos()
+            filename = f'todos_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        else:
+            flash('Неподдерживаемый тип данных для экспорта', 'error')
+            return redirect(request.referrer or url_for('index'))
+        
+        return send_file(
+            excel_file,
+            download_name=filename,
+            as_attachment=True,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        
+    except Exception as e:
+        flash(f'Ошибка при экспорте данных: {str(e)}', 'error')
+        return redirect(request.referrer or url_for('index'))
+
+@app.route('/import/<data_type>', methods=['GET', 'POST'])
+@admin_required
+def import_data(data_type):
+    """Импорт данных из Excel"""
+    if request.method == 'POST':
+        if 'excel_file' not in request.files:
+            flash('Файл не выбран', 'error')
+            return redirect(request.url)
+        
+        file = request.files['excel_file']
+        if file.filename == '':
+            flash('Файл не выбран', 'error')
+            return redirect(request.url)
+        
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            flash('Поддерживаются только файлы Excel (.xlsx, .xls)', 'error')
+            return redirect(request.url)
+        
+        try:
+            # Определяем таблицу для импорта
+            table_mapping = {
+                'devices': 'devices',
+                'providers': 'providers', 
+                'cubes': 'software_cubes',
+                'organizations': 'organizations',
+                'todos': 'todos'
+            }
+            
+            if data_type not in table_mapping:
+                flash('Неподдерживаемый тип данных для импорта', 'error')
+                return redirect(request.url)
+            
+            success, message = import_from_excel(file, table_mapping[data_type])
+            
+            if success:
+                flash(message, 'success')
+            else:
+                flash(message, 'error')
+                
+            return redirect(url_for(data_type))
+            
+        except Exception as e:
+            flash(f'Ошибка при импорте данных: {str(e)}', 'error')
+            return redirect(request.url)
+    
+    # GET запрос - показываем форму импорта
+    page_titles = {
+        'devices': 'устройств',
+        'providers': 'провайдеров',
+        'cubes': 'программных кубов', 
+        'organizations': 'организаций',
+        'todos': 'задач'
+    }
+    
+    if data_type not in page_titles:
+        flash('Неподдерживаемый тип данных', 'error')
+        return redirect(url_for('index'))
+    
+    return render_template('excel/import.html', 
+                         data_type=data_type, 
+                         page_title=f"Импорт {page_titles[data_type]}")
 
 # ========== МАРШРУТЫ ДЛЯ УСТРОЙСТВ ==========
 

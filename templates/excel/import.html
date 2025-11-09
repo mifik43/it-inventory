@@ -1,0 +1,114 @@
+{% extends "base/base.html" %}
+
+{% block title %}Импорт {{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-upload me-2"></i>Импорт {{ page_title }}</h2>
+    <a href="{{ url_for(data_type) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Загрузка Excel файла</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Инструкция по импорту:</h6>
+                    <ul class="mb-0">
+                        <li>Файл должен быть в формате Excel (.xlsx или .xls)</li>
+                        <li>Столбцы должны соответствовать структуре таблицы</li>
+                        <li>Для примера вы можете сначала <a href="{{ url_for('export_data', data_type=data_type) }}" class="alert-link">экспортировать данные</a> и посмотреть структуру файла</li>
+                        <li>Существующие записи с одинаковыми данными могут быть продублированы</li>
+                    </ul>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="excel_file" class="form-label">Выберите Excel файл:</label>
+                        <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
+                        <div class="form-text">Поддерживаются файлы .xlsx и .xls</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for(data_type) }}" class="btn btn-secondary me-md-2">Отмена</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload me-1"></i> Импортировать
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Структура данных</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Поле</th>
+                                <th>Тип</th>
+                                <th>Обязательно</th>
+                                <th>Описание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if data_type == 'devices' %}
+                                <tr><td>name</td><td>text</td><td>да</td><td>Название устройства</td></tr>
+                                <tr><td>model</td><td>text</td><td>нет</td><td>Модель</td></tr>
+                                <tr><td>type</td><td>text</td><td>да</td><td>Тип устройства</td></tr>
+                                <tr><td>serial_number</td><td>text</td><td>да</td><td>Серийный номер</td></tr>
+                                <tr><td>mac_address</td><td>text</td><td>нет</td><td>MAC-адрес</td></tr>
+                                <tr><td>ip_address</td><td>text</td><td>нет</td><td>IP-адрес</td></tr>
+                                <tr><td>location</td><td>text</td><td>да</td><td>Местоположение</td></tr>
+                                <tr><td>status</td><td>text</td><td>да</td><td>Статус</td></tr>
+                                <tr><td>assigned_to</td><td>text</td><td>нет</td><td>Ответственный</td></tr>
+                                <tr><td>specifications</td><td>text</td><td>нет</td><td>Характеристики</td></tr>
+                            {% elif data_type == 'providers' %}
+                                <tr><td>name</td><td>text</td><td>да</td><td>Название провайдера</td></tr>
+                                <tr><td>service_type</td><td>text</td><td>да</td><td>Тип услуги</td></tr>
+                                <tr><td>contract_number</td><td>text</td><td>нет</td><td>Номер договора</td></tr>
+                                <tr><td>contract_date</td><td>date</td><td>нет</td><td>Дата договора</td></tr>
+                                <tr><td>ip_range</td><td>text</td><td>нет</td><td>Диапазон IP</td></tr>
+                                <tr><td>speed</td><td>text</td><td>нет</td><td>Скорость</td></tr>
+                                <tr><td>price</td><td>number</td><td>нет</td><td>Цена</td></tr>
+                                <tr><td>contact_person</td><td>text</td><td>нет</td><td>Контактное лицо</td></tr>
+                                <tr><td>phone</td><td>text</td><td>нет</td><td>Телефон</td></tr>
+                                <tr><td>email</td><td>text</td><td>нет</td><td>Email</td></tr>
+                                <tr><td>object_location</td><td>text</td><td>да</td><td>Объект</td></tr>
+                                <tr><td>city</td><td>text</td><td>да</td><td>Город</td></tr>
+                                <tr><td>status</td><td>text</td><td>да</td><td>Статус</td></tr>
+                                <tr><td>notes</td><td>text</td><td>нет</td><td>Примечания</td></tr>
+                            {% elif data_type == 'cubes' %}
+                                <tr><td>name</td><td>text</td><td>да</td><td>Название программы</td></tr>
+                                <tr><td>software_type</td><td>text</td><td>да</td><td>Тип ПО</td></tr>
+                                <tr><td>license_type</td><td>text</td><td>да</td><td>Тип лицензии</td></tr>
+                                <tr><td>license_key</td><td>text</td><td>нет</td><td>Ключ лицензии</td></tr>
+                                <tr><td>contract_number</td><td>text</td><td>нет</td><td>Номер договора</td></tr>
+                                <tr><td>contract_date</td><td>date</td><td>нет</td><td>Дата договора</td></tr>
+                                <tr><td>price</td><td>number</td><td>нет</td><td>Цена</td></tr>
+                                <tr><td>users_count</td><td>number</td><td>нет</td><td>Количество пользователей</td></tr>
+                                <tr><td>support_contact</td><td>text</td><td>нет</td><td>Контакт поддержки</td></tr>
+                                <tr><td>phone</td><td>text</td><td>нет</td><td>Телефон</td></tr>
+                                <tr><td>email</td><td>text</td><td>нет</td><td>Email</td></tr>
+                                <tr><td>object_location</td><td>text</td><td>да</td><td>Объект</td></tr>
+                                <tr><td>city</td><td>text</td><td>да</td><td>Город</td></tr>
+                                <tr><td>status</td><td>text</td><td>да</td><td>Статус</td></tr>
+                                <tr><td>renewal_date</td><td>date</td><td>нет</td><td>Дата продления</td></tr>
+                                <tr><td>notes</td><td>text</td><td>нет</td><td>Примечания</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
