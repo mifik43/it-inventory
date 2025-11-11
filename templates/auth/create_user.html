@@ -27,6 +27,15 @@
                             <option value="admin">Администратор</option>
                         </select>
                     </div>
+
+                    {% for role in roles %}
+                    <div>
+                        <input type="checkbox" name="{{role.id}}"
+                            value="{{role.id}}" {{role.checked}}/>
+                        <label for="{{role.name}}">{{role.name}}</label>
+                        <label for="{{role.name}}">{{role.description}}</label>
+                    </div>
+                    {% endfor %}
                     
                     <button type="submit" class="btn btn-primary">Создать пользователя</button>
                     <a href="{{ url_for('users.users') }}" class="btn btn-secondary">Отмена</a>

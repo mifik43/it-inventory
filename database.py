@@ -4,6 +4,13 @@ from werkzeug.security import generate_password_hash
 from database_roles import create_roles_tables, find_role_by_name, save_roles_to_user_by_id
 from database_helper import get_db
 
+def find_user_id_by_name(user_name:str, db:sqlite3.Connection = get_db()):
+    user = db.execute(f"SELECT id FROM users where username=\"{user_name}\"").fetchone()
+    if user is None:
+        raise ValueError(f"Пользователь {user_name} не найден")
+    
+    return user["id"]
+
 def init_default_admin(db:sqlite3.Connection):
 
     # Добавляем администратора по умолчанию
@@ -29,11 +36,8 @@ def init_default_admin(db:sqlite3.Connection):
         if super_admin_role is None:
             raise ValueError("Роль SuperAdmin не найдена")
         
-        admin = db.execute('SELECT id FROM users where username="admin"').fetchone()
-        if admin is None:
-            raise ValueError("Пользователь admin не найден")
-        
-        save_roles_to_user_by_id(admin["id"], [super_admin_role["id"]], db, False)
+        admin_id = find_user_id_by_name("admin", db)
+        save_roles_to_user_by_id(admin_id, [super_admin_role["id"]], db, False)
 
 
 def init_db():

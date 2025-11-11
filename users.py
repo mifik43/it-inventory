@@ -1,12 +1,12 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
-from database import get_db
+from database import get_db, find_user_id_by_name
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from functools import wraps
 from requirements import admin_required, login_required, permissions_required
 from database_roles import read_all_roles, read_roles_for_user, save_roles_to_user
 
-from permissions import Permissions
+from permissions import Permissions, Role
 
 bluprint_user_routes = Blueprint("users", __name__)
 
@@ -47,16 +47,25 @@ def users():
     users_list = db.execute('SELECT id, username, role, created_at FROM users').fetchall()
     return render_template('auth/users.html', users=users_list)
 
+def parse_incoming_roles(all_roles:list[Role], request):
+    selected_roles = set()
+    for r in all_roles:
+        if str(r.id) in request.form.keys():
+            selected_roles.add(r)
+    
+    return selected_roles
 
 @bluprint_user_routes.route('/create_user', methods=['GET', 'POST'])
 @permissions_required([Permissions.users_manage])
 def create_user():
+    db = get_db()
+    roles = read_all_roles(db)
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         role = request.form['role']
-        db = get_db()
-        
+
+        selected_roles = parse_incoming_roles(roles, request)
         # Проверяем, существует ли пользователь с таким именем
         existing_user = db.execute(
             'SELECT id FROM users WHERE username = ?', (username,)
@@ -64,7 +73,7 @@ def create_user():
         
         if existing_user:
             flash('Пользователь с таким именем уже существует', 'error')
-            return render_template('auth/create_user.html')
+            return render_template('auth/create_user.html', roles=roles)
         
         # Хешируем пароль и создаем пользователя
         password_hash = generate_password_hash(password)
@@ -74,6 +83,10 @@ def create_user():
                 'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
                 (username, password_hash, role)
             )
+
+            user_id = find_user_id_by_name(username, db)
+            save_roles_to_user(user_id, selected_roles, db)
+
             db.commit()
             flash('Пользователь успешно создан!', 'success')
             return redirect(url_for('users.users'))
@@ -82,7 +95,7 @@ def create_user():
         
         return render_template('auth/create_user.html')
 
-    return render_template('auth/create_user.html')
+    return render_template('auth/create_user.html', roles=roles)
 
 
 
@@ -99,13 +112,8 @@ def edit_user(user_id):
         role = request.form['role']
         new_password = request.form.get('new_password', '')
 
-        selected_roles = set()
-        for r in roles:
-            if str(r.id) in request.form.keys():
-                selected_roles.add(r)
-                print(f"Для пользователя \"{username}\" добавлена роль \"{r.name}\"")
-        
-        if selected_roles == user_roles:
+        selected_roles = parse_incoming_roles(roles, request)
+        if selected_roles == set(user_roles):
             print("Роли не требуют обновления")
         else:
             print("Обновляем роли")
