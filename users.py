@@ -3,8 +3,10 @@ from database import get_db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from functools import wraps
-from requirements import admin_required, login_required
+from requirements import admin_required, login_required, permissions_required
 from database_roles import read_all_roles, read_roles_for_user, save_roles_to_user
+
+from permissions import Permissions
 
 bluprint_user_routes = Blueprint("users", __name__)
 
@@ -39,7 +41,7 @@ def logout():
 # ========== МАРШРУТЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ ==========
 
 @bluprint_user_routes.route('/users')
-@admin_required
+@permissions_required([Permissions.users_read])
 def users():
     db = get_db()
     users_list = db.execute('SELECT id, username, role, created_at FROM users').fetchall()
@@ -47,7 +49,7 @@ def users():
 
 
 @bluprint_user_routes.route('/create_user', methods=['GET', 'POST'])
-@admin_required
+@permissions_required([Permissions.users_manage])
 def create_user():
     if request.method == 'POST':
         username = request.form['username']
@@ -85,7 +87,7 @@ def create_user():
 
 
 @bluprint_user_routes.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
-@admin_required
+@permissions_required([Permissions.users_manage])
 def edit_user(user_id):
     db = get_db()
 
@@ -141,7 +143,7 @@ def edit_user(user_id):
     return render_template('auth/edit_user.html', user=user, roles=roles)
 
 @bluprint_user_routes.route('/delete_user/<int:user_id>')
-@admin_required
+@permissions_required([Permissions.users_manage])
 def delete_user(user_id):
     # Запрещаем удаление самого себя
     if user_id == session.get('user_id'):
@@ -159,7 +161,7 @@ def delete_user(user_id):
     return redirect(url_for('users.users'))
 
 @bluprint_user_routes.route('/change_password', methods=['GET', 'POST'])
-@login_required
+@permissions_required([Permissions.users_manage])
 def change_password():
     if request.method == 'POST':
         current_password = request.form['current_password']
