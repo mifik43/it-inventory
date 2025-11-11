@@ -31,7 +31,7 @@
                     {% for role in roles %}
                     <div>
                         <input type="checkbox" name="{{role.id}}"
-                            value="{{role.id}}" />
+                            value="{{role.id}}" {{role.checked}}/>
                         <label for="{{role.name}}">{{role.name}}</label>
                         <label for="{{role.name}}">{{role.description}}</label>
                     </div>

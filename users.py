@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from functools import wraps
 from requirements import admin_required, login_required
-from database_roles import read_all_roles
+from database_roles import read_all_roles, read_roles_for_user, save_roles_to_user
 
 bluprint_user_routes = Blueprint("users", __name__)
 
@@ -90,6 +90,7 @@ def edit_user(user_id):
     db = get_db()
 
     roles = read_all_roles(db)
+    user_roles = read_roles_for_user(user_id)
     
     if request.method == 'POST':
         username = request.form['username']
@@ -98,9 +99,15 @@ def edit_user(user_id):
 
         selected_roles = set()
         for r in roles:
-            if str(k) in request.form.keys():
+            if str(r.id) in request.form.keys():
                 selected_roles.add(r)
-                print(f"Для пользователя {username} добавлена роль {r.name}")
+                print(f"Для пользователя \"{username}\" добавлена роль \"{r.name}\"")
+        
+        if selected_roles == user_roles:
+            print("Роли не требуют обновления")
+        else:
+            print("Обновляем роли")
+            save_roles_to_user(user_id, selected_roles, db)
 
         try:
             # Обновляем основные данные пользователя
@@ -126,7 +133,12 @@ def edit_user(user_id):
             flash(f'Ошибка при обновлении пользователя: {str(e)}', 'error')
     
     user = db.execute('SELECT id, username, role FROM users WHERE id = ?', (user_id,)).fetchone()
-    return render_template('edit_user.html', user=user, roles=roles)
+    for role in roles:
+        for user_role in user_roles:
+            if role.id == user_role.id:
+                role.checked = "checked"
+
+    return render_template('auth/edit_user.html', user=user, roles=roles)
 
 @bluprint_user_routes.route('/delete_user/<int:user_id>')
 @admin_required

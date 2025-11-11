@@ -39,6 +39,7 @@ class Role:
         self.name = name
         self.permissions:Permissions = permissions
         self.description = description
+        self.checked = ""
     
     def __str__(self):
         return f"Role: id = {str(self.id)} name = {self.name}, perm = [{self.permissions}]"
