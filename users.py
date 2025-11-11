@@ -21,10 +21,15 @@ def login():
         ).fetchone()
         
         if user and check_password_hash(user['password_hash'], password):
+
+            user_roles = read_roles_for_user(user['id'], db)
+            effective_permissions = Role.get_effective_permissions(user_roles)
+
             session['logged_in'] = True
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
+            session['permissions'] = list(effective_permissions)
             flash('Вы успешно вошли в систему!', 'success')
             return redirect(url_for('index'))
         else:

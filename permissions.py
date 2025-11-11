@@ -4,11 +4,11 @@ import database_roles as db_helper
 
 
 # список всех разрешений
-class Permissions(enum.Enum):
-    users_read = 1
-    users_manage = 2
-    roles_read = 3
-    roles_manage = 4
+class Permissions(enum.StrEnum):
+    users_read = "users_read"
+    users_manage = "users_manage"
+    roles_read = "roles_read"
+    roles_manage = "roles_manage"
 
     def to_name(p):
         if p == Permissions.users_read:

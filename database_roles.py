@@ -33,7 +33,7 @@ def save_role_permissions(role : permissions.Role, db = get_db(), commit = True)
     print(f"Удаляем разрешения для роли с id={role.id} ({role.name})")
     for p in role.permissions:
         db.execute(
-            f"INSERT INTO roles_to_permissions (role_id, permission) VALUES ({role.id}, {p.value}) ON CONFLICT(role_id, permission) DO UPDATE SET permission={p.value}"
+            f"INSERT INTO roles_to_permissions (role_id, permission) VALUES ({role.id}, \"{p.value}\") ON CONFLICT(role_id, permission) DO UPDATE SET permission=\"{p.value}\""
         )
 
 
@@ -194,7 +194,7 @@ def create_roles_tables(db:sqlite3.Connection):
     db.execute('''
         CREATE TABLE IF NOT EXISTS roles_to_permissions (
                role_id INTEGER,
-               permission INTEGER,
+               permission TEXT,
 
                PRIMARY KEY (role_id, permission)
             )

@@ -91,15 +91,17 @@
         </a>
     </li>
         <!-- roles -->
+    {% if 'roles_manage' in session.permissions or 'roles_read' in session.permissions %}
     <li class="nav-item">
         <a class="nav-link {% if request.endpoint in ['roles', 'create_role', 'edir_role'] %}active{% endif %}" 
            href="{{ url_for('roles.roles') }}">
             <i class="bi bi-calendar-week"></i>
-            Роли юзеров
+            Роли пользователей
         </a>
     </li>
+    {% endif %}
     <!-- Admin Only -->
-    {% if session.role == 'admin' %}
+    {% if 'users_manage' in session.permissions or 'users_read' in session.permissions %}
     <li class="nav-item">
         <a class="nav-link {% if request.endpoint in ['users', 'create_user', 'edit_user'] %}active{% endif %}" 
            href="{{ url_for('users.users') }}">
