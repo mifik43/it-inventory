@@ -1,7 +1,7 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
 
-from database_roles import create_roles_tables
+from database_roles import create_roles_tables, find_role_by_name, save_roles_to_user_by_id
 from database_helper import get_db
 
 def init_default_admin(db:sqlite3.Connection):
@@ -24,6 +24,17 @@ def init_default_admin(db:sqlite3.Connection):
             'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
             ('user', user_password, 'user')
         )
+
+        super_admin_role = find_role_by_name("SuperAdmin", db)
+        if super_admin_role is None:
+            raise ValueError("Роль SuperAdmin не найдена")
+        
+        admin = db.execute('SELECT id FROM users where username="admin"').fetchone()
+        if admin is None:
+            raise ValueError("Пользователь admin не найден")
+        
+        save_roles_to_user_by_id(admin["id"], [super_admin_role["id"]], db, False)
+
 
 def init_db():
     db = get_db()
@@ -231,24 +242,6 @@ def init_db():
     ''')
     
     # Добавляем администратора по умолчанию
-    cursor = db.execute('SELECT COUNT(*) as count FROM users')
-    count = cursor.fetchone()['count']
-    
-    if count == 0:
-        admin_password = generate_password_hash('admin123')
-        db.execute(
-            'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-            ('admin', admin_password, 'admin')
-        )
-        
-        # Добавляем тестового пользователя
-        user_password = generate_password_hash('user123')
-        db.execute(
-            'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-            ('user', user_password, 'user')
-        )
-    
-        
     create_roles_tables(db)
     init_default_admin(db)
     

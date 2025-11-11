@@ -125,10 +125,21 @@ def remove_all_roles_from_user(user_id:int, db = get_db(), commit = True):
         db.commit()
 
 def save_roles_to_user(user_id:int, roles:list[permissions.Role], db = get_db(), commit = True):
-    remove_all_roles_from_user(user_id, db)
+    remove_all_roles_from_user(user_id, db, False)
     for role in roles:
+        print(f"Сохраняем роль {role.name} для пользователя с id={user_id}")
         db.execute(
             f"INSERT INTO roles_to_user (role_id, user_id) VALUES ('{role.id}', '{user_id}')"
+        )
+    if commit:
+        db.commit()
+
+def save_roles_to_user_by_id(user_id:int, role_ids:list[int], db = get_db(), commit = True):
+    remove_all_roles_from_user(user_id, db, False)
+    for role_id in role_ids:
+        print(f"Сохраняем роль {role_id} для пользователя с id={user_id}")
+        db.execute(
+            f"INSERT INTO roles_to_user (role_id, user_id) VALUES ('{role_id}', '{user_id}')"
         )
     if commit:
         db.commit()
