@@ -144,7 +144,7 @@ def save_roles_to_user_by_id(user_id:int, role_ids:list[int], db = get_db(), com
     if commit:
         db.commit()
 
-def read_roles_for_user(user_id:int, db = get_db(), commit = True) -> list[permissions.Role]:
+def read_roles_for_user(user_id:int, db = get_db()) -> list[permissions.Role]:
 
     # прочтём список всех ролей
     all_roles = read_all_roles(db)
