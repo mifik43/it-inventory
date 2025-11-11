@@ -3,11 +3,13 @@ from database import get_db
 from database_roles import read_all_roles, save_role, update_role, find_role_by_id, remove_role
 from permissions import Role, Permissions
 
+from requirements import permissions_required
 
 bluprint_roles_routes = Blueprint("roles", __name__)
 
 
 @bluprint_roles_routes.route('/roles')
+@permissions_required([Permissions.roles_read])
 def roles():
 
     roles = read_all_roles()
@@ -15,6 +17,7 @@ def roles():
     return render_template('roles/roles.html', roles=roles)
 
 @bluprint_roles_routes.route('/create_role', methods=['GET', 'POST'])
+@permissions_required([Permissions.roles_manage])
 def create_role():
     if request.method == 'POST':
         try:
@@ -36,6 +39,7 @@ def create_role():
     return render_template('roles/create_role.html', permissions=Permissions.get_names())
 
 @bluprint_roles_routes.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
+@permissions_required([Permissions.roles_manage])
 def edit_role(role_id):
     if request.method == 'POST':
         role_name = request.form['name']
@@ -61,6 +65,7 @@ def edit_role(role_id):
         
 
 @bluprint_roles_routes.route('/delete_role/<int:role_id>')
+@permissions_required([Permissions.roles_manage])
 def delete_role(role_id):
     
     remove_role(role_id)
