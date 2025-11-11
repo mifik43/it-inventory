@@ -56,6 +56,15 @@ class Role:
     def is_permission_granted(self, p:Permissions):
         return p in self.permissions
     
+    def get_effective_permissions(roles:list[Role]):
+        permissions = set()
+        for role in roles:
+            for p in role.permissions:
+                permissions.add(p)
+        
+        return permissions
+
+    
 # роль со всеми правами
 def create_full_access_role():
     role = Role(0, "SuperAdmin", description="Роль админа по умолчанию")

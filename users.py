@@ -3,7 +3,7 @@ from database import get_db, find_user_id_by_name
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from functools import wraps
-from requirements import admin_required, login_required, permissions_required
+from requirements import admin_required, login_required, permission_required, permissions_required_all, permissions_required_any
 from database_roles import read_all_roles, read_roles_for_user, save_roles_to_user
 
 from permissions import Permissions, Role
@@ -41,7 +41,7 @@ def logout():
 # ========== МАРШРУТЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ ==========
 
 @bluprint_user_routes.route('/users')
-@permissions_required([Permissions.users_read])
+@permissions_required_any([Permissions.users_read, Permissions.users_manage])
 def users():
     db = get_db()
     users_list = db.execute('SELECT id, username, role, created_at FROM users').fetchall()
@@ -56,7 +56,7 @@ def parse_incoming_roles(all_roles:list[Role], request):
     return selected_roles
 
 @bluprint_user_routes.route('/create_user', methods=['GET', 'POST'])
-@permissions_required([Permissions.users_manage])
+@permission_required(Permissions.users_manage)
 def create_user():
     db = get_db()
     roles = read_all_roles(db)
@@ -100,7 +100,7 @@ def create_user():
 
 
 @bluprint_user_routes.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
-@permissions_required([Permissions.users_manage])
+@permission_required(Permissions.users_manage)
 def edit_user(user_id):
     db = get_db()
 
@@ -151,7 +151,7 @@ def edit_user(user_id):
     return render_template('auth/edit_user.html', user=user, roles=roles)
 
 @bluprint_user_routes.route('/delete_user/<int:user_id>')
-@permissions_required([Permissions.users_manage])
+@permission_required(Permissions.users_manage)
 def delete_user(user_id):
     # Запрещаем удаление самого себя
     if user_id == session.get('user_id'):
@@ -169,7 +169,7 @@ def delete_user(user_id):
     return redirect(url_for('users.users'))
 
 @bluprint_user_routes.route('/change_password', methods=['GET', 'POST'])
-@permissions_required([Permissions.users_manage])
+@permission_required(Permissions.users_manage)
 def change_password():
     if request.method == 'POST':
         current_password = request.form['current_password']
