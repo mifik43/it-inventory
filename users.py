@@ -10,6 +10,12 @@ from permissions import Permissions, Role
 
 bluprint_user_routes = Blueprint("users", __name__)
 
+# обновление разрешения пользователя, на случай, если он настраивал сам себя
+def update_effective_permissions():
+    user_roles = read_roles_for_user(session['user_id'])
+    effective_permissions = Role.get_effective_permissions(user_roles)
+    session['permissions'] = list(effective_permissions)
+
 @bluprint_user_routes.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -21,15 +27,11 @@ def login():
         ).fetchone()
         
         if user and check_password_hash(user['password_hash'], password):
-
-            user_roles = read_roles_for_user(user['id'], db)
-            effective_permissions = Role.get_effective_permissions(user_roles)
-
             session['logged_in'] = True
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
-            session['permissions'] = list(effective_permissions)
+            update_effective_permissions()
             flash('Вы успешно вошли в систему!', 'success')
             return redirect(url_for('index'))
         else:
@@ -143,6 +145,8 @@ def edit_user(user_id):
                 flash('Данные пользователя успешно обновлены!', 'success')
             
             db.commit()
+            # обновляем разрешения пользователя, на случай, если он настраивал сам себя
+            update_effective_permissions()
             return redirect(url_for('users.users'))
         except Exception as e:
             flash(f'Ошибка при обновлении пользователя: {str(e)}', 'error')

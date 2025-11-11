@@ -5,6 +5,8 @@ from permissions import Role, Permissions
 
 from requirements import permission_required, permissions_required_any, permissions_required_all
 
+import users
+
 bluprint_roles_routes = Blueprint("roles", __name__)
 
 
@@ -52,6 +54,7 @@ def edit_role(role_id):
                 role.add_permission(p)
 
         update_role(role)
+        users.update_effective_permissions()
         
         return redirect(url_for('roles.roles'))
     
