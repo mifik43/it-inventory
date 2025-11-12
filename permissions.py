@@ -9,18 +9,72 @@ class Permissions(enum.StrEnum):
     users_manage = "users_manage"
     roles_read = "roles_read"
     roles_manage = "roles_manage"
+    devices_read = "devices_read"
+    devices_manage = "devices_manage"
+    providers_read = "providers_read"
+    providers_manage = "providers_manage"
+    articles_read = "articles_read"
+    articles_manage = "articles_manage"
+    notes_read = "notes_read"
+    notes_manage = "notes_manage"
+    cubes_read = "cubes_read"
+    cubes_manage = "cubes_manage"
+    guest_wifi_read = "guest_wifi_read"
+    guest_wifi_manage = "guest_wifi_manage"
+    organizations_read = "organizations_read"
+    organizations_manage = "organizations_manage"
+    shifts_read = "shifts_read"
+    shifts_manage = "shifts_manage"
+    todo_reads = "todo_reads"
+    todo_manage = "todo_manage"
+
 
     def to_name(p):
         if p == Permissions.users_read:
-            return "Чтение списка пользователей и их настроек"
+            return "Чтение списка пользователей"
         elif p == Permissions.users_manage:
-            return "Управление списком пользователей и их настройками"
+            return "Управление списком пользователей"
         elif p == Permissions.roles_read:
             return "Чтение списка ролей и разрешений"
         elif p == Permissions.roles_manage:
             return "Управление списком ролей и разрешений"
-
-
+        elif p == Permissions.devices_read:
+            return "Чтение списка устройств"
+        elif p == Permissions.devices_manage:
+            return "Управление списком устройств"
+        elif p == Permissions.providers_read:
+            return "Чтение списка провайдеров"
+        elif p == Permissions.providers_manage:
+            return "Управление списком провайдеров"
+        elif p == Permissions.articles_read:
+            return "Чтение списка статей"
+        elif p == Permissions.articles_manage:
+            return "Управление списком статей"
+        elif p == Permissions.notes_read:
+            return "Чтение списка заметок"
+        elif p == Permissions.notes_manage:
+            return "Управление списком заметок"
+        elif p == Permissions.cubes_read:
+            return "Чтение списка кубов"
+        elif p == Permissions.cubes_manage:
+            return "Управление списком кубов"
+        elif p == Permissions.guest_wifi_read:
+            return "Чтение списка гостевых WiFi"
+        elif p == Permissions.guest_wifi_manage:
+            return "Управление списком гостевых WiFi"
+        elif p == Permissions.organizations_read:
+            return "Чтение списка организаций"
+        elif p == Permissions.organizations_manage:
+            return "Управление списком организаций"
+        elif p == Permissions.shifts_read:
+            return "Чтение графика смен"
+        elif p == Permissions.shifts_manage:
+            return "Управление графиком смен"
+        elif p == Permissions.todo_reads:
+            return "Чтение списка задач"
+        elif p == Permissions.todo_manage:
+            return "Управление списком задач"
+    
     def get_names():
         names = dict()
         for p in Permissions:
