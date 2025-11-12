@@ -56,7 +56,7 @@ class Role:
     def is_permission_granted(self, p:Permissions):
         return p in self.permissions
     
-    def get_effective_permissions(roles:list[Role]):
+    def get_effective_permissions(roles):
         permissions = set()
         for role in roles:
             for p in role.permissions:
