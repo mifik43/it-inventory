@@ -31,7 +31,7 @@
         <!-- ДОБАВЛЯЕМ ГОСТЕВОЙ WIFI -->
         <li>
             <a class="dropdown-item {% if request.endpoint in ['guest_wifi', 'add_guest_wifi', 'edit_guest_wifi'] %}active{% endif %}" 
-               href="{{ url_for('guest_wifi') }}">
+               href="{{ url_for('guest_wifi.guest_wifi') }}">
                 <i class="bi bi-router"></i> Гостевой WiFi
             </a>
         </li>

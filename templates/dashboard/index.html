@@ -412,7 +412,7 @@
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center">
                         <h6 class="m-0 font-weight-bold text-info">Последние точки WiFi</h6>
-                        <a href="{{ url_for('guest_wifi') }}" class="btn btn-sm btn-info">Все точки</a>
+                        <a href="{{ url_for('guest_wifi.guest_wifi') }}" class="btn btn-sm btn-info">Все точки</a>
                     </div>
                     <div class="card-body">
                         {% for wifi in recent_wifi %}

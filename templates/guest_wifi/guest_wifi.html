@@ -7,17 +7,17 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-router me-2"></i>Гостевой WiFi</h2>
     <div>
-        <a href="{{ url_for('export_guest_wifi') }}" class="btn btn-success me-2">
+        <a href="{{ url_for('guest_wifi.export_guest_wifi') }}" class="btn btn-success me-2">
             <i class="bi bi-download"></i> Экспорт в Excel
         </a>
         {% if session.role == 'admin' %}
-        <a href="{{ url_for('import_guest_wifi') }}" class="btn btn-primary me-2">
+        <a href="{{ url_for('guest_wifi.import_guest_wifi') }}" class="btn btn-primary me-2">
             <i class="bi bi-upload"></i> Импорт из Excel
         </a>
-        <a href="{{ url_for('download_wifi_template_route') }}" class="btn btn-info me-2">
+        <a href="{{ url_for('guest_wifi.download_wifi_template_route') }}" class="btn btn-info me-2">
             <i class="bi bi-file-earmark-excel"></i> Шаблон
         </a>
-        <a href="{{ url_for('add_guest_wifi') }}" class="btn btn-primary">
+        <a href="{{ url_for('guest_wifi.add_guest_wifi') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Добавить WiFi
         </a>
         {% endif %}
@@ -26,7 +26,7 @@
 <!-- Поиск -->
 <div class="row mb-3">
     <div class="col-md-6">
-        <form class="d-flex" action="{{ url_for('guest_wifi_search') }}" method="GET">
+        <form class="d-flex" action="{{ url_for('guest_wifi.guest_wifi_search') }}" method="GET">
             <input type="text" name="q" class="form-control me-2" placeholder="Поиск по городу, организации..." value="{{ search_query or '' }}">
             <button type="submit" class="btn btn-outline-secondary">
                 <i class="bi bi-search"></i>
@@ -155,10 +155,10 @@
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 {% if session.role == 'admin' %}
-                                <a href="{{ url_for('edit_guest_wifi', wifi_id=wifi.id) }}" class="btn btn-outline-primary">
+                                <a href="{{ url_for('guest_wifi.edit_guest_wifi', wifi_id=wifi.id) }}" class="btn btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{{ url_for('delete_guest_wifi', wifi_id=wifi.id) }}" 
+                                <a href="{{ url_for('guest_wifi.delete_guest_wifi', wifi_id=wifi.id) }}" 
                                    class="btn btn-outline-danger delete-confirm" 
                                    data-confirm="Вы уверены, что хотите удалить гостевой WiFi для {{ wifi.city }}?">
                                     <i class="bi bi-trash"></i>
@@ -234,7 +234,7 @@
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
                                             {% if session.role == 'admin' %}
-                                            <a href="{{ url_for('edit_guest_wifi', wifi_id=wifi.id) }}" class="btn btn-primary">
+                                            <a href="{{ url_for('guest_wifi.edit_guest_wifi', wifi_id=wifi.id) }}" class="btn btn-primary">
                                                 <i class="bi bi-pencil"></i> Редактировать
                                             </a>
                                             {% endif %}
