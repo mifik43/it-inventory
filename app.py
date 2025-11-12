@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
-from database import init_db, get_db
+from templates.base.database import init_db, get_db
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -7,18 +7,18 @@ import socket
 import os
 from datetime import datetime
 
-from users import bluprint_user_routes
-from roles_page import bluprint_roles_routes
+from templates.auth.users import bluprint_user_routes
+from templates.roles.roles_page import bluprint_roles_routes
 
 from functools import wraps
-from requirements import admin_required, login_required
+from templates.base.requirements import admin_required, login_required
 
 from excel_utils import (
     export_devices, export_providers, export_cubes, 
     export_organizations, export_todos, import_from_excel
 )
 
-from wifi_utils import (
+from templates.guest_wifi.wifi_utils import (
     export_guest_wifi_to_excel, 
     import_guest_wifi_from_excel,
     download_wifi_template

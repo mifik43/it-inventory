@@ -1,11 +1,11 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
-from database import get_db
-from database_roles import read_all_roles, save_role, update_role, find_role_by_id, remove_role
-from permissions import Role, Permissions
+from templates.base.database import get_db
+from templates.roles.database_roles import read_all_roles, save_role, update_role, find_role_by_id, remove_role
+from templates.roles.permissions import Role, Permissions
 
-from requirements import permission_required, permissions_required_any, permissions_required_all
+from templates.base.requirements import permission_required, permissions_required_any, permissions_required_all
 
-import users
+import templates.auth.users as users
 
 bluprint_roles_routes = Blueprint("roles", __name__)
 

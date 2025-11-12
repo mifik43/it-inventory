@@ -1,6 +1,6 @@
 import enum
 
-import database_roles as db_helper
+import templates.roles.database_roles as db_helper
 
 
 # список всех разрешений

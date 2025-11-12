@@ -1,9 +1,9 @@
 import sqlite3
 
 import enum
-import permissions
+import templates.roles.permissions as permissions
 
-from database_helper import get_db
+from templates.base.database_helper import get_db
 
 def find_role_by_name(name:str, db = get_db()):
     return db.execute(

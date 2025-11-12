@@ -3,7 +3,7 @@
 import pandas as pd
 import io
 from datetime import datetime
-from database import get_db
+from templates.base.database import get_db
 from flask import send_file
 
 def export_to_excel(table_name, columns=None):

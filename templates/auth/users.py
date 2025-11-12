@@ -1,12 +1,12 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
-from database import get_db, find_user_id_by_name
+from templates.base.database import get_db, find_user_id_by_name
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from functools import wraps
-from requirements import admin_required, login_required, permission_required, permissions_required_all, permissions_required_any
-from database_roles import read_all_roles, read_roles_for_user, save_roles_to_user
+from templates.base.requirements import admin_required, login_required, permission_required, permissions_required_all, permissions_required_any
+from templates.roles.database_roles import read_all_roles, read_roles_for_user, save_roles_to_user
 
-from permissions import Permissions, Role
+from templates.roles.permissions import Permissions, Role
 
 bluprint_user_routes = Blueprint("users", __name__)
 

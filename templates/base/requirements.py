@@ -1,8 +1,8 @@
 from functools import wraps
 from flask import flash, session, redirect, url_for
 
-from database_roles import read_roles_for_user
-from permissions import Permissions, Role
+from templates.roles.database_roles import read_roles_for_user
+from templates.roles.permissions import Permissions, Role
 
 # Декоратор для проверки авторизации
 def login_required(f):

@@ -1,8 +1,8 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
 
-from database_roles import create_roles_tables, find_role_by_name, save_roles_to_user_by_id
-from database_helper import get_db
+from templates.roles.database_roles import create_roles_tables, find_role_by_name, save_roles_to_user_by_id
+from templates.base.database_helper import get_db
 
 def find_user_id_by_name(user_name:str, db:sqlite3.Connection = get_db()):
     user = db.execute(f"SELECT id FROM users where username=\"{user_name}\"").fetchone()
