@@ -11,7 +11,7 @@
                     <p class="text-muted">Управление рабочими сменами сотрудников</p>
                 </div>
                 <div class="btn-group">
-                    <a href="{{ url_for('add_shift') }}" class="btn btn-primary">
+                    <a href="{{ url_for('shifts.add_shift') }}" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> Добавить смену
                     </a>
                     <div class="btn-group">
@@ -19,9 +19,9 @@
                             <i class="bi bi-calendar"></i> Период
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('shifts_list', period='week') }}">Неделя</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('shifts_list', period='month') }}">Месяц</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('shifts_list', period='all') }}">Все смены</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('shifts.shifts_list', period='week') }}">Неделя</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('shifts.shifts_list', period='month') }}">Месяц</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('shifts.shifts_list', period='all') }}">Все смены</a></li>
                         </ul>
                     </div>
                 </div>
@@ -193,12 +193,12 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('edit_shift', shift_id=shift.id) }}" 
+                                            <a href="{{ url_for('shifts.edit_shift', shift_id=shift.id) }}" 
                                                class="btn btn-outline-primary" 
                                                title="Редактировать">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
+                                            <a href="{{ url_for('shifts.delete_shift', shift_id=shift.id) }}" 
                                                class="btn btn-outline-danger" 
                                                title="Удалить"
                                                onclick="return confirm('Удалить смену для {{ shift.username }} на {{ shift.shift_date }}?')">
@@ -216,7 +216,7 @@
                         <i class="bi bi-calendar-x display-1 text-muted"></i>
                         <h4 class="text-muted mt-3">Смены не найдены</h4>
                         <p class="text-muted">Добавьте первую смену для начала работы</p>
-                        <a href="{{ url_for('add_shift') }}" class="btn btn-primary mt-3">
+                        <a href="{{ url_for('shifts.add_shift') }}" class="btn btn-primary mt-3">
                             <i class="bi bi-plus-circle"></i> Добавить смену
                         </a>
                     </div>

@@ -85,7 +85,7 @@
     <!-- Shifts -->
     <li class="nav-item">
         <a class="nav-link {% if request.endpoint in ['shifts_list', 'add_shift', 'edit_shift'] %}active{% endif %}" 
-           href="{{ url_for('shifts_list') }}">
+           href="{{ url_for('shifts.shifts_list') }}">
             <i class="bi bi-calendar-week"></i>
             График смен
         </a>

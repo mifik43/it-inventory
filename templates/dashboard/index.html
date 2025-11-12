@@ -202,7 +202,7 @@
                         <h5 class="m-0 font-weight-bold text-primary">
                             <i class="bi bi-calendar-week"></i> Ближайшие смены
                         </h5>
-                        <a href="{{ url_for('shifts_list') }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ url_for('shifts.shifts_list') }}" class="btn btn-sm btn-outline-primary">
                             Все смены <i class="bi bi-arrow-right"></i>
                         </a>
                     </div>
@@ -260,7 +260,7 @@
                         <div class="text-center py-3">
                             <i class="bi bi-calendar-x display-1 text-muted"></i>
                             <p class="text-muted mt-2">На ближайшие дни смен не запланировано</p>
-                            <a href="{{ url_for('add_shift') }}" class="btn btn-primary btn-sm">
+                            <a href="{{ url_for('shifts.add_shift') }}" class="btn btn-primary btn-sm">
                                 <i class="bi bi-plus-circle"></i> Добавить смену
                             </a>
                         </div>
