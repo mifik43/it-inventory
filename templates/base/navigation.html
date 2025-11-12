@@ -18,7 +18,7 @@
     <ul class="dropdown-menu">
         <li>
             <a class="dropdown-item {% if request.endpoint in ['devices', 'add_device', 'edit_device'] %}active{% endif %}" 
-               href="{{ url_for('devices') }}">
+               href="{{ url_for('devices.devices') }}">
                 <i class="bi bi-pc-display"></i> Устройства
             </a>
         </li>

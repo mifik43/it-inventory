@@ -10,6 +10,7 @@ from datetime import datetime
 from templates.auth.users import bluprint_user_routes
 from templates.roles.roles_page import bluprint_roles_routes
 from templates.providers.providers import bluprint_provider_routes
+from templates.devices.devices import bluprint_devices_routes
 
 from functools import wraps
 from templates.base.requirements import admin_required, login_required
@@ -31,6 +32,7 @@ app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
 app.register_blueprint(bluprint_user_routes)
 app.register_blueprint(bluprint_roles_routes)
 app.register_blueprint(bluprint_provider_routes)
+app.register_blueprint(bluprint_devices_routes)
 
 # Настройки для загрузки файлов
 UPLOAD_FOLDER = 'static/uploads'
@@ -264,107 +266,6 @@ def import_data(data_type):
                          page_title=f"Импорт {page_titles[data_type]}")
 
 # ========== МАРШРУТЫ ДЛЯ УСТРОЙСТВ ==========
-
-@app.route('/devices')
-@login_required
-def devices():
-    db = get_db()
-    devices = db.execute('''
-        SELECT * FROM devices 
-        ORDER BY created_at DESC
-    ''').fetchall()
-    return render_template('devices/devices.html', devices=devices)
-
-@app.route('/add_device', methods=['GET', 'POST'])
-@admin_required
-def add_device():
-    if request.method == 'POST':
-        name = request.form['name']
-        model = request.form.get('model', '')  # Новое поле
-        device_type = request.form['type']
-        serial_number = request.form['serial_number']
-        mac_address = request.form.get('mac_address', '')
-        ip_address = request.form.get('ip_address', '')
-        location = request.form['location']
-        status = request.form['status']
-        assigned_to = request.form.get('assigned_to', '')
-        specifications = request.form.get('specifications', '')
-        
-        db = get_db()
-        try:
-            db.execute('''
-                INSERT INTO devices 
-                (name, model, type, serial_number, mac_address, ip_address, location, status, assigned_to, specifications)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (name, model, device_type, serial_number, mac_address, ip_address, location, status, assigned_to, specifications))
-            db.commit()
-            flash('Устройство успешно добавлено!', 'success')
-            return redirect(url_for('devices'))
-        except Exception as e:
-            flash(f'Ошибка при добавлении устройства: {str(e)}', 'error')
-    
-    return render_template('devices/add_device.html')
-
-@app.route('/edit_device/<int:device_id>', methods=['GET', 'POST'])
-@admin_required
-def edit_device(device_id):
-    db = get_db()
-    
-    if request.method == 'POST':
-        name = request.form['name']
-        model = request.form.get('model', '')  # Новое поле
-        device_type = request.form['type']
-        serial_number = request.form['serial_number']
-        mac_address = request.form.get('mac_address', '')
-        ip_address = request.form.get('ip_address', '')
-        location = request.form['location']
-        status = request.form['status']
-        assigned_to = request.form.get('assigned_to', '')
-        specifications = request.form.get('specifications', '')
-        
-        try:
-            db.execute('''
-                UPDATE devices SET 
-                name=?, model=?, type=?, serial_number=?, mac_address=?, ip_address=?, 
-                location=?, status=?, assigned_to=?, specifications=?
-                WHERE id=?
-            ''', (name, model, device_type, serial_number, mac_address, ip_address, 
-                  location, status, assigned_to, specifications, device_id))
-            db.commit()
-            flash('Устройство успешно обновлено!', 'success')
-            return redirect(url_for('devices'))
-        except Exception as e:
-            flash(f'Ошибка при обновлении устройства: {str(e)}', 'error')
-    
-    device = db.execute('SELECT * FROM devices WHERE id=?', (device_id,)).fetchone()
-    return render_template('devices/edit_device.html', device=device)
-
-@app.route('/delete_device/<int:device_id>')
-@admin_required
-def delete_device(device_id):
-    db = get_db()
-    try:
-        db.execute('DELETE FROM devices WHERE id=?', (device_id,))
-        db.commit()
-        flash('Устройство успешно удалено!', 'success')
-    except Exception as e:
-        flash(f'Ошибка при удалении устройства: {str(e)}', 'error')
-    
-    return redirect(url_for('devices'))
-
-@app.route('/search')
-@login_required
-def search():
-    query = request.args.get('q', '')
-    db = get_db()
-    
-    devices = db.execute('''
-        SELECT * FROM devices 
-        WHERE name LIKE ? OR model LIKE ? OR serial_number LIKE ? OR assigned_to LIKE ?
-        ORDER BY created_at DESC
-    ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
-    
-    return render_template('devices/devices.html', devices=devices, search_query=query)
 
 # ========== МАРШРУТЫ ДЛЯ ПРОВАЙДЕРОВ ==========
 
