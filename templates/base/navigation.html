@@ -66,7 +66,7 @@
             </li>
             <li>
                 <a class="dropdown-item {% if request.endpoint in ['notes_list', 'add_note', 'edit_note'] %}active{% endif %}" 
-                   href="{{ url_for('notes_list') }}">
+                   href="{{ url_for('notes.notes_list') }}">
                     <i class="bi bi-sticky"></i> Заметки
                 </a>
             </li>

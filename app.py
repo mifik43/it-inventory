@@ -14,6 +14,7 @@ from templates.devices.devices import bluprint_devices_routes
 from templates.cubes.cubes import bluprint_cubes_routes, get_cubes
 from templates.guest_wifi.guest_wify import bluprint_guest_wifi_routes
 from templates.organizations.organizations import bluprint_organizations_routes
+from templates.knowledge.notes.notes import bluprint_notes_routes
 
 from functools import wraps
 from templates.base.requirements import admin_required, login_required
@@ -39,6 +40,7 @@ app.register_blueprint(bluprint_devices_routes)
 app.register_blueprint(bluprint_cubes_routes)
 app.register_blueprint(bluprint_guest_wifi_routes)
 app.register_blueprint(bluprint_organizations_routes)
+app.register_blueprint(bluprint_notes_routes)
 
 # Настройки для загрузки файлов
 UPLOAD_FOLDER = 'static/uploads'
@@ -858,135 +860,6 @@ def delete_screenshot(screenshot_id):
         db.commit()
         return True
     return False
-
-
-# ========== МАРШРУТЫ ДЛЯ ЗАМЕТОК ==========
-
-@app.route('/notes')
-@login_required
-def notes_list():
-    db = get_db()
-    notes = db.execute('''
-        SELECT n.*, u.username as author_name 
-        FROM notes n 
-        JOIN users u ON n.author_id = u.id 
-        WHERE n.author_id = ?
-        ORDER BY n.is_pinned DESC, n.updated_at DESC
-    ''', (session['user_id'],)).fetchall()
-    
-    # Статистика для сегодня
-    today = datetime.now().strftime('%Y-%m-%d')
-    today_created = db.execute('''
-        SELECT COUNT(*) as count FROM notes 
-        WHERE DATE(created_at) = ? AND author_id = ?
-    ''', (today, session['user_id'])).fetchone()['count']
-    
-    return render_template('knowledge/notes/notes.html', notes=notes, today_created=today_created)
-
-@app.route('/add_note', methods=['GET', 'POST'])
-@login_required
-def add_note():
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        color = request.form.get('color', '#ffffff')
-        is_pinned = request.form.get('is_pinned') == '1'
-        
-        if not title or not content:
-            flash('Заголовок и содержание обязательны для заполнения', 'error')
-            return render_template('knowledge/notes/add_note.html')
-        
-        db = get_db()
-        try:
-            db.execute('''
-                INSERT INTO notes (title, content, color, is_pinned, author_id)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (title, content, color, is_pinned, session['user_id']))
-            db.commit()
-            flash('Заметка успешно создана!', 'success')
-            return redirect(url_for('notes_list'))
-        except Exception as e:
-            flash(f'Ошибка при создании заметки: {str(e)}', 'error')
-    
-    return render_template('knowledge/notes/add_note.html')
-
-# ========== МАРШРУТЫ ДЛЯ УДАЛЕНИЯ И РЕДАКТИРОВАНИЯ СТАТЕЙ И ЗАМЕТОК ==========
-
-
-@app.route('/delete_note/<int:note_id>')
-@login_required
-def delete_note(note_id):
-    db = get_db()
-    note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 
-                     (note_id, session['user_id'])).fetchone()
-    
-    if not note:
-        flash('Заметка не найдена', 'error')
-        return redirect(url_for('notes_list'))
-    
-    try:
-        db.execute('DELETE FROM notes WHERE id = ?', (note_id,))
-        db.commit()
-        flash('Заметка успешно удалена!', 'success')
-    except Exception as e:
-        flash(f'Ошибка при удалении заметки: {str(e)}', 'error')
-    
-    return redirect(url_for('notes_list'))
-
-@app.route('/edit_note/<int:note_id>', methods=['GET', 'POST'])
-@login_required
-def edit_note(note_id):
-    db = get_db()
-    note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 
-                     (note_id, session['user_id'])).fetchone()
-    
-    if not note:
-        flash('Заметка не найдена', 'error')
-        return redirect(url_for('notes_list'))
-    
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        color = request.form.get('color', '#ffffff')
-        is_pinned = request.form.get('is_pinned') == '1'
-        
-        if not title or not content:
-            flash('Заголовок и содержание обязательны для заполнения', 'error')
-            return render_template('knowledge/notes/edit_note.html', note=note)
-        
-        try:
-            db.execute('''
-                UPDATE notes SET 
-                title=?, content=?, color=?, is_pinned=?, updated_at=CURRENT_TIMESTAMP
-                WHERE id=?
-            ''', (title, content, color, is_pinned, note_id))
-            db.commit()
-            flash('Заметка успешно обновлена!', 'success')
-            return redirect(url_for('notes_list'))
-        except Exception as e:
-            flash(f'Ошибка при обновлении заметки: {str(e)}', 'error')
-    
-    return render_template('knowledge/notes/edit_note.html', note=note)
-
-@app.route('/toggle_pin_note/<int:note_id>')
-@login_required
-def toggle_pin_note(note_id):
-    db = get_db()
-    note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 
-                     (note_id, session['user_id'])).fetchone()
-    
-    if not note:
-        flash('Заметка не найдена', 'error')
-        return redirect(url_for('notes_list'))
-    
-    try:
-        db.execute('UPDATE notes SET is_pinned = NOT is_pinned WHERE id = ?', (note_id,))
-        db.commit()
-        flash('Статус закрепления изменен!', 'success')
-    except Exception as e:
-        flash(f'Ошибка при изменении статуса: {str(e)}', 'error')
-    
-    return redirect(url_for('notes_list'))
 
 
 # ========== МАРШРУТЫ ДЛЯ ГРАФИКА СМЕН ==========
