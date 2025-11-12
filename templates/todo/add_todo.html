@@ -5,7 +5,7 @@
     <div class="col-md-8">
         <h2>Добавить новую задачу</h2>
         
-        <form method="POST" action="{{ url_for('add_todo') }}">
+        <form method="POST" action="{{ url_for('todo.add_todo') }}">
             <div class="mb-3">
                 <label for="title" class="form-label">Название задачи *</label>
                 <input type="text" class="form-control" id="title" name="title" required>
@@ -62,7 +62,7 @@
             </div>
             
             <button type="submit" class="btn btn-primary">Создать задачу</button>
-            <a href="{{ url_for('todo') }}" class="btn btn-secondary">Отмена</a>
+            <a href="{{ url_for('todo.todo') }}" class="btn btn-secondary">Отмена</a>
         </form>
     </div>
 </div>

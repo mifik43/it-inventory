@@ -76,7 +76,7 @@
     <!-- TODO -->
     <li class="nav-item">
         <a class="nav-link {% if request.endpoint in ['todo', 'add_todo', 'edit_todo'] %}active{% endif %}" 
-           href="{{ url_for('todo') }}">
+           href="{{ url_for('todo.todo') }}">
             <i class="bi bi-check-square"></i>
             Задачи
         </a>
