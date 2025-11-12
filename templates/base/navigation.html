@@ -60,7 +60,7 @@
         <ul class="dropdown-menu">
             <li>
                 <a class="dropdown-item {% if request.endpoint in ['articles_list', 'view_article', 'add_article', 'edit_article'] %}active{% endif %}" 
-                   href="{{ url_for('articles_list') }}">
+                   href="{{ url_for('articles.articles_list') }}">
                     <i class="bi bi-journal-text"></i> Статьи
                 </a>
             </li>
