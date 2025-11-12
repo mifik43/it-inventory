@@ -10,39 +10,39 @@
     
     <!-- Serviced Items Dropdown -->
     <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle {% if request.endpoint in ['devices', 'add_device', 'edit_device', 'providers', 'add_provider', 'edit_provider', 'cubes', 'add_cube', 'edit_cube', 'organizations', 'add_organization', 'edit_organization', 'guest_wifi', 'add_guest_wifi', 'edit_guest_wifi'] %}active{% endif %}" 
+    <a class="nav-link dropdown-toggle {% if request.endpoint in ['devices.devices', 'devices.add_device', 'devices.edit_device', 'providers.providers', 'providers.add_provider', 'providers.edit_provider', 'cubes.cubes', 'cubes.add_cube', 'cubes.edit_cube', 'organizations.organizations', 'organizations.add_organization', 'organizations.edit_organization', 'guest_wifi.guest_wifi', 'guest_wifi.add_guest_wifi', 'guest_wifi.edit_guest_wifi'] %}active{% endif %}" 
        href="#" data-bs-toggle="dropdown">
         <i class="bi bi-tools"></i>
         На обслуживании
     </a>
     <ul class="dropdown-menu">
         <li>
-            <a class="dropdown-item {% if request.endpoint in ['devices', 'add_device', 'edit_device'] %}active{% endif %}" 
+            <a class="dropdown-item {% if request.endpoint in ['devices.devices', 'devices.add_device', 'devices.edit_device'] %}active{% endif %}" 
                href="{{ url_for('devices.devices') }}">
                 <i class="bi bi-pc-display"></i> Устройства
             </a>
         </li>
         <li>
-            <a class="dropdown-item {% if request.endpoint in ['providers', 'add_provider', 'edit_provider'] %}active{% endif %}" 
+            <a class="dropdown-item {% if request.endpoint in ['providers.providers', 'providers.add_provider', 'providers.edit_provider'] %}active{% endif %}" 
                href="{{ url_for('providers.providers') }}">
                 <i class="bi bi-wifi"></i> Провайдеры
             </a>
         </li>
         <!-- ДОБАВЛЯЕМ ГОСТЕВОЙ WIFI -->
         <li>
-            <a class="dropdown-item {% if request.endpoint in ['guest_wifi', 'add_guest_wifi', 'edit_guest_wifi'] %}active{% endif %}" 
+            <a class="dropdown-item {% if request.endpoint in ['guest_wifi.guest_wifi', 'guest_wifi.add_guest_wifi', 'guest_wifi.edit_guest_wifi'] %}active{% endif %}" 
                href="{{ url_for('guest_wifi.guest_wifi') }}">
                 <i class="bi bi-router"></i> Гостевой WiFi
             </a>
         </li>
         <li>
-            <a class="dropdown-item {% if request.endpoint in ['cubes', 'add_cube', 'edit_cube'] %}active{% endif %}" 
+            <a class="dropdown-item {% if request.endpoint in ['cubes.cubes', 'cubes.add_cube', 'cubes.edit_cube'] %}active{% endif %}" 
                href="{{ url_for('cubes.cubes') }}">
                 <i class="bi bi-box"></i> Программы
             </a>
         </li>
         <li>
-            <a class="dropdown-item {% if request.endpoint in ['organizations', 'add_organization', 'edit_organization'] %}active{% endif %}" 
+            <a class="dropdown-item {% if request.endpoint in ['organizations.organizations', 'organizations.add_organization', 'organizations.edit_organization'] %}active{% endif %}" 
                href="{{ url_for('organizations.organizations') }}">
                 <i class="bi bi-building"></i> Организации
             </a>
@@ -52,20 +52,20 @@
 
     <!-- Knowledge Base -->
     <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle {% if request.endpoint in ['articles_list', 'view_article', 'add_article', 'edit_article', 'notes_list', 'add_note', 'edit_note'] %}active{% endif %}" 
+        <a class="nav-link dropdown-toggle {% if request.endpoint in ['articles.articles_list', 'articles.view_article', 'articles.add_article', 'articles.edit_article', 'notes.notes_list', 'notes.add_note', 'notes.edit_note'] %}active{% endif %}" 
            href="#" data-bs-toggle="dropdown">
             <i class="bi bi-journal-text"></i>
             База знаний
         </a>
         <ul class="dropdown-menu">
             <li>
-                <a class="dropdown-item {% if request.endpoint in ['articles_list', 'view_article', 'add_article', 'edit_article'] %}active{% endif %}" 
+                <a class="dropdown-item {% if request.endpoint in ['articles.articles_list', 'articles.view_article', 'articles.add_article', 'articles.edit_article'] %}active{% endif %}" 
                    href="{{ url_for('articles.articles_list') }}">
                     <i class="bi bi-journal-text"></i> Статьи
                 </a>
             </li>
             <li>
-                <a class="dropdown-item {% if request.endpoint in ['notes_list', 'add_note', 'edit_note'] %}active{% endif %}" 
+                <a class="dropdown-item {% if request.endpoint in ['notes.notes_list', 'notes.add_note', 'notes.edit_note'] %}active{% endif %}" 
                    href="{{ url_for('notes.notes_list') }}">
                     <i class="bi bi-sticky"></i> Заметки
                 </a>
@@ -75,7 +75,7 @@
     
     <!-- TODO -->
     <li class="nav-item">
-        <a class="nav-link {% if request.endpoint in ['todo', 'add_todo', 'edit_todo'] %}active{% endif %}" 
+        <a class="nav-link {% if request.endpoint in ['todo.todo', 'todo.add_todo', 'todo.edit_todo'] %}active{% endif %}" 
            href="{{ url_for('todo.todo') }}">
             <i class="bi bi-check-square"></i>
             Задачи
@@ -84,7 +84,7 @@
     
     <!-- Shifts -->
     <li class="nav-item">
-        <a class="nav-link {% if request.endpoint in ['shifts_list', 'add_shift', 'edit_shift'] %}active{% endif %}" 
+        <a class="nav-link {% if request.endpoint in ['shifts.shifts_list', 'shifts.add_shift', 'shifts.edit_shift'] %}active{% endif %}" 
            href="{{ url_for('shifts.shifts_list') }}">
             <i class="bi bi-calendar-week"></i>
             График смен
@@ -93,7 +93,7 @@
         <!-- roles -->
     {% if 'roles_manage' in session.permissions or 'roles_read' in session.permissions %}
     <li class="nav-item">
-        <a class="nav-link {% if request.endpoint in ['roles', 'create_role', 'edir_role'] %}active{% endif %}" 
+        <a class="nav-link {% if request.endpoint in ['roles.roles', 'roles.create_role', 'roles.edir_role'] %}active{% endif %}" 
            href="{{ url_for('roles.roles') }}">
             <i class="bi bi-calendar-week"></i>
             Роли пользователей
@@ -103,7 +103,7 @@
     <!-- Admin Only -->
     {% if 'users_manage' in session.permissions or 'users_read' in session.permissions %}
     <li class="nav-item">
-        <a class="nav-link {% if request.endpoint in ['users', 'create_user', 'edit_user'] %}active{% endif %}" 
+        <a class="nav-link {% if request.endpoint in ['users.users', 'users.create_user', 'users.edit_user'] %}active{% endif %}" 
            href="{{ url_for('users.users') }}">
             <i class="bi bi-people"></i>
             Пользователи
