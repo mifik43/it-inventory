@@ -1,10 +1,8 @@
-# [file name]: excel_utils.py
-# [file content begin]
 import pandas as pd
 import io
 from datetime import datetime
 from database import get_db
-from flask import send_file
+
 
 def export_to_excel(table_name, columns=None):
     """Экспорт данных из таблицы в Excel"""
@@ -109,4 +107,3 @@ def export_todos():
         'organization_id', 'due_date', 'is_completed'
     ])
 
-# [file content end]
