@@ -1,0 +1,35 @@
+<style>
+/* Прокрутка в списке ролей при редактировании пользователя или роли */
+.roles-container {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    height: 100%;
+}
+
+.roles-scrollable {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+/* Стили для скроллбара */
+.roles-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.roles-scrollable::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.roles-scrollable::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.roles-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
