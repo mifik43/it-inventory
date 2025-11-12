@@ -43,7 +43,7 @@
         </li>
         <li>
             <a class="dropdown-item {% if request.endpoint in ['organizations', 'add_organization', 'edit_organization'] %}active{% endif %}" 
-               href="{{ url_for('organizations') }}">
+               href="{{ url_for('organizations.organizations') }}">
                 <i class="bi bi-building"></i> Организации
             </a>
         </li>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
 from templates.base.database import init_db, get_db
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -13,6 +13,7 @@ from templates.providers.providers import bluprint_provider_routes
 from templates.devices.devices import bluprint_devices_routes
 from templates.cubes.cubes import bluprint_cubes_routes, get_cubes
 from templates.guest_wifi.guest_wify import bluprint_guest_wifi_routes
+from templates.organizations.organizations import bluprint_organizations_routes
 
 from functools import wraps
 from templates.base.requirements import admin_required, login_required
@@ -37,6 +38,7 @@ app.register_blueprint(bluprint_provider_routes)
 app.register_blueprint(bluprint_devices_routes)
 app.register_blueprint(bluprint_cubes_routes)
 app.register_blueprint(bluprint_guest_wifi_routes)
+app.register_blueprint(bluprint_organizations_routes)
 
 # Настройки для загрузки файлов
 UPLOAD_FOLDER = 'static/uploads'
@@ -248,10 +250,10 @@ def import_data(data_type):
     
     # GET запрос - показываем форму импорта
     page_titles = {
-        'devices': 'устройств',
-        'providers': 'провайдеров',
-        'cubes': 'программных кубов', 
-        'organizations': 'организаций',
+        'devices.devices': 'устройств',
+        'providers.providers': 'провайдеров',
+        'cubes.cubes': 'программных кубов', 
+        'organizations.organizations': 'организаций',
         'todos': 'задач'
     }
     
@@ -536,117 +538,6 @@ def toggle_completed():
     """Переключить отображение выполненных задач"""
     show_completed = request.args.get('show_completed', 'false') == 'true'
     return redirect(url_for('todo', show_completed=show_completed))
-
-# ========== МАРШРУТЫ ДЛЯ ОРГАНИЗАЦИЙ ==========
-
-@app.route('/organizations')
-@login_required
-def organizations():
-    db = get_db()
-    organizations_list = db.execute('''
-        SELECT * FROM organizations 
-        ORDER BY 
-            CASE type
-                WHEN 'ООО' THEN 1
-                WHEN 'ИП' THEN 2
-                WHEN 'Самозанятый' THEN 3
-                ELSE 4
-            END,
-            name
-    ''').fetchall()
-    return render_template('organizations/organizations.html', organizations=organizations_list)
-
-@app.route('/add_organization', methods=['GET', 'POST'])
-@admin_required
-def add_organization():
-    if request.method == 'POST':
-        name = request.form['name']
-        org_type = request.form['type']
-        inn = request.form.get('inn', '')
-        contact_person = request.form.get('contact_person', '')
-        phone = request.form.get('phone', '')
-        email = request.form.get('email', '')
-        address = request.form.get('address', '')
-        notes = request.form.get('notes', '')
-        
-        # Валидация
-        if not name:
-            flash('Название организации обязательно для заполнения', 'error')
-            return render_template('add_organization.html')
-        
-        db = get_db()
-        try:
-            db.execute('''
-                INSERT INTO organizations (name, type, inn, contact_person, phone, email, address, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (name, org_type, inn, contact_person, phone, email, address, notes))
-            db.commit()
-            flash('Организация успешно добавлена!', 'success')
-            return redirect(url_for('organizations'))
-        except Exception as e:
-            flash(f'Ошибка при добавлении организации: {str(e)}', 'error')
-    
-    return render_template('organizations/add_organization.html')
-
-@app.route('/edit_organization/<int:org_id>', methods=['GET', 'POST'])
-@admin_required
-def edit_organization(org_id):
-    db = get_db()
-    
-    org = db.execute('SELECT * FROM organizations WHERE id = ?', (org_id,)).fetchone()
-    if not org:
-        flash('Организация не найдена', 'error')
-        return redirect(url_for('organizations'))
-    
-    if request.method == 'POST':
-        name = request.form['name']
-        org_type = request.form['type']
-        inn = request.form.get('inn', '')
-        contact_person = request.form.get('contact_person', '')
-        phone = request.form.get('phone', '')
-        email = request.form.get('email', '')
-        address = request.form.get('address', '')
-        notes = request.form.get('notes', '')
-        
-        # Валидация
-        if not name:
-            flash('Название организации обязательно для заполнения', 'error')
-            return render_template('organizations/edit_organization.html', org=org)
-        
-        try:
-            db.execute('''
-                UPDATE organizations SET 
-                name=?, type=?, inn=?, contact_person=?, phone=?, email=?, address=?, notes=?
-                WHERE id=?
-            ''', (name, org_type, inn, contact_person, phone, email, address, notes, org_id))
-            db.commit()
-            flash('Данные организации успешно обновлены!', 'success')
-            return redirect(url_for('organizations'))
-        except Exception as e:
-            flash(f'Ошибка при обновлении организации: {str(e)}', 'error')
-    
-    return render_template('organizations/edit_organization.html', org=org)
-
-@app.route('/delete_organization/<int:org_id>')
-@admin_required
-def delete_organization(org_id):
-    db = get_db()
-    
-    # Проверяем, используется ли организация в задачах
-    tasks_count = db.execute('SELECT COUNT(*) as count FROM todos WHERE organization_id = ?', (org_id,)).fetchone()['count']
-    
-    if tasks_count > 0:
-        flash('Невозможно удалить организацию, так как она используется в задачах', 'error')
-        return redirect(url_for('organizations'))
-    
-    try:
-        db.execute('DELETE FROM organizations WHERE id = ?', (org_id,))
-        db.commit()
-        flash('Организация успешно удалена!', 'success')
-    except Exception as e:
-        flash(f'Ошибка при удалении организации: {str(e)}', 'error')
-    
-    return redirect(url_for('organizations'))
 
 # ========== МАРШРУТЫ ДЛЯ СТАТЕЙ И ЗАМЕТОК ==========
 
