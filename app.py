@@ -1,10 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
 from templates.base.database import init_db, get_db
-from werkzeug.security import generate_password_hash, check_password_hash
 
 
 import socket
-import os
 from datetime import datetime
 
 from templates.auth.users import bluprint_user_routes
@@ -19,7 +17,6 @@ from templates.knowledge.articles.articles import bluprint_articles_routes
 from templates.todo.todo import bluprint_todo_routes
 from templates.shifts.shifts import bluprint_shifts_routes
 
-from functools import wraps
 from templates.base.requirements import admin_required, login_required
 
 from excel_utils import (
