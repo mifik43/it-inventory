@@ -37,7 +37,7 @@
         </li>
         <li>
             <a class="dropdown-item {% if request.endpoint in ['cubes', 'add_cube', 'edit_cube'] %}active{% endif %}" 
-               href="{{ url_for('cubes') }}">
+               href="{{ url_for('cubes.cubes') }}">
                 <i class="bi bi-box"></i> Программы
             </a>
         </li>
