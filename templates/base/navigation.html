@@ -24,7 +24,7 @@
         </li>
         <li>
             <a class="dropdown-item {% if request.endpoint in ['providers', 'add_provider', 'edit_provider'] %}active{% endif %}" 
-               href="{{ url_for('providers') }}">
+               href="{{ url_for('providers.providers') }}">
                 <i class="bi bi-wifi"></i> Провайдеры
             </a>
         </li>

@@ -387,7 +387,7 @@
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center">
                         <h6 class="m-0 font-weight-bold text-success">Активные провайдеры</h6>
-                        <a href="{{ url_for('providers') }}" class="btn btn-sm btn-success">Все провайдеры</a>
+                        <a href="{{ url_for('providers.providers') }}" class="btn btn-sm btn-success">Все провайдеры</a>
                     </div>
                     <div class="card-body">
                         {% for provider in active_providers %}

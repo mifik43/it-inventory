@@ -9,6 +9,7 @@ from datetime import datetime
 
 from templates.auth.users import bluprint_user_routes
 from templates.roles.roles_page import bluprint_roles_routes
+from templates.providers.providers import bluprint_provider_routes
 
 from functools import wraps
 from templates.base.requirements import admin_required, login_required
@@ -29,6 +30,7 @@ app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
 
 app.register_blueprint(bluprint_user_routes)
 app.register_blueprint(bluprint_roles_routes)
+app.register_blueprint(bluprint_provider_routes)
 
 # Настройки для загрузки файлов
 UPLOAD_FOLDER = 'static/uploads'
@@ -365,133 +367,6 @@ def search():
     return render_template('devices/devices.html', devices=devices, search_query=query)
 
 # ========== МАРШРУТЫ ДЛЯ ПРОВАЙДЕРОВ ==========
-
-@app.route('/providers')
-@login_required
-def providers():
-    db = get_db()
-    providers_list = db.execute('''
-        SELECT * FROM providers 
-        ORDER BY created_at DESC
-    ''').fetchall()
-    return render_template('providers/providers.html', providers=providers_list)
-
-@app.route('/add_provider', methods=['GET', 'POST'])
-@admin_required
-def add_provider():
-    if request.method == 'POST':
-        name = request.form['name']
-        service_type = request.form['service_type']
-        contract_number = request.form.get('contract_number', '')
-        contract_date = request.form.get('contract_date', '')
-        ip_range = request.form.get('ip_range', '')
-        speed = request.form.get('speed', '')
-        price = request.form.get('price', 0)
-        contact_person = request.form.get('contact_person', '')
-        phone = request.form.get('phone', '')
-        email = request.form.get('email', '')
-        object_location = request.form['object_location']
-        city = request.form['city']
-        status = request.form['status']
-        notes = request.form.get('notes', '')
-        
-        # Преобразуем цену в число
-        try:
-            price = float(price) if price else 0
-        except ValueError:
-            price = 0
-        
-        db = get_db()
-        try:
-            db.execute('''
-                INSERT INTO providers 
-                (name, service_type, contract_number, contract_date, ip_range, speed, price, 
-                 contact_person, phone, email, object_location, city, status, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                name, service_type, contract_number, contract_date, ip_range, speed, price,
-                contact_person, phone, email, object_location, city, status, notes
-            ))
-            db.commit()
-            flash('Провайдер успешно добавлен!', 'success')
-            return redirect(url_for('providers'))
-        except Exception as e:
-            flash(f'Ошибка при добавлении провайдера: {str(e)}', 'error')
-    
-    return render_template('providers/add_provider.html')
-
-@app.route('/edit_provider/<int:provider_id>', methods=['GET', 'POST'])
-@admin_required
-def edit_provider(provider_id):
-    db = get_db()
-    
-    if request.method == 'POST':
-        name = request.form['name']
-        service_type = request.form['service_type']
-        contract_number = request.form.get('contract_number', '')
-        contract_date = request.form.get('contract_date', '')
-        ip_range = request.form.get('ip_range', '')
-        speed = request.form.get('speed', '')
-        price = request.form.get('price', 0)
-        contact_person = request.form.get('contact_person', '')
-        phone = request.form.get('phone', '')
-        email = request.form.get('email', '')
-        object_location = request.form['object_location']
-        city = request.form['city']
-        status = request.form['status']
-        notes = request.form.get('notes', '')
-        
-        # Преобразуем цену в число
-        try:
-            price = float(price) if price else 0
-        except ValueError:
-            price = 0
-        
-        try:
-            db.execute('''
-                UPDATE providers SET 
-                name=?, service_type=?, contract_number=?, contract_date=?, ip_range=?, speed=?, price=?,
-                contact_person=?, phone=?, email=?, object_location=?, city=?, status=?, notes=?
-                WHERE id=?
-            ''', (
-                name, service_type, contract_number, contract_date, ip_range, speed, price,
-                contact_person, phone, email, object_location, city, status, notes, provider_id
-            ))
-            db.commit()
-            flash('Данные провайдера успешно обновлены!', 'success')
-            return redirect(url_for('providers'))
-        except Exception as e:
-            flash(f'Ошибка при обновлении провайдера: {str(e)}', 'error')
-    
-    provider = db.execute('SELECT * FROM providers WHERE id=?', (provider_id,)).fetchone()
-    return render_template('providers/edit_provider.html', provider=provider)
-
-@app.route('/delete_provider/<int:provider_id>')
-@admin_required
-def delete_provider(provider_id):
-    db = get_db()
-    try:
-        db.execute('DELETE FROM providers WHERE id=?', (provider_id,))
-        db.commit()
-        flash('Провайдер успешно удален!', 'success')
-    except Exception as e:
-        flash(f'Ошибка при удалении провайдера: {str(e)}', 'error')
-    
-    return redirect(url_for('providers'))
-
-@app.route('/provider_search')
-@login_required
-def provider_search():
-    query = request.args.get('q', '')
-    db = get_db()
-    
-    providers_list = db.execute('''
-        SELECT * FROM providers 
-        WHERE name LIKE ? OR contract_number LIKE ? OR object_location LIKE ? OR city LIKE ? OR contact_person LIKE ?
-        ORDER BY created_at DESC
-    ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
-    
-    return render_template('providers/providers.html', providers=providers_list, search_query=query)
 
 # ========== МАРШРУТЫ ДЛЯ КУБИКОВ (ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ) ==========
 
