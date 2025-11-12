@@ -10,7 +10,7 @@ bluprint_todo_routes = Blueprint("todo", __name__)
 
 
 @bluprint_todo_routes.route('/todo')
-@permission_required(Permissions.todo_reads)
+@permission_required(Permissions.todo_read)
 def todo():
     db = get_db()
     

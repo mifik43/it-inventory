@@ -25,9 +25,8 @@ class Permissions(enum.StrEnum):
     organizations_manage = "organizations_manage"
     shifts_read = "shifts_read"
     shifts_manage = "shifts_manage"
-    todo_reads = "todo_reads"
+    todo_read = "todo_read"
     todo_manage = "todo_manage"
-
 
     def to_name(p):
         if p == Permissions.users_read:
@@ -70,7 +69,7 @@ class Permissions(enum.StrEnum):
             return "Чтение графика смен"
         elif p == Permissions.shifts_manage:
             return "Управление графиком смен"
-        elif p == Permissions.todo_reads:
+        elif p == Permissions.todo_read:
             return "Чтение списка задач"
         elif p == Permissions.todo_manage:
             return "Управление списком задач"
@@ -96,7 +95,10 @@ class Role:
         self.checked = ""
     
     def __str__(self):
-        return f"Role: id = {str(self.id)} name = {self.name}, perm = [{self.permissions}]"
+        perms:str = ""
+        for p in self.permissions:
+            perms += str(p) + " "
+        return f"Role: id = {str(self.id)} name = {self.name}, perm = [{perms}]"
 
     def add_permission(self, p:Permissions):
         self.permissions.add(p)
@@ -121,10 +123,18 @@ class Role:
     
 # роль со всеми правами
 def create_full_access_role():
-    role = Role(0, "SuperAdmin", description="Роль админа по умолчанию")
+    role = Role(id=None, name="SuperAdmin", description="Роль админа по умолчанию", permissions=set())
 
     for p in Permissions:
         role.add_permission(p)
     
     return role
 
+def create_read_only_role():
+    role = Role(id=None, name="Reader", description="Роль с правами только на чтение", permissions=set())
+
+    for p in Permissions:
+        if str(p).endswith("read"):
+            role.add_permission(p)
+
+    return role

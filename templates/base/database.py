@@ -11,6 +11,15 @@ def find_user_id_by_name(user_name:str, db:sqlite3.Connection = get_db()):
     
     return user["id"]
 
+def set_role_for_user(user_name, role_name, db:sqlite3.Connection):
+    role = find_role_by_name(role_name, db)
+    if role is None:
+        raise ValueError(f"Роль {role_name} не найдена")
+    
+    user_id = find_user_id_by_name(user_name, db)
+    save_roles_to_user_by_id(user_id, [role["id"]], db, False)
+
+
 def init_default_admin(db:sqlite3.Connection):
 
     # Добавляем администратора по умолчанию
@@ -36,8 +45,9 @@ def init_default_admin(db:sqlite3.Connection):
         if super_admin_role is None:
             raise ValueError("Роль SuperAdmin не найдена")
         
-        admin_id = find_user_id_by_name("admin", db)
-        save_roles_to_user_by_id(admin_id, [super_admin_role["id"]], db, False)
+
+        set_role_for_user("admin", "SuperAdmin", db)
+        set_role_for_user("user", "Reader", db)
 
 
 def init_db():

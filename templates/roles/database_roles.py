@@ -67,6 +67,7 @@ def save_role(role : permissions.Role, db = get_db(), commit = True):
         if existing_role is None:
             raise ValueError(f"Во время сохранения роли \"{role.name}\" произошла ошибка")
         role.id = existing_role["id"]
+        print(f"Новый id роли: {role.id}")
     else:
         db.execute(
             f"INSERT INTO roles (id, name, description) VALUES ({role.id}, '{role.name}', '{role.description}')"
@@ -176,8 +177,11 @@ def init_default_admin_role(db:sqlite3.Connection):
     if count == 0:
         # создаём роль админа
         print("Ролей не найдено. Создаём роль админа по умолчанию")
-        role = permissions.create_full_access_role()
-        save_role(role, db, False)
+        admin_role = permissions.create_full_access_role()
+        save_role(admin_role, db, False)
+
+        reader_role = permissions.create_read_only_role()
+        save_role(reader_role, db, False)
         
 
 def create_roles_tables(db:sqlite3.Connection):
