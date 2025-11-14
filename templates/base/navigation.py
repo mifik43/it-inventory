@@ -2,6 +2,7 @@
 from templates.roles.permissions import Permissions
 from flask import session, url_for
 
+# класс родитель-заглушка
 class DrawableMenuItem():
     def __init__(self, icon, button_class = "nav-link"):
         self.icon = icon
@@ -15,7 +16,8 @@ class DrawableMenuItem():
     
     def draw(self, url):
         return ""
-    
+
+# кнопка
 class MenuItem(DrawableMenuItem):
     def __init__(self, icon:str, name:str, url:str, urls_to_be_active:list, permissions:list, button_class = "nav-link"):
         super().__init__(icon, button_class)
@@ -55,6 +57,7 @@ class MenuItem(DrawableMenuItem):
             </li>
         """
 
+# меню без заголовка
 class SimpleMenu(DrawableMenuItem):
     def __init__(self, icon:str):
         super().__init__(icon)
@@ -75,6 +78,7 @@ class SimpleMenu(DrawableMenuItem):
     def is_active(self, url):
         return any(i.is_active(url) for i in self.items)
 
+# выпадающее меню
 class DropDownMenu(SimpleMenu):
     def __init__(self, icon:str, name:str):
         super().__init__(icon)
