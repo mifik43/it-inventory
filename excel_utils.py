@@ -107,3 +107,10 @@ def export_todos():
         'organization_id', 'due_date', 'is_completed'
     ])
 
+def export_wtware():
+    """Экспорт конфигураций WTware в Excel"""
+    return export_to_excel('wtware_configs', [
+        'name', 'version', 'server_ip', 'server_port', 'screen_width', 
+        'screen_height', 'auto_start', 'network_drive', 'printer_config',
+        'startup_script', 'shutdown_script', 'status', 'notes'
+    ])

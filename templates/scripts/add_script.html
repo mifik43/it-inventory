@@ -1,0 +1,130 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-plus-circle"></i> Добавление нового скрипта
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_script') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">
+                                        <strong>Название скрипта *</strong>
+                                    </label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ request.form.name }}" required
+                                           placeholder="Например: Очистка временных файлов">
+                                    <div class="form-text">Укажите понятное название для идентификации скрипта</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="filename" class="form-label">
+                                        <strong>Имя файла *</strong>
+                                    </label>
+                                    <input type="text" class="form-control" id="filename" name="filename" 
+                                           value="{{ request.form.filename }}" required
+                                           placeholder="Например: очистка_системы.bat">
+                                    <div class="form-text">
+                                        Разрешены расширения: .bat, .ps1
+                                        <span id="filename-help" class="text-muted"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <strong>Описание скрипта</strong>
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Опишите назначение скрипта и его функции">{{ request.form.description }}</textarea>
+                            <div class="form-text">Необязательное поле. Опишите что делает этот скрипт.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">
+                                <strong>Содержимое скрипта *</strong>
+                            </label>
+                            <textarea class="form-control font-monospace" id="content" name="content" 
+                                      rows="15" required placeholder="Введите код скрипта...">{{ request.form.content }}</textarea>
+                            <div class="form-text">
+                                Введите полный код скрипта. Для BAT-скриптов используйте команды CMD, для PowerShell - соответствующий синтаксис.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Информация о безопасности</h6>
+                            <ul class="mb-0">
+                                <li>Все скрипты выполняются на сервере с ограниченными правами</li>
+                                <li>Время выполнения ограничено 5 минутами</li>
+                                <li>Все действия логируются</li>
+                                <li>Доступ к выполнению скриптов имеют только администраторы</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('scripts_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Сохранить скрипт
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.font-monospace {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filenameInput = document.getElementById('filename');
+    const filenameHelp = document.getElementById('filename-help');
+    
+    filenameInput.addEventListener('input', function() {
+        const filename = this.value;
+        const extension = filename.split('.').pop().toLowerCase();
+        
+        if (extension === 'bat') {
+            filenameHelp.textContent = ' - BAT-скрипт (Windows Command Line)';
+            filenameHelp.className = 'text-info';
+        } else if (extension === 'ps1') {
+            filenameHelp.textContent = ' - PowerShell скрипт';
+            filenameHelp.className = 'text-warning';
+        } else if (filename.includes('.') && !['bat', 'ps1'].includes(extension)) {
+            filenameHelp.textContent = ' - Неподдерживаемое расширение! Используйте .bat или .ps1';
+            filenameHelp.className = 'text-danger';
+        } else {
+            filenameHelp.textContent = '';
+        }
+    });
+    
+    // Примеры кода для быстрой вставки
+    const contentTextarea = document.getElementById('content');
+    
+    // Добавляем подсказку при фокусе
+    contentTextarea.addEventListener('focus', function() {
+        if (!this.value.trim()) {
+            this.placeholder = `@echo off\necho Запуск скрипта...\necho Скрипт выполнен успешно\npause`;
+        }
+    });
+});
+</script>
+{% endblock %}

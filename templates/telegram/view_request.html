@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Заявка #{{ request.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-telegram me-2"></i>Заявка #{{ request.id }}</h2>
+    <a href="{{ url_for('telegram_requests') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <!-- Основная информация -->
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Сообщение от пользователя</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-start mb-4">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-person-circle fs-1 text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mt-0">
+                            {% if request.first_name or request.last_name %}
+                                {{ request.first_name or '' }} {{ request.last_name or '' }}
+                            {% else %}
+                                {{ request.username or 'Анонимный пользователь' }}
+                            {% endif %}
+                            {% if request.username %}
+                            <small class="text-muted">@{{ request.username }}</small>
+                            {% endif %}
+                        </h5>
+                        <p class="mb-1"><strong>Telegram ID:</strong> {{ request.telegram_id }}</p>
+                        <p class="mb-1"><strong>Категория:</strong> 
+                            {% if request.category %}
+                            <span class="badge bg-light text-dark">{{ request.category }}</span>
+                            {% else %}
+                            <span class="text-muted">Не определена</span>
+                            {% endif %}
+                        </p>
+                        <p class="mb-0"><strong>Дата:</strong> {{ request.created_at }}</p>
+                    </div>
+                </div>
+                
+                <div class="message-content bg-light p-3 rounded">
+                    <p class="mb-0">{{ request.message_text }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ответ на заявку -->
+        {% if request.response_text %}
+        <div class="card shadow mb-4 border-success">
+            <div class="card-header py-3 bg-success text-white">
+                <h6 class="m-0 font-weight-bold">Ответ на заявку</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-person-check fs-1 text-success"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mt-0">{{ request.response_username }}</h5>
+                        <p class="text-muted mb-2">Ответ дан: {{ request.response_at }}</p>
+                        <div class="response-content bg-light p-3 rounded">
+                            <p class="mb-0">{{ request.response_text }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Форма ответа -->
+        {% if request.status != 'completed' %}
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Ответить на заявку</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_telegram_response', request_id=request.id) }}">
+                    <div class="mb-3">
+                        <label for="response_text" class="form-label">Текст ответа</label>
+                        <textarea class="form-control" id="response_text" name="response_text" 
+                                  rows="4" placeholder="Введите ответ пользователю..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-send"></i> Отправить ответ
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Боковая панель управления -->
+    <div class="col-md-4">
+        <!-- Статус заявки -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Управление заявкой</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Текущий статус:</strong></label>
+                    <div class="mb-2">
+                        <span class="badge 
+                            {% if request.status == 'new' %}bg-warning
+                            {% elif request.status == 'assigned' %}bg-info
+                            {% elif request.status == 'completed' %}bg-success
+                            {% else %}bg-secondary{% endif %} fs-6">
+                            {{ request.status }}
+                        </span>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('update_telegram_request_status', request_id=request.id) }}" class="mb-3">
+                        <div class="mb-2">
+                            <label class="form-label">Изменить статус:</label>
+                            <select name="status" class="form-select">
+                                <option value="new" {% if request.status == 'new' %}selected{% endif %}>Новая</option>
+                                <option value="assigned" {% if request.status == 'assigned' %}selected{% endif %}>Назначена</option>
+                                <option value="completed" {% if request.status == 'completed' %}selected{% endif %}>Завершена</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Обновить</button>
+                    </form>
+                </div>
+
+                <!-- Назначение -->
+                <div class="mb-3">
+                    <label class="form-label"><strong>Назначена на:</strong></label>
+                    <div class="mb-2">
+                        {% if request.assigned_username %}
+                        <span class="badge bg-info">{{ request.assigned_username }}</span>
+                        {% else %}
+                        <span class="text-muted">Не назначена</span>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('assign_telegram_request', request_id=request.id) }}">
+                        <div class="mb-2">
+                            <label class="form-label">Назначить на:</label>
+                            <select name="user_id" class="form-select">
+                                <option value="">-- Выберите пользователя --</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if request.assigned_to == user.id %}selected{% endif %}>
+                                    {{ user.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-outline-info btn-sm">Назначить</button>
+                    </form>
+                </div>
+
+                <!-- Информация -->
+                <div class="mt-4">
+                    <h6>Информация о заявке:</h6>
+                    <ul class="list-unstyled small">
+                        <li><strong>Создана:</strong> {{ request.created_at }}</li>
+                        <li><strong>Обновлена:</strong> {{ request.updated_at }}</li>
+                        {% if request.response_at %}
+                        <li><strong>Ответ дан:</strong> {{ request.response_at }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Быстрые действия</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if request.status != 'completed' %}
+                    <form method="POST" action="{{ url_for('update_telegram_request_status', request_id=request.id) }}">
+                        <input type="hidden" name="status" value="completed">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check-circle"></i> Завершить заявку
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('telegram_requests') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list"></i> К списку заявок
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

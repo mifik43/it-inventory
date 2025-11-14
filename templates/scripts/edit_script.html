@@ -1,0 +1,191 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-edit"></i> Редактирование скрипта: {{ script.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('script_edit', script_id=script.id) }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">
+                                        <strong>Название скрипта *</strong>
+                                    </label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="{{ script.name }}" required
+                                           placeholder="Например: Очистка временных файлов">
+                                    <div class="form-text">Укажите понятное название для идентификации скрипта</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="filename" class="form-label">
+                                        <strong>Имя файла *</strong>
+                                    </label>
+                                    <input type="text" class="form-control" id="filename" name="filename" 
+                                           value="{{ script.filename }}" required
+                                           placeholder="Например: очистка_системы.bat">
+                                    <div class="form-text">
+                                        Разрешены расширения: .bat, .ps1
+                                        <span id="filename-help" class="text-muted">
+                                            {% if script.filename.endswith('.bat') %}
+                                                - BAT-скрипт (Windows Command Line)
+                                            {% elif script.filename.endswith('.ps1') %}
+                                                - PowerShell скрипт
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <strong>Описание скрипта</strong>
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Опишите назначение скрипта и его функции">{{ script.description or '' }}</textarea>
+                            <div class="form-text">Необязательное поле. Опишите что делает этот скрипт.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">
+                                <strong>Содержимое скрипта *</strong>
+                            </label>
+                            <textarea class="form-control font-monospace" id="content" name="content" 
+                                      rows="15" required placeholder="Введите код скрипта...">{{ script.content }}</textarea>
+                            <div class="form-text">
+                                Введите полный код скрипта. Для BAT-скриптов используйте команды CMD, для PowerShell - соответствующий синтаксис.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Информация о безопасности</h6>
+                            <ul class="mb-0">
+                                <li>Все скрипты выполняются на сервере с ограниченными правами</li>
+                                <li>Время выполнения ограничено 5 минутами</li>
+                                <li>Все действия логируются</li>
+                                <li>Доступ к выполнению скриптов имеют только администраторы</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="{{ url_for('script_view', script_id=script.id) }}" class="btn btn-info me-2">
+                                    <i class="fas fa-eye"></i> Просмотр
+                                </a>
+                                <a href="{{ url_for('script_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Отмена
+                                </a>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Сохранить изменения
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Информация о скрипте -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Информация о скрипте
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>ID:</strong> {{ script.id }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Создан:</strong> 
+                            {% if script.created_at %}
+                                {% if script.created_at is string %}
+                                    {{ script.created_at[:16] }}
+                                {% else %}
+                                    {{ script.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Обновлен:</strong> 
+                            {% if script.updated_at %}
+                                {% if script.updated_at is string %}
+                                    {{ script.updated_at[:16] }}
+                                {% else %}
+                                    {{ script.updated_at.strftime('%d.%m.%Y %H:%M') }}
+                                {% endif %}
+                            {% else %}
+                                Никогда
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.font-monospace {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filenameInput = document.getElementById('filename');
+    const filenameHelp = document.getElementById('filename-help');
+    
+    filenameInput.addEventListener('input', function() {
+        const filename = this.value;
+        const extension = filename.split('.').pop().toLowerCase();
+        
+        if (extension === 'bat') {
+            filenameHelp.textContent = ' - BAT-скрипт (Windows Command Line)';
+            filenameHelp.className = 'text-info';
+        } else if (extension === 'ps1') {
+            filenameHelp.textContent = ' - PowerShell скрипт';
+            filenameHelp.className = 'text-warning';
+        } else if (filename.includes('.') && !['bat', 'ps1'].includes(extension)) {
+            filenameHelp.textContent = ' - Неподдерживаемое расширение! Используйте .bat или .ps1';
+            filenameHelp.className = 'text-danger';
+        } else {
+            filenameHelp.textContent = '';
+        }
+    });
+    
+    // Подсветка синтаксиса для содержимого скрипта
+    const contentTextarea = document.getElementById('content');
+    
+    // Авто-определение типа скрипта и подсказки
+    function updateSyntaxHint() {
+        const content = contentTextarea.value;
+        const filename = filenameInput.value;
+        
+        if (filename.endsWith('.bat')) {
+            // BAT скрипт
+            contentTextarea.placeholder = "@echo off\necho Запуск скрипта...\necho Скрипт выполнен успешно\npause";
+        } else if (filename.endsWith('.ps1')) {
+            // PowerShell скрипт
+            contentTextarea.placeholder = "Write-Host \"Запуск PowerShell скрипта...\"\nWrite-Host \"Скрипт выполнен успешно\"";
+        }
+    }
+    
+    filenameInput.addEventListener('change', updateSyntaxHint);
+    updateSyntaxHint();
+});
+</script>
+{% endblock %}

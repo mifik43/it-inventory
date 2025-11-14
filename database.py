@@ -244,7 +244,96 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
     ''')
+    # Таблица wtware
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS wtware_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            version TEXT,
+            server_ip TEXT,
+            server_port INTEGER DEFAULT 80,
+            screen_width INTEGER DEFAULT 1024,
+            screen_height INTEGER DEFAULT 768,
+            auto_start TEXT,
+            network_drive TEXT,
+            printer_config TEXT,
+            startup_script TEXT,
+            shutdown_script TEXT,
+            custom_config TEXT,
+            status TEXT DEFAULT 'Активна',
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS wtware_deployments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_id INTEGER NOT NULL,
+            device_ip TEXT NOT NULL,
+            status TEXT NOT NULL,
+            error_message TEXT,
+            deployed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (config_id) REFERENCES wtware_configs (id)
+        );        ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS scripts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            filename TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     
+    # Таблица для хранения результатов выполнения скриптов
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS script_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            script_id INTEGER,
+            executed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            output TEXT,
+            success BOOLEAN,
+            error_message TEXT,
+            execution_time REAL,
+            FOREIGN KEY (script_id) REFERENCES scripts (id)
+        )
+    ''')
+
+    # Таблица для хранения сессий сканирования
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS network_scans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            scan_type TEXT NOT NULL,
+            target_range TEXT NOT NULL,
+            status TEXT DEFAULT 'running',
+            devices_found INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            completed_at DATETIME,
+            notes TEXT
+        )
+    ''')
+    
+    # Таблица для хранения обнаруженных устройств
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS network_devices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            scan_id INTEGER,
+            ip_address TEXT NOT NULL,
+            mac_address TEXT,
+            hostname TEXT,
+            vendor TEXT,
+            os_info TEXT,
+            ports TEXT,
+            status TEXT DEFAULT 'online',
+            response_time REAL,
+            last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (scan_id) REFERENCES network_scans (id)
+        )
+    ''')
+
     # Добавляем администратора по умолчанию
     create_roles_tables(db)
     init_default_admin(db)

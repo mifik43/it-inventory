@@ -1,0 +1,101 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>История выполнения: {{ script.name }}</h1>
+        <a href="{{ url_for('script_list') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад к списку
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-history"></i> История запусков (последние 20)
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if results %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Время выполнения</th>
+                            <th>Статус</th>
+                            <th>Код возврата</th>
+                            <th>Время (сек)</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td>
+                                {% if result.executed_at %}
+                                    {% if result.executed_at is string %}
+                                        {{ result.executed_at[:16] }}
+                                    {% else %}
+                                        {{ result.executed_at.strftime('%d.%m.%Y %H:%M') }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if result.success %}
+                                <span class="badge bg-success">Успешно</span>
+                                {% else %}
+                                <span class="badge bg-danger">Ошибка</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ result.return_code or result.success }}</td>
+                            <td>
+                                {% if result.execution_time %}
+                                    {{ "%.2f"|format(result.execution_time) }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info" 
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#result-{{ result.id }}" 
+                                        aria-expanded="false">
+                                    <i class="fas fa-eye"></i> Показать вывод
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="collapse" id="result-{{ result.id }}">
+                            <td colspan="5">
+                                <div class="card card-body">
+                                    <h6>Вывод скрипта:</h6>
+                                    {% if result.output %}
+                                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap;">{{ result.output }}</pre>
+                                    {% else %}
+                                    <p class="text-muted">Нет вывода</p>
+                                    {% endif %}
+                                    
+                                    {% if result.error_message %}
+                                    <h6 class="text-danger mt-3">Ошибки:</h6>
+                                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;">{{ result.error_message }}</pre>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Нет данных о выполнении этого скрипта</p>
+                <a href="{{ url_for('script_run', script_id=script.id) }}" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Запустить скрипт
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "base/base.html" %}
+
+{% block title %}Подключение к WTware устройству{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-terminal me-2"></i>Подключение к WTware устройству</h2>
+    <a href="{{ url_for('wtware_list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Конфигурация: {{ wtware_config.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Версия:</strong> {{ wtware_config.version or 'Не указана' }}<br>
+                    <strong>Сервер:</strong> {{ wtware_config.server_ip or 'Не настроен' }}<br>
+                    <strong>Статус:</strong> 
+                    <span class="badge {% if wtware_config.status == 'Активна' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ wtware_config.status }}
+                    </span>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>WTware подключение:</strong> Первое подключение происходит без пароля через порт 80
+                </div>
+                
+                <h6>Подключение к устройству</h6>
+                <form method="POST" id="connectionForm">
+                    <div class="mb-3">
+                        <label for="device_ip" class="form-label">IP адрес устройства *</label>
+                        <input type="text" class="form-control" id="device_ip" name="device_ip" 
+                               placeholder="192.168.1.100" required
+                               pattern="^([0-9]{1,3}\.){3}[0-9]{1,3}$">
+                        <div class="form-text">Формат: 192.168.1.100</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="port" class="form-label">Порт WTware</label>
+                        <input type="number" class="form-control" id="port" name="port" value="80" min="1" max="65535">
+                        <div class="form-text">По умолчанию WTware использует порт 80 (1-65535)</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="connectBtn">
+                            <i class="bi bi-plug"></i> Тестировать подключение
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if connection_status %}
+        <div class="card mt-4">
+            <div class="card-header {% if connection_status.success %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <h6 class="card-title mb-0">Результат подключения</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert {% if connection_status.success %}alert-success{% else %}alert-danger{% endif %}">
+                    {{ connection_status.message }}
+                </div>
+                
+                {% if connection_status.success %}
+                <div class="d-grid gap-2">
+                    <form method="POST" action="{{ url_for('wtware_deploy_config', config_id=wtware_config.id) }}" onsubmit="return validateForm()">
+                        <input type="hidden" name="device_ip" value="{{ request.form.device_ip }}">
+                        <input type="hidden" name="port" value="{{ request.form.port }}">
+                        <button type="submit" class="btn btn-success w-100 mb-2">
+                            <i class="bi bi-cloud-upload"></i> Развернуть конфигурацию
+                        </button>
+                    </form>
+                    
+                    <form method="POST" action="{{ url_for('wtware_restart_service', config_id=wtware_config.id) }}" onsubmit="return validateForm()">
+                        <input type="hidden" name="device_ip" value="{{ request.form.device_ip }}">
+                        <input type="hidden" name="port" value="{{ request.form.port }}">
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="bi bi-arrow-clockwise"></i> Перезапустить устройство
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-6">
+        {% if system_info %}
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">Информация о системе WTware</h6>
+            </div>
+            <div class="card-body">
+                {% if system_info.version %}
+                <div class="mb-3">
+                    <strong>Версия WTware:</strong>
+                    <code class="d-block mt-1 p-2 bg-light">{{ system_info.version }}</code>
+                </div>
+                {% endif %}
+                
+                {% if system_info.status %}
+                <div class="mb-3">
+                    <strong>Статус:</strong>
+                    <code class="d-block mt-1 p-2 bg-light small">{{ system_info.status }}</code>
+                </div>
+                {% endif %}
+                
+                {% if system_info.config %}
+                <div class="mb-3">
+                    <strong>Текущая конфигурация:</strong>
+                    <pre class="mt-1 p-2 bg-light small" style="max-height: 200px; overflow-y: auto;">{{ system_info.config }}</pre>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Сгенерированная конфигурация WTware</h6>
+            </div>
+            <div class="card-body">
+                <pre class="p-3 bg-light" style="max-height: 400px; overflow-y: auto;"><code>{{ generate_wtware_config(wtware_config) }}</code></pre>
+                
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm" onclick="copyConfig()">
+                        <i class="bi bi-clipboard"></i> Копировать конфигурацию
+                    </button>
+                    <a href="{{ url_for('download_wtware_config', config_id=wtware_config.id) }}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-download"></i> Скачать файл
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Инструкция по настройке</h6>
+            </div>
+            <div class="card-body">
+                <ol class="small">
+                    <li>Убедитесь, что устройство WTware включено и подключено к сети</li>
+                    <li>Проверьте, что IP адрес устройства корректен</li>
+                    <li>WTware по умолчанию использует порт 80 для управления</li>
+                    <li>Первое подключение происходит без пароля</li>
+                    <li>После развертывания конфигурации устройство перезагрузится</li>
+                    <li>Если порт 80 не работает, попробуйте другие порты (8080, 443, 8081)</li>
+                </ol>
+                
+                <div class="alert alert-warning mt-3">
+                    <strong>Возможные проблемы:</strong>
+                    <ul class="mb-0">
+                        <li>Брандмауэр блокирует подключение</li>
+                        <li>Устройство не поддерживает удаленное управление</li>
+                        <li>Некорректный IP адрес или порт</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Функция для копирования конфигурации в буфер обмена
+function copyConfig() {
+    const configText = document.querySelector('pre code').innerText;
+    navigator.clipboard.writeText(configText).then(function() {
+        alert('Конфигурация скопирована в буфер обмена');
+    }, function(err) {
+        console.error('Ошибка копирования: ', err);
+    });
+}
+
+// Валидация формы
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('connectionForm');
+    const portInput = document.getElementById('port');
+    
+    form.addEventListener('submit', function(e) {
+        const port = parseInt(portInput.value);
+        if (isNaN(port) || port < 1 || port > 65535) {
+            e.preventDefault();
+            alert('Порт должен быть числом от 1 до 65535');
+            portInput.focus();
+            return false;
+        }
+        
+        // Показываем индикатор загрузки
+        const connectBtn = document.getElementById('connectBtn');
+        connectBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Подключение...';
+        connectBtn.disabled = true;
+    });
+});
+
+function validateForm() {
+    const portInput = document.querySelector('input[name="port"]');
+    const port = parseInt(portInput.value);
+    
+    if (isNaN(port) || port < 1 || port > 65535) {
+        alert('Порт должен быть числом от 1 до 65535');
+        return false;
+    }
+    return true;
+}
+
+// Валидация IP адреса
+document.getElementById('device_ip').addEventListener('input', function(e) {
+    const ip = e.target.value;
+    const ipRegex = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/;
+    
+    if (ip && !ipRegex.test(ip)) {
+        e.target.classList.add('is-invalid');
+    } else {
+        e.target.classList.remove('is-invalid');
+    }
+});
+</script>
+{% endblock %}
