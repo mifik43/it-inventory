@@ -167,7 +167,7 @@
                             </div>
                         </div>
                         <!--<div class="mt-2 text-center">
-                            <a href="{{ url_for('articles_list') }}" class="btn btn-sm btn-outline-danger">Перейти</a>
+                            <a href="{{ url_for('articles.articles_list') }}" class="btn btn-sm btn-outline-danger">Перейти</a>
                         </div>-->
                     </div>
                 </div>
@@ -188,7 +188,7 @@
                             </div>
                         </div>
                         <!--<div class="mt-2 text-center">
-                            <a href="{{ url_for('notes_list') }}" class="btn btn-sm btn-outline-secondary">Перейти</a>
+                            <a href="{{ url_for('notes.notes_list') }}" class="btn btn-sm btn-outline-secondary">Перейти</a>
                         </div>-->
                     </div>
                 </div>
@@ -202,7 +202,7 @@
                         <h5 class="m-0 font-weight-bold text-primary">
                             <i class="bi bi-calendar-week"></i> Ближайшие смены
                         </h5>
-                        <a href="{{ url_for('shifts_list') }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ url_for('shifts.shifts_list') }}" class="btn btn-sm btn-outline-primary">
                             Все смены <i class="bi bi-arrow-right"></i>
                         </a>
                     </div>
@@ -260,7 +260,7 @@
                         <div class="text-center py-3">
                             <i class="bi bi-calendar-x display-1 text-muted"></i>
                             <p class="text-muted mt-2">На ближайшие дни смен не запланировано</p>
-                            <a href="{{ url_for('add_shift') }}" class="btn btn-primary btn-sm">
+                            <a href="{{ url_for('shifts.add_shift') }}" class="btn btn-primary btn-sm">
                                 <i class="bi bi-plus-circle"></i> Добавить смену
                             </a>
                         </div>
@@ -277,7 +277,7 @@
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center">
                         <h6 class="m-0 font-weight-bold text-primary">Последние добавленные устройства</h6>
-                        <a href="{{ url_for('devices') }}" class="btn btn-sm btn-primary">Все устройства</a>
+                        <a href="{{ url_for('devices.devices') }}" class="btn btn-sm btn-primary">Все устройства</a>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -388,7 +388,7 @@
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center">
                         <h6 class="m-0 font-weight-bold text-success">Активные провайдеры</h6>
-                        <a href="{{ url_for('providers') }}" class="btn btn-sm btn-success">Все провайдеры</a>
+                        <a href="{{ url_for('providers.providers') }}" class="btn btn-sm btn-success">Все провайдеры</a>
                     </div>
                     <div class="card-body">
                         {% for provider in active_providers %}
@@ -413,7 +413,7 @@
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center">
                         <h6 class="m-0 font-weight-bold text-info">Последние точки WiFi</h6>
-                        <a href="{{ url_for('guest_wifi') }}" class="btn btn-sm btn-info">Все точки</a>
+                        <a href="{{ url_for('guest_wifi.guest_wifi') }}" class="btn btn-sm btn-info">Все точки</a>
                     </div>
                     <div class="card-body">
                         {% for wifi in recent_wifi %}

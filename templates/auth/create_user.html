@@ -2,46 +2,52 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="col-md-8">
         <div class="card">
             <div class="card-header">
                 <h4 class="card-title mb-0">Создание пользователя</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Имя пользователя *</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Пароль *</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                        <div class="form-text">Пароль должен быть не менее 6 символов</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Роль *</label>
-                        <select class="form-select" id="role" name="role" required>
-                            <option value="user">Обычный пользователь</option>
-                            <option value="admin">Администратор</option>
-                        </select>
-                    </div>
+                    <div class="row">
+                        <!-- Левая колонка - основная форма -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Имя пользователя *</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
 
-                    {% for role in roles %}
-                    <div>
-                        <input type="checkbox" name="{{role.id}}"
-                            value="{{role.id}}" {{role.checked}}/>
-                        <label for="{{role.name}}">{{role.name}}</label>
-                        <label for="{{role.name}}">{{role.description}}</label>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Пароль *</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <div class="form-text">Пароль должен быть не менее 6 символов</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Роль *</label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="user">Обычный пользователь</option>
+                                    <option value="admin">Администратор</option>
+                                </select>
+                            </div>
+                            
+                            <div class="btn-group" role="group">
+                                <button type="submit" class="btn btn-primary">Сохранить</button>
+                                <a href="{{ url_for('users.users') }}" class="btn btn-outline-secondary">Отмена</a>
+                            </div>
+                        </div>
+
+                        <!-- Правая колонка - роли с прокруткой -->
+                        <div class="col-md-6">
+                            {% include "auth/roles.html" %}
+                        </div>
                     </div>
-                    {% endfor %}
-                    
-                    <button type="submit" class="btn btn-primary">Создать пользователя</button>
-                    <a href="{{ url_for('users.users') }}" class="btn btn-secondary">Отмена</a>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+{% include "auth/roles_styles.html" %}
+
 {% endblock %}

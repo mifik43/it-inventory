@@ -67,9 +67,9 @@
             <div class="d-flex justify-content-between">
                 <div>
                     <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-                    <a href="{{ url_for('shifts_list') }}" class="btn btn-secondary">Отмена</a>
+                    <a href="{{ url_for('shifts.shifts_list') }}" class="btn btn-secondary">Отмена</a>
                 </div>
-                <a href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
+                <a href="{{ url_for('shifts.delete_shift', shift_id=shift.id) }}" 
                    class="btn btn-danger"
                    onclick="return confirm('Удалить смену для {{ shift.username }} на {{ shift.shift_date }}?')">
                     <i class="bi bi-trash"></i> Удалить смену

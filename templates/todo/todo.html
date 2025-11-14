@@ -19,17 +19,17 @@
                     <p class="text-muted">Управление задачами по обслуживанию организаций</p>
                 </div>
                 <div class="btn-group">
-    <a href="{{ url_for('add_todo') }}" class="btn btn-primary">
+    <a href="{{ url_for('todo.add_todo') }}" class="btn btn-primary">
         <i class="bi bi-plus-circle"></i> Добавить задачу
     </a>
     
     {% if show_completed %}
-        <a href="{{ url_for('todo', show_completed='false') }}" 
+        <a href="{{ url_for('todo.todo', show_completed='false') }}" 
            class="btn btn-outline-secondary">
             <i class="bi bi-eye-slash"></i> Скрыть выполненные
         </a>
     {% else %}
-        <a href="{{ url_for('todo', show_completed='true') }}" 
+        <a href="{{ url_for('todo.todo', show_completed='true') }}" 
            class="btn btn-outline-secondary">
             <i class="bi bi-eye"></i> Показать выполненные
         </a>
@@ -229,14 +229,14 @@
                                     <td>
                                         <div class="btn-group btn-group-sm">
                                             {% if not task.is_completed %}
-                                                <a href="{{ url_for('complete_todo', todo_id=task.id) }}" 
+                                                <a href="{{ url_for('todo.complete_todo', todo_id=task.id) }}" 
                                                    class="btn btn-outline-success" 
                                                    title="Отметить как выполненную"
                                                    onclick="return confirm('Отметить задачу \"{{ task.title }}\" как выполненную?')">
                                                     <i class="bi bi-check-lg"></i>
                                                 </a>
                                             {% else %}
-                                                <a href="{{ url_for('reopen_todo', todo_id=task.id) }}" 
+                                                <a href="{{ url_for('todo.reopen_todo', todo_id=task.id) }}" 
                                                    class="btn btn-outline-warning" 
                                                    title="Вернуть в работу"
                                                    onclick="return confirm('Вернуть задачу \"{{ task.title }}\" в работу?')">
@@ -244,12 +244,12 @@
                                                 </a>
                                             {% endif %}
                                             
-                                            <a href="{{ url_for('edit_todo', todo_id=task.id) }}" 
+                                            <a href="{{ url_for('todo.edit_todo', todo_id=task.id) }}" 
                                                class="btn btn-outline-primary" 
                                                title="Редактировать">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="{{ url_for('delete_todo', todo_id=task.id) }}" 
+                                            <a href="{{ url_for('todo.delete_todo', todo_id=task.id) }}" 
                                                class="btn btn-outline-danger" 
                                                title="Удалить"
                                                onclick="return confirm('Вы уверены, что хотите удалить задачу \"{{ task.title }}\"?')">
@@ -279,11 +279,11 @@
                                 Все задачи выполнены или нет активных задач
                             {% endif %}
                         </p>
-                        <a href="{{ url_for('add_todo') }}" class="btn btn-primary mt-3">
+                        <a href="{{ url_for('todo.add_todo') }}" class="btn btn-primary mt-3">
                             <i class="bi bi-plus-circle"></i> Создать задачу
                         </a>
                         {% if not show_completed %}
-                            <a href="{{ url_for('toggle_completed', show_completed=true) }}" class="btn btn-outline-secondary mt-3">
+                            <a href="{{ url_for('todo.toggle_completed', show_completed=true) }}" class="btn btn-outline-secondary mt-3">
                                 <i class="bi bi-eye"></i> Показать выполненные задачи
                             </a>
                         {% endif %}
@@ -299,7 +299,7 @@
                                 <strong>Есть выполненные задачи:</strong> 
                                 Сейчас скрыто {{ all_tasks_completed }} выполненных задач
                             </div>
-<a href="{{ url_for('todo', show_completed='true') }}" class="btn btn-sm btn-info">
+<a href="{{ url_for('todo.todo', show_completed='true') }}" class="btn btn-sm btn-info">
     Показать все задачи
 </a>
                         </div>
@@ -321,7 +321,7 @@
             <i class="bi bi-upload"></i> Импорт из Excel
         </a>
         {% endif %}
-        <a href="{{ url_for('add_todo') }}" class="btn btn-primary">
+        <a href="{{ url_for('todo.add_todo') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Добавить задачу
         </a>
     </div>
