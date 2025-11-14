@@ -39,7 +39,6 @@ class MenuItem(DrawableMenuItem):
 
 
     def draw(self, url):
-        print (f"Рисуем элемент меню {self.name}")
         active = "active" if self.is_active(url) else ""
 
         if not self.is_allowed():
@@ -51,7 +50,7 @@ class MenuItem(DrawableMenuItem):
                 <a
                     class="{self.button_class} {active}"
                     href="{ "index" if self.url is None or self.url == '' else url_for(self.url) }">
-                    <i class="bi {self.icon}"></i>{self.name}
+                    <i class="bi {self.icon}"></i> {self.name}
                 </a>
             </li>
         """
@@ -93,7 +92,7 @@ class DropDownMenu(SimpleMenu):
                 class="nav-link dropdown-toggle 
                 {active}
                 href="#" data-bs-toggle="dropdown">
-                <i class="bi {self.icon}"></i>{self.name}
+                <i class="bi {self.icon}"></i> {self.name}
             </a>
             <ul class="dropdown-menu">
                 {super().draw(url)}
