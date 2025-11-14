@@ -1,0 +1,166 @@
+{% extends "base/base.html" %}
+
+{% block title %}Импорт WTware{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-terminal me-2"></i>Импорт WTware</h2>
+    <a href="{{ url_for('wtware_list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-cloud-upload me-2"></i>Загрузка конфигураций WTware
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Инструкция по импорту:</h6>
+                    <ul class="mb-0">
+                        <li>Используйте шаблон для правильного формата данных</li>
+                        <li>Обязательное поле: <strong>Название конфигурации</strong></li>
+                        <li>Поддерживаются файлы .xlsx и .xls</li>
+                        <li>Для портов и разрешений используйте числовые значения</li>
+                    </ul>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="excel_file" class="form-label">Выберите Excel файл:</label>
+                        <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
+                        <div class="form-text">Поддерживаются файлы .xlsx и .xls</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('wtware_list') }}" class="btn btn-secondary me-md-2">Отмена</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload me-1"></i> Импортировать данные
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-list-check me-2"></i>Структура данных WTware
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Поле</th>
+                                <th>Тип</th>
+                                <th>Обязательно</th>
+                                <th>Описание</th>
+                                <th>Пример</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>name</strong></td>
+                                <td>текст</td>
+                                <td><span class="badge bg-danger">ДА</span></td>
+                                <td>Название конфигурации</td>
+                                <td>Основная конфигурация</td>
+                            </tr>
+                            <tr>
+                                <td>version</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Версия WTware</td>
+                                <td>5.6.20</td>
+                            </tr>
+                            <tr>
+                                <td>server_ip</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>IP адрес сервера</td>
+                                <td>192.168.1.100</td>
+                            </tr>
+                            <tr>
+                                <td>server_port</td>
+                                <td>число</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Порт сервера</td>
+                                <td>8080</td>
+                            </tr>
+                            <tr>
+                                <td>screen_width</td>
+                                <td>число</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Ширина экрана</td>
+                                <td>1024</td>
+                            </tr>
+                            <tr>
+                                <td>screen_height</td>
+                                <td>число</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Высота экрана</td>
+                                <td>768</td>
+                            </tr>
+                            <tr>
+                                <td>auto_start</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Программа автозапуска</td>
+                                <td>explorer.exe</td>
+                            </tr>
+                            <tr>
+                                <td>network_drive</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Сетевой диск</td>
+                                <td>\\server\share</td>
+                            </tr>
+                            <tr>
+                                <td>printer_config</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Настройка принтера</td>
+                                <td>\\printserver\printer1</td>
+                            </tr>
+                            <tr>
+                                <td>startup_script</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Скрипт запуска</td>
+                                <td>net use Z: \\server\share</td>
+                            </tr>
+                            <tr>
+                                <td>shutdown_script</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Скрипт завершения</td>
+                                <td>taskkill /im program.exe</td>
+                            </tr>
+                            <tr>
+                                <td>status</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Статус конфигурации</td>
+                                <td>Активна</td>
+                            </tr>
+                            <tr>
+                                <td>notes</td>
+                                <td>текст</td>
+                                <td><span class="badge bg-secondary">нет</span></td>
+                                <td>Примечания</td>
+                                <td>Для офисных тонких клиентов</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

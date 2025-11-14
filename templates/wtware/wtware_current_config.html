@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+
+{% block title %}Текущая конфигурация WTware{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-terminal me-2"></i>Текущая конфигурация WTware</h2>
+    <a href="{{ url_for('wtware_connect', config_id=wtware_config.id) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    Устройство: {{ device_ip }} | Конфигурация: {{ wtware_config.name }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 
+                    Текущая конфигурация, загруженная с устройства {{ device_ip }}
+                </div>
+                
+                <pre class="p-3 bg-light" style="max-height: 600px; overflow-y: auto;"><code>{{ current_config }}</code></pre>
+                
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary" onclick="copyConfig()">
+                        <i class="bi bi-clipboard"></i> Копировать в буфер обмена
+                    </button>
+                    <a href="data:text/plain;charset=utf-8,{{ current_config | urlencode }}" 
+                       download="wtware_current_config_{{ device_ip }}.conf" 
+                       class="btn btn-outline-success">
+                        <i class="bi bi-download"></i> Скачать файл
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyConfig() {
+    const configText = document.querySelector('pre code').innerText;
+    navigator.clipboard.writeText(configText).then(function() {
+        alert('Конфигурация скопирована в буфер обмена');
+    }, function(err) {
+        console.error('Ошибка копирования: ', err);
+    });
+}
+</script>
+{% endblock %}

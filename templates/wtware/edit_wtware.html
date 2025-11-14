@@ -1,0 +1,128 @@
+{% extends "base/base.html" %}
+
+{% block title %}Редактировать конфигурацию WTware{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-terminal me-2"></i>Редактировать конфигурацию WTware</h2>
+    <a href="{{ url_for('wtware_list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">Основная информация</h5>
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Название конфигурации *</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ wtware_config.name }}" required>
+                        <div class="form-text">Уникальное название для идентификации конфигурации</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="version" class="form-label">Версия WTware</label>
+                        <input type="text" class="form-control" id="version" name="version" value="{{ wtware_config.version or '' }}" placeholder="5.6.20">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Статус</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Активна" {% if wtware_config.status == 'Активна' %}selected{% endif %}>Активна</option>
+                            <option value="Неактивна" {% if wtware_config.status == 'Неактивна' %}selected{% endif %}>Неактивна</option>
+                            <option value="Тестируется" {% if wtware_config.status == 'Тестируется' %}selected{% endif %}>Тестируется</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5 class="mb-3">Серверные настройки</h5>
+                    
+                    <div class="mb-3">
+                        <label for="server_ip" class="form-label">IP адрес сервера</label>
+                        <input type="text" class="form-control" id="server_ip" name="server_ip" value="{{ wtware_config.server_ip or '' }}" placeholder="192.168.1.100">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="server_port" class="form-label">Порт сервера</label>
+                        <input type="number" class="form-control" id="server_port" name="server_port" value="{{ wtware_config.server_port or 80 }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="network_drive" class="form-label">Сетевой диск</label>
+                        <input type="text" class="form-control" id="network_drive" name="network_drive" value="{{ wtware_config.network_drive or '' }}" placeholder="\\server\share">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="printer_config" class="form-label">Настройка принтера</label>
+                        <input type="text" class="form-control" id="printer_config" name="printer_config" value="{{ wtware_config.printer_config or '' }}" placeholder="\\printserver\printer1">
+                    </div>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">Настройки экрана</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="screen_width" class="form-label">Ширина экрана</label>
+                                <input type="number" class="form-control" id="screen_width" name="screen_width" value="{{ wtware_config.screen_width or 1024 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="screen_height" class="form-label">Высота экрана</label>
+                                <input type="number" class="form-control" id="screen_height" name="screen_height" value="{{ wtware_config.screen_height or 768 }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="auto_start" class="form-label">Автозапуск</label>
+                        <textarea class="form-control" id="auto_start" name="auto_start" rows="3" placeholder="Программа или команда для автозапуска">{{ wtware_config.auto_start or '' }}</textarea>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5 class="mb-3">Скрипты</h5>
+                    
+                    <div class="mb-3">
+                        <label for="startup_script" class="form-label">Скрипт запуска</label>
+                        <textarea class="form-control" id="startup_script" name="startup_script" rows="3" placeholder="Скрипт, выполняемый при запуске">{{ wtware_config.startup_script or '' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="shutdown_script" class="form-label">Скрипт завершения</label>
+                        <textarea class="form-control" id="shutdown_script" name="shutdown_script" rows="3" placeholder="Скрипт, выполняемый при завершении">{{ wtware_config.shutdown_script or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="custom_config" class="form-label">Пользовательская конфигурация</label>
+                <textarea class="form-control" id="custom_config" name="custom_config" rows="6" placeholder="Дополнительные параметры конфигурации в формате INI">{{ wtware_config.custom_config or '' }}</textarea>
+                <div class="form-text">Дополнительные параметры в формате ключ=значение</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Примечания</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Дополнительная информация о конфигурации...">{{ wtware_config.notes or '' }}</textarea>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('wtware_list') }}" class="btn btn-secondary me-md-2">Отмена</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Сохранить изменения
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Заявки из Telegram{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-telegram me-2"></i>Заявки из Telegram</h2>
+    <div>
+        {% if session.role == 'admin' %}
+        <a href="{{ url_for('setup_telegram_webhook') }}" class="btn btn-outline-info me-2">
+            <i class="bi bi-gear"></i> Настроить Webhook
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-chat-dots fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ stats.total or 0 }}</h4>
+                        <small>Всего заявок</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-clock fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ stats.new_count or 0 }}</h4>
+                        <small>Новых</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-person-check fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ stats.assigned_count or 0 }}</h4>
+                        <small>Назначенных</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ stats.completed_count or 0 }}</h4>
+                        <small>Завершенных</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4 mb-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-people fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ stats.unique_users or 0 }}</h4>
+                        <small>Уникальных пользователей</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Фильтры</h6>
+    </div>
+    <div class="card-body">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('telegram_requests') }}" 
+               class="btn btn-outline-primary {% if not status_filter %}active{% endif %}">
+                Все
+            </a>
+            <a href="{{ url_for('telegram_requests', status='new') }}" 
+               class="btn btn-outline-warning {% if status_filter == 'new' %}active{% endif %}">
+                Новые
+            </a>
+            <a href="{{ url_for('telegram_requests', status='assigned') }}" 
+               class="btn btn-outline-info {% if status_filter == 'assigned' %}active{% endif %}">
+                Назначенные
+            </a>
+            <a href="{{ url_for('telegram_requests', status='completed') }}" 
+               class="btn btn-outline-success {% if status_filter == 'completed' %}active{% endif %}">
+                Завершенные
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Список заявок -->
+<div class="card shadow">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">Список заявок</h6>
+        <span class="badge bg-primary">Всего: {{ requests|length }}</span>
+    </div>
+    <div class="card-body">
+        {% if requests %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Пользователь</th>
+                        <th>Сообщение</th>
+                        <th>Статус</th>
+                        <th>Категория</th>
+                        <th>Дата</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>{{ req.id }}</td>
+                        <td>
+                            <div>
+                                <strong>
+                                    {% if req.first_name or req.last_name %}
+                                        {{ req.first_name or '' }} {{ req.last_name or '' }}
+                                    {% else %}
+                                        {{ req.username or 'Без имени' }}
+                                    {% endif %}
+                                </strong>
+                                {% if req.username %}
+                                <br><small class="text-muted">@{{ req.username }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="message-preview">
+                                {{ req.message_text|truncate(100) }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if req.status == 'new' %}bg-warning
+                                {% elif req.status == 'assigned' %}bg-info
+                                {% elif req.status == 'completed' %}bg-success
+                                {% else %}bg-secondary{% endif %}">
+                                {{ req.status }}
+                            </span>
+                            {% if req.assigned_username %}
+                            <br><small class="text-muted">{{ req.assigned_username }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.category %}
+                            <span class="badge bg-light text-dark">{{ req.category }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ req.created_at[:16] }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('view_telegram_request', request_id=req.id) }}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">Заявки не найдены</h4>
+            <p class="text-muted">Нет заявок, соответствующих выбранным фильтрам</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.message-preview {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
+{% endblock %}

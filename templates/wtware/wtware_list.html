@@ -1,0 +1,267 @@
+
+{% extends "base/base.html" %}
+
+{% block title %}WTware Конфигурации{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-terminal me-2"></i>WTware Конфигурации</h2>
+    <div>
+        <a href="{{ url_for('export_wtware') }}" class="btn btn-success me-2">
+            <i class="bi bi-download"></i> Экспорт в Excel
+        </a>
+        {% if session.role == 'admin' %}
+        <a href="{{ url_for('import_wtware') }}" class="btn btn-primary me-2">
+            <i class="bi bi-upload"></i> Импорт из Excel
+        </a>
+        <a href="{{ url_for('add_wtware') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Добавить конфигурацию
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Поиск -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form class="d-flex" action="{{ url_for('wtware_search') }}" method="GET">
+            <input type="text" name="q" class="form-control me-2" placeholder="Поиск конфигураций..." value="{{ search_query or '' }}">
+            <button type="submit" class="btn btn-outline-secondary">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-terminal fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ configs|length }}</h4>
+                        <small>Всего конфигураций</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ configs|selectattr('status', 'equalto', 'Активна')|list|length }}</h4>
+                        <small>Активных</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-server fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ configs|selectattr('server_ip')|list|length }}</h4>
+                        <small>С настроенным сервером</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-code-slash fs-3 me-3"></i>
+                    <div>
+                        <h4 class="mb-0">{{ configs|selectattr('startup_script')|list|length }}</h4>
+                        <small>Со скриптами</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Таблица конфигураций -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Название</th>
+                        <th>Версия</th>
+                        <th>Сервер</th>
+                        <th>Разрешение</th>
+                        <th>Статус</th>
+                        <th>Автозапуск</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wtware_config in configs %}
+                    <tr>
+                        <td>
+                            <strong>{{ wtware_config.name }}</strong>
+                            {% if wtware_config.notes %}
+                            <br><small class="text-muted">{{ wtware_config.notes[:50] }}{% if wtware_config.notes|length > 50 %}...{% endif %}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ wtware_config.version or 'Не указана' }}</td>
+                        <td>
+                            {% if wtware_config.server_ip %}
+                            <code>{{ wtware_config.server_ip }}{% if wtware_config.server_port %}:{{ wtware_config.server_port }}{% endif %}</code>
+                            {% else %}
+                            <span class="text-muted">Не настроен</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if wtware_config.screen_width and wtware_config.screen_height %}
+                            {{ wtware_config.screen_width }}×{{ wtware_config.screen_height }}
+                            {% else %}
+                            <span class="text-muted">По умолчанию</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if wtware_config.status == 'Активна' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ wtware_config.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if wtware_config.auto_start %}
+                            <code class="small">{{ wtware_config.auto_start[:30] }}{% if wtware_config.auto_start|length > 30 %}...{% endif %}</code>
+                            {% else %}
+                            <span class="text-muted">Не настроен</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="#" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#configModal{{ wtware_config.id }}">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('download_wtware_config', config_id=wtware_config.id) }}" class="btn btn-outline-success" title="Скачать конфиг">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <a href="{{ url_for('wtware_connect', config_id=wtware_config.id) }}" class="btn btn-outline-warning" title="Подключиться к устройству">
+                                    <i class="bi bi-plug"></i>
+                                </a>
+                                {% if session.role == 'admin' %}
+                                <a href="{{ url_for('edit_wtware', config_id=wtware_config.id) }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{{ url_for('delete_wtware', config_id=wtware_config.id) }}" 
+                                   class="btn btn-outline-danger delete-confirm" 
+                                   data-confirm="Вы уверены, что хотите удалить конфигурацию '{{ wtware_config.name }}'?">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+
+                            <!-- Modal -->
+                            <div class="modal fade" id="configModal{{ wtware_config.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Конфигурация WTware - {{ wtware_config.name }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6>Основная информация</h6>
+                                                    <p><strong>Название:</strong> {{ wtware_config.name }}</p>
+                                                    <p><strong>Версия:</strong> {{ wtware_config.version or 'Не указана' }}</p>
+                                                    <p><strong>Статус:</strong> 
+                                                        <span class="badge {% if wtware_config.status == 'Активна' %}bg-success{% else %}bg-secondary{% endif %}">
+                                                            {{ wtware_config.status }}
+                                                        </span>
+                                                    </p>
+                                                    <p><strong>Разрешение экрана:</strong> 
+                                                        {% if wtware_config.screen_width and wtware_config.screen_height %}
+                                                        {{ wtware_config.screen_width }}×{{ wtware_config.screen_height }}
+                                                        {% else %}
+                                                        По умолчанию
+                                                        {% endif %}
+                                                    </p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Серверные настройки</h6>
+                                                    <p><strong>IP сервера:</strong> {{ wtware_config.server_ip or 'Не настроен' }}</p>
+                                                    <p><strong>Порт:</strong> {{ wtware_config.server_port or '80' }}</p>
+                                                    <p><strong>Сетевой диск:</strong> {{ wtware_config.network_drive or 'Не настроен' }}</p>
+                                                    <p><strong>Принтер:</strong> {{ wtware_config.printer_config or 'Не настроен' }}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if wtware_config.auto_start %}
+                                            <hr>
+                                            <h6>Автозапуск</h6>
+                                            <pre class="bg-light p-2"><code>{{ wtware_config.auto_start }}</code></pre>
+                                            {% endif %}
+                                            
+                                            {% if wtware_config.startup_script or wtware_config.shutdown_script %}
+                                            <hr>
+                                            <h6>Скрипты</h6>
+                                            {% if wtware_config.startup_script %}
+                                            <p><strong>Скрипт запуска:</strong></p>
+                                            <pre class="bg-light p-2 small"><code>{{ wtware_config.startup_script }}</code></pre>
+                                            {% endif %}
+                                            {% if wtware_config.shutdown_script %}
+                                            <p><strong>Скрипт завершения:</strong></p>
+                                            <pre class="bg-light p-2 small"><code>{{ wtware_config.shutdown_script }}</code></pre>
+                                            {% endif %}
+                                            {% endif %}
+                                            
+                                            {% if wtware_config.custom_config %}
+                                            <hr>
+                                            <h6>Пользовательская конфигурация</h6>
+                                            <pre class="bg-light p-2"><code>{{ wtware_config.custom_config }}</code></pre>
+                                            {% endif %}
+                                            
+                                            {% if wtware_config.notes %}
+                                            <hr>
+                                            <h6>Примечания</h6>
+                                            <p>{{ wtware_config.notes }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                            {% if session.role == 'admin' %}
+                                            <a href="{{ url_for('edit_wtware', config_id=wtware_config.id) }}" class="btn btn-primary">
+                                                <i class="bi bi-pencil"></i> Редактировать
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-terminal fs-1 d-block mb-2"></i>
+                            Конфигурации WTware не найдены
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Ссылка на историю развертываний -->
+<div class="mt-3 text-center">
+    <a href="{{ url_for('wtware_deployments') }}" class="btn btn-outline-info">
+        <i class="bi bi-clock-history me-2"></i>Посмотреть историю развертываний
+    </a>
+</div>
+{% endblock %}
