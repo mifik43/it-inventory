@@ -35,6 +35,8 @@ from wtware_client import WTwareClient, generate_wtware_config, test_wtware_conn
 from script_utils import execute_script, save_script_result, get_script_results
 
 from network_scanner import NetworkScanner
+
+from templates.base.navigation import create_main_menu
 # Глобальный объект сканера
 network_scanner = NetworkScanner()
 
@@ -81,6 +83,12 @@ def utility_processor():
         from wtware_ssh import generate_wtware_config as gen_config
         return gen_config(dict(wtware_config))
     return dict(generate_wtware_config=generate_wtware_config)
+
+@app.context_processor
+def inject_common_variables():
+    return {
+        'menu': create_main_menu()
+    }
 
 @app.route('/')
 def index():
