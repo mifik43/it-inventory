@@ -74,6 +74,7 @@
     </li>
     
     <!-- TODO -->
+     {% if 'todo_manage' in session.permissions or 'todo_read' in session.permissions %}
     <li class="nav-item">
         <a class="nav-link {% if request.endpoint in ['todo.todo', 'todo.add_todo', 'todo.edit_todo'] %}active{% endif %}" 
            href="{{ url_for('todo.todo') }}">
@@ -81,8 +82,10 @@
             Задачи
         </a>
     </li>
-    
+    {% endif %}
+
     <!-- Shifts -->
+      {% if 'shifts_manage' in session.permissions or 'shifts_read' in session.permissions %}
     <li class="nav-item">
         <a class="nav-link {% if request.endpoint in ['shifts.shifts_list', 'shifts.add_shift', 'shifts.edit_shift'] %}active{% endif %}" 
            href="{{ url_for('shifts.shifts_list') }}">
@@ -90,6 +93,7 @@
             График смен
         </a>
     </li>
+    {% endif %}
         <!-- roles -->
     {% if 'roles_manage' in session.permissions or 'roles_read' in session.permissions %}
     <li class="nav-item">
