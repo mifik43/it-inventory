@@ -9,8 +9,8 @@
     </li>
     
     <!-- Serviced Items Dropdown -->
-    <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle {% if request.endpoint in ['devices', 'add_device', 'edit_device', 'providers', 'add_provider', 'edit_provider', 'cubes', 'add_cube', 'edit_cube', 'organizations', 'add_organization', 'edit_organization', 'guest_wifi', 'add_guest_wifi', 'edit_guest_wifi'] %}active{% endif %}" 
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle {% if request.endpoint in ['devices', 'add_device', 'edit_device', 'providers', 'add_provider', 'edit_provider', 'cubes', 'add_cube', 'edit_cube', 'organizations', 'add_organization', 'edit_organization', 'guest_wifi', 'add_guest_wifi', 'edit_guest_wifi', 'wtware_list', 'add_wtware', 'edit_wtware'] %}active{% endif %}" 
        href="#" data-bs-toggle="dropdown">
         <i class="bi bi-tools"></i>
         На обслуживании
@@ -28,13 +28,25 @@
                 <i class="bi bi-wifi"></i> Провайдеры
             </a>
         </li>
-        <!-- ДОБАВЛЯЕМ ГОСТЕВОЙ WIFI -->
         <li>
             <a class="dropdown-item {% if request.endpoint in ['guest_wifi', 'add_guest_wifi', 'edit_guest_wifi'] %}active{% endif %}" 
                href="{{ url_for('guest_wifi') }}">
                 <i class="bi bi-router"></i> Гостевой WiFi
             </a>
         </li>
+        <!-- ДОБАВЛЯЕМ WTWARE -->
+<li>
+    <a class="dropdown-item {% if request.endpoint in ['wtware_list', 'add_wtware', 'edit_wtware'] %}active{% endif %}" 
+       href="{{ url_for('wtware_list') }}">
+        <i class="bi bi-terminal"></i> WTware Конфигурации
+    </a>
+</li>
+<li>
+    <a class="dropdown-item {% if request.endpoint == 'wtware_deployments' %}active{% endif %}" 
+       href="{{ url_for('wtware_deployments') }}">
+        <i class="bi bi-clock-history"></i> История развертываний
+    </a>
+</li>
         <li>
             <a class="dropdown-item {% if request.endpoint in ['cubes', 'add_cube', 'edit_cube'] %}active{% endif %}" 
                href="{{ url_for('cubes') }}">
@@ -90,6 +102,18 @@
             График смен
         </a>
     </li>
+    <li class="nav-item">
+    <a class="nav-link" href="{{ url_for('network_scan') }}">
+        <i class="fas fa-network-wired"></i> Сканирование сети
+    </a>
+</li>
+    {% if session.role == 'admin' %}
+<li class="nav-item">
+    <a class="nav-link" href="{{ url_for('scripts_list') }}">
+        <i class="fas fa-terminal"></i> Скрипты
+    </a>
+</li>
+{% endif %}
         <!-- roles -->
     <li class="nav-item">
         <a class="nav-link {% if request.endpoint in ['roles', 'create_role', 'edir_role'] %}active{% endif %}" 
