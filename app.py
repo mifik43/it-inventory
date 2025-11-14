@@ -2492,7 +2492,7 @@ def get_script_results(db, script_id, limit=10):
         LIMIT ?
     ''', (script_id, limit)).fetchall()
 
-# ========== МАРШРУТЫ ДЛЯ СКРИПТОВ ==========
+
 
 # ========== МАРШРУТЫ ДЛЯ СКРИПТОВ ==========
 
@@ -2515,7 +2515,7 @@ def script_list():  # Изменили имя с scripts_list на script_list
 
 @app.route('/add_script', methods=['GET', 'POST'])
 @admin_required
-def script_add():  # Изменили имя с add_script на script_add
+def add_script():  # Изменили имя с add_script на script_add
     """Добавление нового скрипта"""
     if request.method == 'POST':
         name = request.form['name']
