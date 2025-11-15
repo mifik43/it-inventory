@@ -1,7 +1,9 @@
 import enum
 
-import templates.roles.database_roles as db_helper
+from templates.base.db import Base, get_db_engine
 
+from sqlalchemy import String, Column, Table, ForeignKey, TypeDecorator, select
+from sqlalchemy.orm import Mapped, mapped_column, relationship, Session
 
 # список всех разрешений
 class Permissions(enum.StrEnum):
@@ -86,13 +88,19 @@ class Permissions(enum.StrEnum):
 
 # класс для работы с ролями
 # каждая роль имеет уникальный id, имя и список разрешений
-class Role:
-    def __init__(self, id, name, permissions = set(), description = str()):
-        self.id = id
-        self.name = name
-        self.permissions:Permissions = permissions
-        self.description = description
-        self.checked = ""
+class Role(Base):
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(), unique=True, nullable=False)
+    description: Mapped[str] = mapped_column(String())
+    permissions = set()
+    checked = ""
+
+
+    # def __init__(self, id, name, permissions = set(), description = str()):
+    #     self.name = name
+    #     self.permissions:Permissions = permissions
+    #     self.checked = ""
     
     def __str__(self):
         perms:str = ""
@@ -138,3 +146,22 @@ def create_read_only_role():
             role.add_permission(p)
 
     return role
+
+def find_role_by_name(name:str, session:Session):
+    return session.scalar(select(Role).where(Role.name == name))
+
+def init_default_roles():
+    role = find_role_by_name("SuperAdmin")
+    if role is not None:
+        print("Роль SuperAdmin найдена")
+        return
+    
+    print("Роль SuperAdmin не найдена. Создаём")
+    role = create_full_access_role()
+    reader = create_read_only_role()
+
+    with Session(get_db_engine()) as session:
+        session.add(role)
+        session.add(reader)
+        session.commit()
+

@@ -7,6 +7,7 @@ from alembic import context
 
 from templates.base.db import Base
 from templates.auth.user import User
+from templates.roles.permissions import Role
 
 import os
 # this is the Alembic Config object, which provides
