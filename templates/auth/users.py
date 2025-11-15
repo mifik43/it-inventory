@@ -8,6 +8,8 @@ from templates.roles.database_roles import read_all_roles, read_roles_for_user, 
 
 from templates.roles.permissions import Permissions, Role
 
+from templates.auth.user import User, find_user_by_name
+
 bluprint_user_routes = Blueprint("users", __name__)
 
 # обновление разрешения пользователя, на случай, если он настраивал сам себя
@@ -21,16 +23,14 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+
+        user:User = find_user_by_name(username)
+
         db = get_db()
-        user = db.execute(
-            'SELECT * FROM users WHERE username = ?', (username,)
-        ).fetchone()
-        
-        if user and check_password_hash(user['password_hash'], password):
+        if user and user.verify_password(password):
             session['logged_in'] = True
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            session['role'] = user['role']
+            session['user_id'] = user.id
+            session['username'] = user.name
             update_effective_permissions()
             flash('Вы успешно вошли в систему!', 'success')
             return redirect(url_for('index'))
