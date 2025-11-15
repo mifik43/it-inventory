@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Все сетевые устройства</h1>
         <div class="btn-group">
-            <a href="{{ url_for('network_scan') }}" class="btn btn-primary">
+            <a href="{{ url_for('network_scan.network_scan') }}" class="btn btn-primary">
                 <i class="fas fa-radar"></i> Новое сканирование
             </a>
             <button class="btn btn-outline-success" onclick="exportAllToCSV()">
@@ -219,7 +219,7 @@
                 <i class="fas fa-search fa-3x text-muted mb-3"></i>
                 <h5 class="text-muted">Устройства не найдены</h5>
                 <p class="text-muted">Запустите сканирование сети для обнаружения устройств</p>
-                <a href="{{ url_for('network_scan') }}" class="btn btn-primary">
+                <a href="{{ url_for('network_scan.network_scan') }}" class="btn btn-primary">
                     <i class="fas fa-radar"></i> Запустить сканирование
                 </a>
             </div>

@@ -15,16 +15,16 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('start_network_scan') }}">
+                    <form method="POST" action="{{ url_for('network_scan.start_network_scan') }}" id="scan-form">
                         <div class="mb-3">
                             <label for="scan_name" class="form-label">Название сканирования</label>
                             <input type="text" class="form-control" id="scan_name" name="scan_name" 
-                                   value="Сканирование {{ now.strftime('%Y-%m-%d %H:%M') if now else '' }}">
+                                   value="Сканирование">
                         </div>
                         
                         <div class="mb-3">
                             <label for="scan_type" class="form-label">Тип сканирования</label>
-                            <select class="form-select" id="scan_type" name="scan_type" required>
+                            <select class="form-select" id="scan_type" name="scan_type" required onchange="updateTargetField()">
                                 <option value="ping">Ping сканирование</option>
                                 <option value="arp">ARP сканирование</option>
                             </select>
@@ -34,21 +34,29 @@
                             <label for="target_range" class="form-label">Целевая сеть</label>
                             <input type="text" class="form-control" id="target_range" name="target_range" 
                                    placeholder="192.168.1.0/24" required>
-                            <div class="form-text">
-                                Для ping: укажите сеть (192.168.1.0/24)<br>
-                                Для ARP: оставьте пустым для автоматического определения
+                            <div class="form-text" id="target_help">
+                                <strong>Поддерживаемые форматы:</strong><br>
+                                • CIDR: <code>192.168.1.0/24</code> (вся подсеть)<br>
+                                • Диапазон: <code>192.168.1.1-100</code> (от 1 до 100)<br>
+                                • Одиночный IP: <code>192.168.1.1</code><br>
+                                Для ARP-сканирования оставьте пустым
+                            </div>
+                            <div id="target_preview" class="mt-2" style="display: none;">
+                                <small class="text-info" id="preview_text"></small>
                             </div>
                         </div>
                         
                         <div class="alert alert-warning">
                             <small>
                                 <i class="fas fa-exclamation-triangle"></i>
-                                Сканирование сети может занять несколько минут. 
-                                Не сканируйте сети без разрешения!
+                                <strong>Рекомендации:</strong><br>
+                                • Для больших сетей (/16 и больше) сканирование может занять много времени<br>
+                                • Используйте диапазоны для ограничения количества проверяемых IP<br>
+                                • Не сканируйте сети без разрешения!
                             </small>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="scan-button">
                             <i class="fas fa-play"></i> Запустить сканирование
                         </button>
                     </form>
@@ -95,12 +103,12 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('network_scan_results', scan_id=scan.id) }}" 
+                                            <a href="{{ url_for('network_scan.network_scan_results', scan_id=scan.id) }}" 
                                                class="btn btn-outline-info">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if session.role == 'admin' %}
-                                            <a href="{{ url_for('delete_network_scan', scan_id=scan.id) }}" 
+                                            <a href="{{ url_for('network_scan.delete_network_scan', scan_id=scan.id) }}" 
                                                class="btn btn-outline-danger"
                                                onclick="return confirm('Удалить сканирование?')">
                                                 <i class="fas fa-trash"></i>
@@ -118,7 +126,7 @@
                     {% endif %}
                     
                     <div class="mt-3">
-                        <a href="{{ url_for('network_devices') }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('network_scan.network_devices') }}" class="btn btn-outline-primary">
                             <i class="fas fa-list"></i> Все устройства
                         </a>
                     </div>
@@ -139,7 +147,7 @@
                     </div>
                     <p class="text-center mb-0" id="progress-text">0%</p>
                     
-                    <form method="POST" action="{{ url_for('stop_network_scan') }}" class="text-center mt-3">
+                    <form method="POST" action="{{ url_for('network_scan.stop_network_scan') }}" class="text-center mt-3">
                         <button type="submit" class="btn btn-sm btn-outline-danger">
                             <i class="fas fa-stop"></i> Остановить сканирование
                         </button>
@@ -152,7 +160,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const scanForm = document.querySelector('form');
+    // Устанавливаем текущую дату в название сканирования
+    const now = new Date();
+    const dateString = now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+    document.getElementById('scan_name').value = 'Сканирование ' + dateString;
+
+    const scanForm = document.getElementById('scan-form');
     const progressCard = document.getElementById('progress-card');
     const progressBar = document.getElementById('scan-progress-bar');
     const progressText = document.getElementById('progress-text');
@@ -163,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function checkProgress() {
-        fetch('{{ url_for("network_scan_progress") }}')
+        fetch('{{ url_for("network_scan.network_scan_progress") }}')
             .then(response => response.json())
             .then(data => {
                 if (data.is_scanning) {
@@ -180,6 +193,105 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Error checking progress:', error);
             });
+    }
+});
+
+function updateTargetField() {
+    const scanType = document.getElementById('scan_type').value;
+    const targetField = document.getElementById('target_range');
+    const targetHelp = document.getElementById('target_help');
+    
+    if (scanType === 'arp') {
+        targetField.required = false;
+        targetField.placeholder = 'Оставьте пустым для автоматического определения';
+        targetField.value = '';
+    } else {
+        targetField.required = true;
+        targetField.placeholder = '192.168.1.0/24 или 192.168.1.1-100';
+    }
+}
+
+function validateNetworkRange(range) {
+    // CIDR формат
+    const cidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/;
+    // Диапазон IP
+    const rangeRegex = /^(\d{1,3}\.){3}\d{1,3}-\d{1,3}$/;
+    // Одиночный IP
+    const singleIpRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    
+    return cidrRegex.test(range) || rangeRegex.test(range) || singleIpRegex.test(range);
+}
+
+function parseNetworkRange(range) {
+    if (!range) return null;
+    
+    const preview = document.getElementById('preview_text');
+    const previewDiv = document.getElementById('target_preview');
+    
+    try {
+        if (range.includes('/')) {
+            // CIDR формат
+            const [network, prefix] = range.split('/');
+            const ipCount = Math.pow(2, (32 - parseInt(prefix)));
+            preview.innerHTML = `<i class="fas fa-info-circle"></i> Будет проверено примерно ${ipCount - 2} IP-адресов`;
+            previewDiv.style.display = 'block';
+            return true;
+        } else if (range.includes('-')) {
+            // Диапазон
+            const [baseIp, end] = range.split('-');
+            const ipParts = baseIp.split('.');
+            const startIp = parseInt(ipParts[3]);
+            const endIp = parseInt(end);
+            const count = endIp - startIp + 1;
+            preview.innerHTML = `<i class="fas fa-info-circle"></i> Будет проверено ${count} IP-адресов (${baseIp} - ${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.${end})`;
+            previewDiv.style.display = 'block';
+            return true;
+        } else if (/^(\d{1,3}\.){3}\d{1,3}$/.test(range)) {
+            // Одиночный IP
+            preview.innerHTML = `<i class="fas fa-info-circle"></i> Будет проверен 1 IP-адрес`;
+            previewDiv.style.display = 'block';
+            return true;
+        } else {
+            preview.innerHTML = `<i class="fas fa-exclamation-triangle text-warning"></i> Неверный формат сети`;
+            previewDiv.style.display = 'block';
+            return false;
+        }
+    } catch (e) {
+        preview.innerHTML = `<i class="fas fa-exclamation-triangle text-danger"></i> Ошибка в формате: ${e.message}`;
+        previewDiv.style.display = 'block';
+        return false;
+    }
+}
+
+// Валидация при вводе
+document.getElementById('target_range').addEventListener('input', function() {
+    const scanType = document.getElementById('scan_type').value;
+    const targetRange = this.value;
+    
+    if (scanType === 'ping' && targetRange) {
+        parseNetworkRange(targetRange);
+    } else {
+        document.getElementById('target_preview').style.display = 'none';
+    }
+});
+
+// Валидация при отправке формы
+document.getElementById('scan-form').addEventListener('submit', function(e) {
+    const scanType = document.getElementById('scan_type').value;
+    const targetRange = document.getElementById('target_range').value;
+    
+    if (scanType === 'ping') {
+        if (!targetRange) {
+            e.preventDefault();
+            alert('Для ping-сканирования необходимо указать сетевой диапазон');
+            return;
+        }
+        
+        if (!validateNetworkRange(targetRange)) {
+            e.preventDefault();
+            alert('Неверный формат сетевого диапазона. Используйте: 192.168.1.0/24 или 192.168.1.1-100');
+            return;
+        }
     }
 });
 </script>

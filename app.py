@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, Response, jsonify
 from templates.base.database import init_db, get_db
 
-
+import ipaddress
 import socket
 from datetime import datetime
 
@@ -16,6 +16,7 @@ from templates.knowledge.notes.notes import bluprint_notes_routes
 from templates.knowledge.articles.articles import bluprint_articles_routes
 from templates.todo.todo import bluprint_todo_routes
 from templates.shifts.shifts import bluprint_shifts_routes
+from templates.network_scan.network_scanner import bluprint_network_scan_routes 
 
 from templates.base.requirements import admin_required, login_required
 
@@ -38,7 +39,7 @@ from network_scanner import NetworkScanner
 
 from templates.base.navigation import create_main_menu
 # Глобальный объект сканера
-network_scanner = NetworkScanner()
+
 
 #from telegram_utils import (
 #    save_telegram_request, get_telegram_requests, update_request_status,
@@ -66,7 +67,7 @@ app.register_blueprint(bluprint_notes_routes)
 app.register_blueprint(bluprint_articles_routes)
 app.register_blueprint(bluprint_todo_routes)
 app.register_blueprint(bluprint_shifts_routes)
-
+app.register_blueprint(bluprint_network_scan_routes)
 
 
 # Инициализация БД при запуске приложения
@@ -1080,241 +1081,6 @@ def script_download(script_id):  # Изменили имя с download_script н
     
     return response
 
-# ========== МАРШРУТЫ ДЛЯ СКАНИРОВАНИЯ СЕТИ ==========
-
-@app.route('/network_scan')
-@login_required
-def network_scan():
-    """Главная страница сканирования сети"""
-    db = get_db()
-    
-    # Получаем последние сканирования
-    scans = db.execute('''
-        SELECT * FROM network_scans 
-        ORDER BY created_at DESC 
-        LIMIT 10
-    ''').fetchall()
-    
-    return render_template('network_scan/network_scan.html', scans=scans)
-
-@app.route('/network_scan/start', methods=['POST'])
-@admin_required
-def start_network_scan():
-    """Запуск сканирования сети"""
-    scan_type = request.form['scan_type']
-    target_range = request.form['target_range']
-    scan_name = request.form.get('scan_name', f'Scan {datetime.now().strftime("%Y-%m-%d %H:%M")}')
-    
-    # Валидация target_range для ping сканирования
-    if scan_type == 'ping':
-        try:
-            ipaddress.ip_network(target_range, strict=False)
-        except:
-            flash('Неверный формат сетевого диапазона. Пример: 192.168.1.0/24', 'error')
-            return redirect(url_for('network_scan'))
-    
-    db = get_db()
-    
-    try:
-        # Создаем запись о сканировании
-        scan_id = db.execute('''
-            INSERT INTO network_scans (name, scan_type, target_range, status)
-            VALUES (?, ?, ?, ?)
-        ''', (scan_name, scan_type, target_range, 'running')).lastrowid
-        db.commit()
-        
-        # Запускаем сканирование в отдельном потоке
-        import threading
-        scan_thread = threading.Thread(
-            target=run_network_scan_background,
-            args=(scan_id, scan_type, target_range)
-        )
-        scan_thread.daemon = True
-        scan_thread.start()
-        
-        flash('Сканирование сети запущено!', 'success')
-        
-    except Exception as e:
-        flash(f'Ошибка при запуске сканирования: {str(e)}', 'error')
-    
-    return redirect(url_for('network_scan'))
-
-def run_network_scan_background(scan_id, scan_type, target_range):
-    """Фоновая задача сканирования сети"""
-    with app.app_context():
-        db = get_db()
-        try:
-            # Запускаем сканирование
-            devices = network_scanner.start_scan(scan_type, target_range)
-            
-            # Сохраняем найденные устройства
-            for device in devices:
-                db.execute('''
-                    INSERT INTO network_devices 
-                    (scan_id, ip_address, mac_address, hostname, vendor, os_info, ports, response_time)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    scan_id,
-                    device['ip_address'],
-                    device.get('mac_address', 'Unknown'),
-                    device.get('hostname', 'Unknown'),
-                    device.get('vendor', 'Unknown'),
-                    device.get('os_info', 'Unknown'),
-                    json.dumps(device.get('ports', [])),
-                    device.get('response_time', 0)
-                ))
-            
-            # Обновляем статус сканирования
-            db.execute('''
-                UPDATE network_scans 
-                SET status = 'completed', 
-                    devices_found = ?,
-                    completed_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            ''', (len(devices), scan_id))
-            db.commit()
-            
-        except Exception as e:
-            # В случае ошибки обновляем статус
-            db.execute('''
-                UPDATE network_scans 
-                SET status = 'failed',
-                    notes = ?
-                WHERE id = ?
-            ''', (str(e), scan_id))
-            db.commit()
-
-@app.route('/network_scan/<int:scan_id>')
-@login_required
-def network_scan_results(scan_id):
-    """Результаты сканирования"""
-    db = get_db()
-    
-    scan = db.execute('SELECT * FROM network_scans WHERE id = ?', (scan_id,)).fetchone()
-    devices = db.execute('''
-        SELECT * FROM network_devices 
-        WHERE scan_id = ? 
-        ORDER BY ip_address
-    ''', (scan_id,)).fetchall()
-    
-    # Парсим JSON для портов
-    processed_devices = []
-    for device in devices:
-        device_dict = dict(device)
-        if device_dict['ports']:
-            try:
-                device_dict['ports'] = json.loads(device_dict['ports'])
-            except:
-                device_dict['ports'] = []
-        processed_devices.append(device_dict)
-    
-    return render_template('network_scan/scan_results.html', 
-                         scan=scan, 
-                         devices=processed_devices)
-
-@app.route('/network_scan/progress')
-@login_required
-def network_scan_progress():
-    """Получение прогресса сканирования"""
-    return jsonify({
-        'is_scanning': network_scanner.is_scanning,
-        'progress': network_scanner.scan_progress
-    })
-
-@app.route('/network_scan/stop', methods=['POST'])
-@admin_required
-def stop_network_scan():
-    """Остановка сканирования"""
-    network_scanner.is_scanning = False
-    flash('Сканирование остановлено', 'info')
-    return redirect(url_for('network_scan'))
-
-@app.route('/network_devices')
-@login_required
-def network_devices():
-    """Список всех обнаруженных устройств"""
-    db = get_db()
-    
-    devices = db.execute('''
-        SELECT nd.*, ns.name as scan_name, ns.created_at as scan_date
-        FROM network_devices nd
-        JOIN network_scans ns ON nd.scan_id = ns.id
-        ORDER BY nd.last_seen DESC
-    ''').fetchall()
-    
-    # Обрабатываем порты
-    processed_devices = []
-    for device in devices:
-        device_dict = dict(device)
-        if device_dict['ports']:
-            try:
-                device_dict['ports'] = json.loads(device_dict['ports'])
-            except:
-                device_dict['ports'] = []
-        processed_devices.append(device_dict)
-    
-    return render_template('network_scan/devices_list.html', devices=processed_devices)
-
-@app.route('/network_scan/ping/<ip>')
-@login_required
-def ping_device(ip):
-    """Пинг устройства"""
-    try:
-        import platform
-        param = "-n 1 -w 1000" if platform.system().lower() == "windows" else "-c 1 -W 1"
-        result = subprocess.run(
-            f"ping {param} {ip}", 
-            capture_output=True, 
-            shell=True
-        )
-        
-        success = result.returncode == 0
-        return jsonify({
-            'success': success,
-            'ip': ip,
-            'response_time': 10.5 if success else 0,  # В реальности нужно парсить вывод
-            'error': '' if success else 'Устройство не отвечает'
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/network_scan/device_info/<int:device_id>')
-@login_required
-def device_info(device_id):
-    """Информация об устройстве"""
-    db = get_db()
-    device = db.execute('''
-        SELECT nd.*, ns.name as scan_name 
-        FROM network_devices nd
-        JOIN network_scans ns ON nd.scan_id = ns.id
-        WHERE nd.id = ?
-    ''', (device_id,)).fetchone()
-    
-    if device:
-        device_dict = dict(device)
-        if device_dict['ports']:
-            try:
-                device_dict['ports'] = json.loads(device_dict['ports'])
-            except:
-                device_dict['ports'] = []
-        return jsonify({'success': True, 'device': device_dict})
-    else:
-        return jsonify({'success': False, 'error': 'Устройство не найдено'})
-
-
-
-# Вспомогательная функция для шаблонов
-@app.context_processor
-def utility_processor():
-    def get_port_service(port):
-        port_services = {
-            21: 'FTP', 22: 'SSH', 23: 'Telnet', 25: 'SMTP', 53: 'DNS',
-            80: 'HTTP', 110: 'POP3', 143: 'IMAP', 443: 'HTTPS', 993: 'IMAPS',
-            995: 'POP3S', 1433: 'MSSQL', 1521: 'Oracle', 3306: 'MySQL',
-            3389: 'RDP', 5432: 'PostgreSQL', 5900: 'VNC', 8080: 'HTTP-Alt'
-        }
-        return port_services.get(port, 'Unknown')
-    return dict(get_port_service=get_port_service)
 
 def get_local_ip():
     """Получает локальный IP-адрес для доступа по сети"""
