@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, Response, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response
 from templates.base.database import init_db, get_db
 
-import ipaddress
+
 import socket
 from datetime import datetime
 
@@ -75,8 +75,6 @@ with app.app_context():
     init_db()
 
 # ========== ОСНОВНЫЕ МАРШРУТЫ ==========
-
-
 
 @app.context_processor
 def utility_processor():
