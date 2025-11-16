@@ -151,16 +151,16 @@ def find_role_by_name(name:str, session:Session):
     return session.scalar(select(Role).where(Role.name == name))
 
 def init_default_roles():
-    role = find_role_by_name("SuperAdmin")
-    if role is not None:
-        print("Роль SuperAdmin найдена")
-        return
-    
-    print("Роль SuperAdmin не найдена. Создаём")
-    role = create_full_access_role()
-    reader = create_read_only_role()
-
     with Session(get_db_engine()) as session:
+        role = find_role_by_name("SuperAdmin", session)
+        if role is not None:
+            print("Роль SuperAdmin найдена")
+            return
+        
+        print("Роль SuperAdmin не найдена. Создаём")
+        role = create_full_access_role()
+        reader = create_read_only_role()
+
         session.add(role)
         session.add(reader)
         session.commit()
