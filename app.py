@@ -19,6 +19,8 @@ from templates.shifts.shifts import bluprint_shifts_routes
 
 from templates.base.requirements import admin_required, login_required
 
+from templates.base.db import verify_database_updated, update_database
+
 from excel_utils import (
     export_devices, export_providers, export_cubes, 
     export_organizations, export_todos, import_from_excel
@@ -1328,6 +1330,14 @@ def get_local_ip():
         return "не удалось определить"
 
 if __name__ == '__main__':
+    
+    # проверяем, что база обновлена
+    if not verify_database_updated():
+        # если с базой что-то не так, пробуем обновиться
+        if not update_database():
+            raise Exception("Во время обновления базы что-то пошло не так")
+    
+
     local_ip = get_local_ip()
     with app.app_context():
         print("Зарегистрированные маршруты:")
