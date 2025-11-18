@@ -28,12 +28,18 @@ def init_default_admin(db:sqlite3.Connection):
     
     if count == 0:
         print("Админ по умолчанию не найден. Создаём")
-        admin_password = generate_password_hash('admin123123123')
+        admin_password = generate_password_hash('admin123')
         db.execute(
             'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
             ('admin', admin_password, 'admin')
         )
         
+        # Добавляем тестового пользователя
+        user_password = generate_password_hash('user123')
+        db.execute(
+            'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+            ('user', user_password, 'user')
+        )
 
         super_admin_role = find_role_by_name("SuperAdmin", db)
         if super_admin_role is None:
