@@ -5,11 +5,11 @@ from templates.base.database import get_db
 
 def get_supported_exel_types_mapping():
     table_mapping = {
-                'devices.devices': 'devices',
-                'providers.providers': 'providers', 
-                'cubes.cubes': 'software_cubes',
-                'organizations.organizations': 'organizations',
-                'todos.todos': 'todos'
+                'devices.devices': { 'tablename' : 'devices', 'exporter' : export_devices },
+                'providers.providers': {'tablename' : 'providers',  'exporter' : export_providers },
+                'cubes.cubes': {'tablename' : 'software_cubes', 'exporter' : export_cubes },
+                'organizations.organizations': {'tablename' : 'organizations', 'exporter' : export_organizations },
+                'todos.todos': {'tablename' : 'todos', 'exporter' : export_todos },
             }
     
     return table_mapping
@@ -21,7 +21,7 @@ def generate_export_filename(data_type):
     if data_type not in table_mapping:
         raise Exception('Неподдерживаемый тип данных для экспорта')
     
-    table_name = table_mapping[data_type]
+    table_name = table_mapping[data_type]['tablename']
     filename = f'{table_name}_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
     return filename
 
@@ -59,7 +59,7 @@ def import_from_excel(file, data_type, column_mapping=None):
     if data_type not in table_mapping:
         raise Exception('Неподдерживаемый тип данных для импорта')
     
-    table_name = table_mapping[data_type]
+    table_name = table_mapping[data_type]['tablename']
 
     try:
         # Читаем Excel файл
@@ -146,15 +146,8 @@ def export_wtware():
 
 def export_any_type_to_exel(data_type):
 
-    if data_type == 'devices.devices':
-        return export_devices()
-    elif data_type == 'providers.providers':
-        return export_providers()
-    elif data_type == 'cubes.cubes':
-        return export_cubes()
-    elif data_type == 'organizations.organizations':
-        return export_organizations()
-    elif data_type == 'todos.todos':
-        return export_todos()
-    else:
-        raise Exception('Неподдерживаемый тип данных для экспорта')
+    filename = generate_export_filename(data_type)
+    mapping = get_supported_exel_types_mapping()
+    exporter = mapping[data_type]['exporter']
+    file = exporter()
+    return filename, file

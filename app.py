@@ -23,7 +23,7 @@ from templates.scripts.script import bluprint_script_routes
 from templates.base.requirements import admin_required, login_required
 
 from excel_utils import (
-    export_any_type_to_exel, import_from_excel, generate_export_filename
+    export_any_type_to_exel, import_from_excel
 )
 
 from templates.guest_wifi.wifi_utils import (
@@ -214,8 +214,7 @@ def index():
 def export_data(data_type):
     """Экспорт данных в Excel"""
     try:
-        excel_file = export_any_type_to_exel(data_type)
-        filename = generate_export_filename(data_type)
+        filename, excel_file = export_any_type_to_exel(data_type)
         
         return send_file(
             excel_file,
