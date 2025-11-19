@@ -1,6 +1,29 @@
 import pandas as pd
 import io
+from datetime import datetime
 from templates.base.database import get_db
+
+def get_supported_exel_types_mapping():
+    table_mapping = {
+                'devices.devices': 'devices',
+                'providers.providers': 'providers', 
+                'cubes.cubes': 'software_cubes',
+                'organizations.organizations': 'organizations',
+                'todos.todos': 'todos'
+            }
+    
+    return table_mapping
+
+def generate_export_filename(data_type):
+    
+    table_mapping = get_supported_exel_types_mapping()
+    
+    if data_type not in table_mapping:
+        raise Exception('Неподдерживаемый тип данных для экспорта')
+    
+    table_name = table_mapping[data_type]
+    filename = f'{table_name}_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    return filename
 
 def export_to_excel(table_name, columns=None):
     """Экспорт данных из таблицы в Excel"""
@@ -27,10 +50,17 @@ def export_to_excel(table_name, columns=None):
     output.seek(0)
     return output
 
-def import_from_excel(file, table_name, column_mapping=None):
+def import_from_excel(file, data_type, column_mapping=None):
     """Импорт данных из Excel в таблицу"""
     db = get_db()
+
+    # проверка на поддерживаемый тип
+    table_mapping = get_supported_exel_types_mapping()
+    if data_type not in table_mapping:
+        raise Exception('Неподдерживаемый тип данных для импорта')
     
+    table_name = table_mapping[data_type]
+
     try:
         # Читаем Excel файл
         df = pd.read_excel(file)
@@ -112,3 +142,21 @@ def export_wtware():
         'screen_height', 'auto_start', 'network_drive', 'printer_config',
         'startup_script', 'shutdown_script', 'status', 'notes'
     ])
+
+
+def export_any_type_to_exel(data_type):
+
+    if data_type == 'devices.devices':
+        return export_devices()
+    elif data_type == 'providers.providers':
+        return export_providers()
+    elif data_type == 'cubes.cubes':
+        return export_cubes()
+    elif data_type == 'organizations.organizations':
+        return export_organizations()
+    elif data_type == 'todos.todos':
+        return export_todos()
+    else:
+        raise Exception('Неподдерживаемый тип данных для экспорта')
+    
+    return excel_file

@@ -23,8 +23,7 @@ from templates.scripts.script import bluprint_script_routes
 from templates.base.requirements import admin_required, login_required
 
 from excel_utils import (
-    export_devices, export_providers, export_cubes, 
-    export_organizations, export_todos, import_from_excel
+    export_any_type_to_exel, import_from_excel, generate_export_filename
 )
 
 from templates.guest_wifi.wifi_utils import (
@@ -215,24 +214,8 @@ def index():
 def export_data(data_type):
     """Экспорт данных в Excel"""
     try:
-        if data_type == 'devices':
-            excel_file = export_devices()
-            filename = f'devices_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
-        elif data_type == 'providers':
-            excel_file = export_providers()
-            filename = f'providers_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
-        elif data_type == 'cubes':
-            excel_file = export_cubes()
-            filename = f'cubes_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
-        elif data_type == 'organizations':
-            excel_file = export_organizations()
-            filename = f'organizations_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
-        elif data_type == 'todos':
-            excel_file = export_todos()
-            filename = f'todos_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
-        else:
-            flash('Неподдерживаемый тип данных для экспорта', 'error')
-            return redirect(request.referrer or url_for('index'))
+        excel_file = export_any_type_to_exel(data_type)
+        filename = generate_export_filename(data_type)
         
         return send_file(
             excel_file,
@@ -264,20 +247,7 @@ def import_data(data_type):
             return redirect(request.url)
         
         try:
-            # Определяем таблицу для импорта
-            table_mapping = {
-                'devices': 'devices',
-                'providers': 'providers', 
-                'cubes': 'software_cubes',
-                'organizations': 'organizations',
-                'todos': 'todos'
-            }
-            
-            if data_type not in table_mapping:
-                flash('Неподдерживаемый тип данных для импорта', 'error')
-                return redirect(request.url)
-            
-            success, message = import_from_excel(file, table_mapping[data_type])
+            success, message = import_from_excel(file, data_type)
             
             if success:
                 flash(message, 'success')
