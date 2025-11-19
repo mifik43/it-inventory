@@ -158,5 +158,3 @@ def export_any_type_to_exel(data_type):
         return export_todos()
     else:
         raise Exception('Неподдерживаемый тип данных для экспорта')
-    
-    return excel_file
