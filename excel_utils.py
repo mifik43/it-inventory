@@ -1,6 +1,29 @@
 import pandas as pd
 import io
+from datetime import datetime
 from templates.base.database import get_db
+
+def get_supported_exel_types_mapping():
+    table_mapping = {
+                'devices.devices': { 'tablename' : 'devices', 'exporter' : export_devices },
+                'providers.providers': {'tablename' : 'providers',  'exporter' : export_providers },
+                'cubes.cubes': {'tablename' : 'software_cubes', 'exporter' : export_cubes },
+                'organizations.organizations': {'tablename' : 'organizations', 'exporter' : export_organizations },
+                'todos.todos': {'tablename' : 'todos', 'exporter' : export_todos },
+            }
+    
+    return table_mapping
+
+def generate_export_filename(data_type):
+    
+    table_mapping = get_supported_exel_types_mapping()
+    
+    if data_type not in table_mapping:
+        raise Exception('Неподдерживаемый тип данных для экспорта')
+    
+    table_name = table_mapping[data_type]['tablename']
+    filename = f'{table_name}_export_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    return filename
 
 def export_to_excel(table_name, columns=None):
     """Экспорт данных из таблицы в Excel"""
@@ -27,10 +50,17 @@ def export_to_excel(table_name, columns=None):
     output.seek(0)
     return output
 
-def import_from_excel(file, table_name, column_mapping=None):
+def import_from_excel(file, data_type, column_mapping=None):
     """Импорт данных из Excel в таблицу"""
     db = get_db()
+
+    # проверка на поддерживаемый тип
+    table_mapping = get_supported_exel_types_mapping()
+    if data_type not in table_mapping:
+        raise Exception('Неподдерживаемый тип данных для импорта')
     
+    table_name = table_mapping[data_type]['tablename']
+
     try:
         # Читаем Excel файл
         df = pd.read_excel(file)
@@ -112,3 +142,12 @@ def export_wtware():
         'screen_height', 'auto_start', 'network_drive', 'printer_config',
         'startup_script', 'shutdown_script', 'status', 'notes'
     ])
+
+
+def export_any_type_to_exel(data_type):
+
+    filename = generate_export_filename(data_type)
+    mapping = get_supported_exel_types_mapping()
+    exporter = mapping[data_type]['exporter']
+    file = exporter()
+    return filename, file

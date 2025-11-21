@@ -9,6 +9,8 @@ from templates.guest_wifi.wifi_utils import download_wifi_template, import_guest
 
 bluprint_guest_wifi_routes = Blueprint("guest_wifi", __name__)
 
+
+
 @bluprint_guest_wifi_routes.route('/guest_wifi')
 @permission_required(Permissions.guest_wifi_read)
 def guest_wifi():
@@ -42,7 +44,20 @@ def guest_wifi():
         GROUP BY city 
         ORDER BY total_price DESC
     ''').fetchall()    
-    return render_template('guest_wifi/guest_wifi.html')
+
+    wifi_list = db.execute('''
+        SELECT * FROM guest_wifi 
+        ORDER BY city, organization
+    ''').fetchall()
+
+    return render_template('guest_wifi/guest_wifi.html',
+                         total_wifi_count=total_wifi_count,
+                         active_wifi_count=active_wifi_count,
+                         total_wifi_price=total_wifi_price,
+                         wifi_cities_count=wifi_cities_count,
+                         recent_wifi=recent_wifi,
+                         wifi_by_city=wifi_by_city,
+                         wifi_list=wifi_list) 
 
 @bluprint_guest_wifi_routes.route('/add_guest_wifi', methods=['GET', 'POST'])
 @permission_required(Permissions.guest_wifi_manage)
