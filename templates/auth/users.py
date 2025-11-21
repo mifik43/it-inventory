@@ -1,5 +1,4 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
-from templates.base.database import get_db, find_user_id_by_name
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from functools import wraps
@@ -8,12 +7,17 @@ from templates.roles.database_roles import read_all_roles, read_roles_for_user, 
 
 from templates.roles.permissions import Permissions, Role
 
-from templates.auth.user import User, find_user_by_name
+from templates.auth.user import User, find_user_by_name, find_user_by_id
+
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+from templates.base.db import get_session
 
 bluprint_user_routes = Blueprint("users", __name__)
 
 # обновление разрешения пользователя, на случай, если он настраивал сам себя
-def update_effective_permissions(user:User):
+def update_effective_permissions():
+    user = find_user_by_id(session['user_id'])
     session['permissions'] = list(user.get_effective_permissions())
 
 @bluprint_user_routes.route('/login', methods=['GET', 'POST'])
@@ -24,12 +28,11 @@ def login():
 
         user:User = find_user_by_name(username)
 
-        db = get_db()
         if user and user.verify_password(password):
             session['logged_in'] = True
             session['user_id'] = user.id
             session['username'] = user.name
-            update_effective_permissions(user)
+            update_effective_permissions()
             flash('Вы успешно вошли в систему!', 'success')
             return redirect(url_for('index'))
         else:
@@ -48,9 +51,9 @@ def logout():
 @bluprint_user_routes.route('/users')
 @permissions_required_any([Permissions.users_read, Permissions.users_manage])
 def users():
-    db = get_db()
-    users_list = db.execute('SELECT id, username, role, created_at FROM users').fetchall()
-    return render_template('auth/users.html', users=users_list)
+    with get_session() as s:
+        users_list = s.query(User).all()
+        return render_template('auth/users.html', users=users_list)
 
 def parse_incoming_roles(all_roles:list[Role], request):
     selected_roles = set()
@@ -107,55 +110,46 @@ def create_user():
 @bluprint_user_routes.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @permission_required(Permissions.users_manage)
 def edit_user(user_id):
-    db = get_db()
 
-    roles = read_all_roles(db)
-    user_roles = read_roles_for_user(user_id)
+    with get_session() as s:
+        roles = s.query(Role).all()
+        user = find_user_by_id(user_id, s)
+        print(f"Редактируем пользователя {user.name}")
     
-    if request.method == 'POST':
-        username = request.form['username']
-        role = request.form['role']
-        new_password = request.form.get('new_password', '')
+    
+        if request.method == 'POST':
+            username = request.form['username']
+            role = request.form['role']
+            new_password = request.form.get('new_password', '')
 
-        selected_roles = parse_incoming_roles(roles, request)
-        if selected_roles == set(user_roles):
-            print("Роли не требуют обновления")
-        else:
-            print("Обновляем роли")
-            save_roles_to_user(user_id, selected_roles, db)
+            selected_roles = parse_incoming_roles(roles, request)
 
-        try:
-            # Обновляем основные данные пользователя
-            if new_password:
-                # Если указан новый пароль, обновляем его
-                password_hash = generate_password_hash(new_password)
-                db.execute(
-                    'UPDATE users SET username = ?, role = ?, password_hash = ? WHERE id = ?',
-                    (username, role, password_hash, user_id)
-                )
-                flash('Данные пользователя и пароль успешно обновлены!', 'success')
-            else:
-                # Если пароль не указан, обновляем только остальные данные
-                db.execute(
-                    'UPDATE users SET username = ?, role = ? WHERE id = ?',
-                    (username, role, user_id)
-                )
+            user.roles = list(selected_roles)
+
+            try:
+                # Обновляем основные данные пользователя
+                if new_password:
+                    # Если указан новый пароль, обновляем его
+                    user.password = generate_password_hash(new_password)
+                
+                user.name = username
+                
+                s.commit()
+                print("Данные пользователя успешно обновлены")
                 flash('Данные пользователя успешно обновлены!', 'success')
-            
-            db.commit()
-            # обновляем разрешения пользователя, на случай, если он настраивал сам себя
-            update_effective_permissions()
-            return redirect(url_for('users.users'))
-        except Exception as e:
-            flash(f'Ошибка при обновлении пользователя: {str(e)}', 'error')
-    
-    user = db.execute('SELECT id, username, role FROM users WHERE id = ?', (user_id,)).fetchone()
-    for role in roles:
-        for user_role in user_roles:
-            if role.id == user_role.id:
-                role.checked = "checked"
+                # обновляем разрешения пользователя, на случай, если он настраивал сам себя
+                update_effective_permissions()
+                return redirect(url_for('users.users'))
+            except Exception as e:
+                flash(f'Ошибка при обновлении пользователя: {str(e)}', 'error')
+                return redirect(url_for('users.users'))
+        
+        for role in roles:
+            for user_role in user.roles:
+                if role.id == user_role.id:
+                    role.checked = "checked"
 
-    return render_template('auth/edit_user.html', user=user, roles=roles)
+        return render_template('auth/edit_user.html', user=user, roles=roles)
 
 @bluprint_user_routes.route('/delete_user/<int:user_id>')
 @permission_required(Permissions.users_manage)

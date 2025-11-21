@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, declared_attr
+from sqlalchemy.orm import DeclarativeBase, declared_attr, Session
 
 from alembic.config import Config
 from alembic import command
@@ -31,6 +31,10 @@ class SingletonClass:
 def get_db_engine():
     singleton = SingletonClass()
     return singleton.db_engine
+
+
+def get_session():
+    return Session(get_db_engine())
 
 DATABASE_URL = "sqlite:///new_db.db"
 

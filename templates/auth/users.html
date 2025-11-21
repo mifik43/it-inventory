@@ -21,7 +21,7 @@
             {% for user in users %}
             <tr>
                 <td></a>{{ user.id }}</td>
-                <td><a href="{{ url_for('users.edit_user', user_id=user.id) }}">{{ user.username }}</a></td>
+                <td><a href="{{ url_for('users.edit_user', user_id=user.id) }}">{{ user.name }}</a></td>
                 <td>
                     <span class="badge bg-{% if user.role == 'admin' %}danger{% else %}secondary{% endif %}">
                         {{ user.role }}

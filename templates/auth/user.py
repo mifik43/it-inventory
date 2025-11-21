@@ -43,6 +43,14 @@ def find_user_by_name(user_name:str, session:Session = None):
 
     return session.scalar(select(User).where(User.name == user_name))
 
+def find_user_by_id(user_id, session:Session = None):
+
+    if session is None:
+        with Session(get_db_engine()) as session:
+            return session.scalar(select(User).where(User.id == int(user_id)))
+
+    return session.scalar(select(User).where(User.id == int(user_id)))
+
 def safe_new_user(user_name:str, user_pass:str, session:Session):
     print(f"Сохраняем нового пользователя '{user_name}'")
     password_hash = generate_password_hash(user_pass)
