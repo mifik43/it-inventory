@@ -1,1 +1,12 @@
-Generic single-database configuration.
+# Первая инициализация
+py -m alembic init alembic
+
+# проверить, что миграция нужна
+py -m alembic check
+# сгенерировать миграцию для базы
+py -m alembic revision --autogenerate -m "add permissions"
+
+# обновить текущую базу
+py -m alembic upgrade head
+
+py -m alembic downgrade -1
