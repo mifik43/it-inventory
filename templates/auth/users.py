@@ -66,44 +66,40 @@ def parse_incoming_roles(all_roles:list[Role], request):
 @bluprint_user_routes.route('/create_user', methods=['GET', 'POST'])
 @permission_required(Permissions.users_manage)
 def create_user():
-    db = get_db()
-    roles = read_all_roles(db)
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        role = request.form['role']
+    with get_session() as s:
+        
+        roles = s.query(Role).all()
+        if request.method == 'POST':
+            username = request.form['username']
+            password = request.form['password']
 
-        selected_roles = parse_incoming_roles(roles, request)
-        # Проверяем, существует ли пользователь с таким именем
-        existing_user = db.execute(
-            'SELECT id FROM users WHERE username = ?', (username,)
-        ).fetchone()
-        
-        if existing_user:
-            flash('Пользователь с таким именем уже существует', 'error')
-            return render_template('auth/create_user.html', roles=roles)
-        
-        # Хешируем пароль и создаем пользователя
-        password_hash = generate_password_hash(password)
+            selected_roles = parse_incoming_roles(roles, request)
+
+            # Проверяем, существует ли пользователь с таким именем
+            existing_user = find_user_by_name(username)
             
-        try:
-            db.execute(
-                'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-                (username, password_hash, role)
-            )
+            if existing_user:
+                flash('Пользователь с таким именем уже существует', 'error')
+                return render_template('auth/create_user.html', roles=roles)
+            
+            # Хешируем пароль и создаем пользователя
+            password_hash = generate_password_hash(password)
+                
+            try:
+                user = User()
+                user.name = username
+                user.password = password_hash
+                user.roles = list(selected_roles)
+                s.add(user)
+                s.commit()
+                flash('Пользователь успешно создан!', 'success')
+                return redirect(url_for('users.users'))
+            except Exception as e:
+                flash(f'Ошибка при создании пользователя: {str(e)}', 'error')
+            
+            return render_template('auth/create_user.html')
 
-            user_id = find_user_id_by_name(username, db)
-            save_roles_to_user(user_id, selected_roles, db)
-
-            db.commit()
-            flash('Пользователь успешно создан!', 'success')
-            return redirect(url_for('users.users'))
-        except Exception as e:
-            flash(f'Ошибка при создании пользователя: {str(e)}', 'error')
-        
-        return render_template('auth/create_user.html')
-
-    return render_template('auth/create_user.html', roles=roles)
+        return render_template('auth/create_user.html', roles=roles)
 
 
 
@@ -159,13 +155,11 @@ def delete_user(user_id):
         flash('Вы не можете удалить свою собственную учетную запись', 'error')
         return redirect(url_for('users.users'))
     
-    db = get_db()
-    try:
-        db.execute('DELETE FROM users WHERE id = ?', (user_id,))
-        db.commit()
+    with get_session() as s:
+        user = find_user_by_id(user_id, s)
+        s.delete(user)
+        s.commit()
         flash('Пользователь успешно удален!', 'success')
-    except Exception as e:
-        flash(f'Ошибка при удалении пользователя: {str(e)}', 'error')
     
     return redirect(url_for('users.users'))
 
@@ -180,19 +174,14 @@ def change_password():
         if new_password != confirm_password:
             flash('Новый пароль и подтверждение не совпадают', 'error')
             return render_template('auth/change_password.html')
+        with get_session() as s:
+            user = find_user_by_id(session['user_id'], s)
         
-        db = get_db()
-        user = db.execute(
-            'SELECT * FROM users WHERE id = ?', (session['user_id'],)
-        ).fetchone()
         
-        if user and check_password_hash(user['password_hash'], current_password):
+        if user and user.verify_password(current_password):
             new_password_hash = generate_password_hash(new_password)
-            db.execute(
-                'UPDATE users SET password_hash = ? WHERE id = ?',
-                (new_password_hash, session['user_id'])
-            )
-            db.commit()
+            user.password = new_password_hash
+            s.commit()
             flash('Пароль успешно изменен!', 'success')
             return redirect(url_for('index'))
         else:
