@@ -21,19 +21,27 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(), nullable=False)
 
-    roles:Mapped[list[Role]] = relationship(secondary=user_roles_table)
+    roles:Mapped[list[Role]] = relationship(secondary=user_roles_table, lazy="joined")
 
     def update_password(self, new_password:str):
         self.password = generate_password_hash(new_password)
     
     def verify_password(self, password:str):
         return check_password_hash(self.password, password)
+    
+    def get_effective_permissions(self):
+        return Role.get_effective_permissions(self.roles)
 
 
 
-def find_user_by_name(user_name:str, session:Session):
-    user = session.scalar(select(User).where(User.name == user_name))
-    return user
+
+def find_user_by_name(user_name:str, session:Session = None):
+
+    if session is None:
+        with Session(get_db_engine()) as session:
+            return session.scalar(select(User).where(User.name == user_name))
+
+    return session.scalar(select(User).where(User.name == user_name))
 
 def safe_new_user(user_name:str, user_pass:str, session:Session):
     print(f"Сохраняем нового пользователя '{user_name}'")

@@ -86,6 +86,14 @@ class Permissions(enum.StrEnum):
         
         return names
 
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+    
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), primary_key=True)
+    permission: Mapped[str] = mapped_column(String(100), primary_key=True)
+    
+    role = relationship("Role")
+
 # класс для работы с ролями
 # каждая роль имеет уникальный id, имя и список разрешений
 class Role(Base):
@@ -95,6 +103,8 @@ class Role(Base):
     description: Mapped[str] = mapped_column(String())
     permissions = set()
     checked = ""
+
+    role_permissions:Mapped[set[String]] = relationship("RolePermission", lazy='joined')
 
 
     # def __init__(self, id, name, permissions = set(), description = str()):
@@ -110,11 +120,14 @@ class Role(Base):
 
     def add_permission(self, p:Permissions):
         self.permissions.add(p)
+        if not any(rp.permission == p for rp in self.role_permissions):
+            self.role_permissions.add(RolePermission(permission=p))
         print(f"В роль \"{self.name}\" было добавлено разрешение \"{p.name}\"")
 
     def remove_permission(self, p:Permissions):
         if self.is_permission_granted(p):
             self.permissions.remove(p)
+            self.role_permissions = [rp for rp in self.role_permissions if rp.permission != p]
             print(f"Из роли \"{self.name}\" было удалено разрешение \"{p.name}\"")
     
     def is_permission_granted(self, p:Permissions):
@@ -123,9 +136,9 @@ class Role(Base):
     def get_effective_permissions(roles):
         permissions = set()
         for role in roles:
-            for p in role.permissions:
-                permissions.add(p)
-        
+            for p in role.role_permissions:
+                permissions.add(p.permission)
+
         return permissions
 
     

@@ -13,10 +13,8 @@ from templates.auth.user import User, find_user_by_name
 bluprint_user_routes = Blueprint("users", __name__)
 
 # обновление разрешения пользователя, на случай, если он настраивал сам себя
-def update_effective_permissions():
-    user_roles = read_roles_for_user(session['user_id'])
-    effective_permissions = Role.get_effective_permissions(user_roles)
-    session['permissions'] = list(effective_permissions)
+def update_effective_permissions(user:User):
+    session['permissions'] = list(user.get_effective_permissions())
 
 @bluprint_user_routes.route('/login', methods=['GET', 'POST'])
 def login():
@@ -31,7 +29,7 @@ def login():
             session['logged_in'] = True
             session['user_id'] = user.id
             session['username'] = user.name
-            update_effective_permissions()
+            update_effective_permissions(user)
             flash('Вы успешно вошли в систему!', 'success')
             return redirect(url_for('index'))
         else:

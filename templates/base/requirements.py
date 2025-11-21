@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import flash, session, redirect, url_for
 
-from templates.roles.database_roles import read_roles_for_user
+from templates.auth.user import User, find_user_by_name
 from templates.roles.permissions import Permissions, Role
 
 # Декоратор для проверки авторизации
@@ -34,8 +34,8 @@ def permission_required(p:Permissions):
         def wrapper(*args, **kwargs):
             
             print(f"Проверяем {p} для пользователя с id={session['user_id']} ({session['username']})")
-            roles:Role = read_roles_for_user(session['user_id'])
-            effective_permissions = Role.get_effective_permissions(roles)
+            user = find_user_by_name(session['username'])
+            effective_permissions = user.get_effective_permissions()
 
             is_granted = p in effective_permissions
 
@@ -58,8 +58,8 @@ def permissions_required_any(permissions:list[Permissions]):
         def wrapper(*args, **kwargs):
             
             print(f"Проверяем наличие хотябы одного из {permissions} для пользователя с id={session['user_id']} ({session['username']})")
-            roles:Role = read_roles_for_user(session['user_id'])
-            effective_permissions = Role.get_effective_permissions(roles)
+            user = find_user_by_name(session['username'])
+            effective_permissions = user.get_effective_permissions()
 
             #
             is_granted = any(p in effective_permissions for p in permissions)
@@ -82,9 +82,8 @@ def permissions_required_all(permissions:list[Permissions]):
         def wrapper(*args, **kwargs):
             
             print(f"Проверяем наличие всех разрешений из {permissions} для пользователя с id={session['user_id']} ({session['username']})")
-            roles:Role = read_roles_for_user(session['user_id'])
-
-            effective_permissions = Role.get_effective_permissions(roles)
+            user = find_user_by_name(session['username'])
+            effective_permissions = user.get_effective_permissions()
 
 
             is_granted = all(p in effective_permissions for p in permissions)
