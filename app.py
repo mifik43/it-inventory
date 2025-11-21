@@ -272,8 +272,11 @@ def import_data(data_type):
         flash('Неподдерживаемый тип данных', 'error')
         return redirect(url_for('index'))
     
+    simple_data_type = data_type.split('.')[0] if '.' in data_type else data_type
+    
     return render_template('excel/import.html', 
-                         data_type=data_type, 
+                         data_type=data_type,
+                         simple_data_type=simple_data_type,  
                          page_title=f"Импорт {page_titles[data_type]}")
 
 

@@ -60,7 +60,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% if data_type == 'devices' %}
+                            
+                            {% if simple_data_type == 'devices' %}
                                 <tr><td>name</td><td>text</td><td>да</td><td>Название устройства</td></tr>
                                 <tr><td>model</td><td>text</td><td>нет</td><td>Модель</td></tr>
                                 <tr><td>type</td><td>text</td><td>да</td><td>Тип устройства</td></tr>
@@ -71,7 +72,7 @@
                                 <tr><td>status</td><td>text</td><td>да</td><td>Статус</td></tr>
                                 <tr><td>assigned_to</td><td>text</td><td>нет</td><td>Ответственный</td></tr>
                                 <tr><td>specifications</td><td>text</td><td>нет</td><td>Характеристики</td></tr>
-                            {% elif data_type == 'providers' %}
+                            {% elif simple_data_type == 'providers' %}
                                 <tr><td>name</td><td>text</td><td>да</td><td>Название провайдера</td></tr>
                                 <tr><td>service_type</td><td>text</td><td>да</td><td>Тип услуги</td></tr>
                                 <tr><td>contract_number</td><td>text</td><td>нет</td><td>Номер договора</td></tr>
@@ -86,7 +87,7 @@
                                 <tr><td>city</td><td>text</td><td>да</td><td>Город</td></tr>
                                 <tr><td>status</td><td>text</td><td>да</td><td>Статус</td></tr>
                                 <tr><td>notes</td><td>text</td><td>нет</td><td>Примечания</td></tr>
-                            {% elif data_type == 'cubes' %}
+                            {% elif simple_data_type == 'cubes' %}
                                 <tr><td>name</td><td>text</td><td>да</td><td>Название программы</td></tr>
                                 <tr><td>software_type</td><td>text</td><td>да</td><td>Тип ПО</td></tr>
                                 <tr><td>license_type</td><td>text</td><td>да</td><td>Тип лицензии</td></tr>
@@ -103,6 +104,25 @@
                                 <tr><td>status</td><td>text</td><td>да</td><td>Статус</td></tr>
                                 <tr><td>renewal_date</td><td>date</td><td>нет</td><td>Дата продления</td></tr>
                                 <tr><td>notes</td><td>text</td><td>нет</td><td>Примечания</td></tr>
+                            {% elif simple_data_type == 'organizations' %}
+                                <tr><td>name</td><td>text</td><td>да</td><td>Название организации</td></tr>
+                                <tr><td>type</td><td>text</td><td>да</td><td>Тип организации</td></tr>
+                                <tr><td>inn</td><td>text</td><td>нет</td><td>ИНН</td></tr>
+                                <tr><td>contact_person</td><td>text</td><td>нет</td><td>Контактное лицо</td></tr>
+                                <tr><td>phone</td><td>text</td><td>нет</td><td>Телефон</td></tr>
+                                <tr><td>email</td><td>text</td><td>нет</td><td>Email</td></tr>
+                                <tr><td>address</td><td>text</td><td>нет</td><td>Адрес</td></tr>
+                                <tr><td>notes</td><td>text</td><td>нет</td><td>Примечания</td></tr>
+                            {% elif simple_data_type == 'todos' %}
+                                <tr><td>title</td><td>text</td><td>да</td><td>Название задачи</td></tr>
+                                <tr><td>description</td><td>text</td><td>нет</td><td>Описание</td></tr>
+                                <tr><td>status</td><td>text</td><td>да</td><td>Статус</td></tr>
+                                <tr><td>priority</td><td>text</td><td>да</td><td>Приоритет</td></tr>
+                                <tr><td>organization_id</td><td>number</td><td>нет</td><td>ID организации</td></tr>
+                                <tr><td>due_date</td><td>date</td><td>нет</td><td>Срок выполнения</td></tr>
+                                <tr><td>is_completed</td><td>boolean</td><td>да</td><td>Выполнено</td></tr>
+                            {% else %}
+                                <tr><td colspan="4" class="text-center text-muted">Информация о структуре данных недоступна для этого типа</td></tr>
                             {% endif %}
                         </tbody>
                     </table>
