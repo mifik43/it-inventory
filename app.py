@@ -6,6 +6,7 @@ import socket
 from datetime import datetime
 
 from templates.auth.users import bluprint_user_routes
+from templates.auth.user import init_default_admin
 from templates.roles.roles_page import bluprint_roles_routes
 from templates.providers.providers import bluprint_provider_routes
 from templates.devices.devices import bluprint_devices_routes
@@ -311,6 +312,8 @@ if __name__ == '__main__':
         print("Зарегистрированные маршруты:")
         for rule in app.url_map.iter_rules():
             print(f"{rule.endpoint}: {rule.rule}")
+    
+    init_default_admin()
 
     # Запускаем сервер с доступом из локальной сети
     app.run(
