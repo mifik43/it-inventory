@@ -54,7 +54,7 @@ def add_script():  # Изменили имя с add_script на script_add
             ''', (name, description, filename, content))
             db.commit()
             flash('Скрипт успешно добавлен!', 'success')
-            return redirect(url_for('script_list'))  # Обновили ссылку
+            return redirect(url_for('script.script_list'))  # Обновили ссылку
         except Exception as e:
             flash(f'Ошибка при добавлении скрипта: {str(e)}', 'error')
     
@@ -68,7 +68,7 @@ def script_edit(script_id):  # Изменили имя с edit_script на scrip
     
     if not script:
         flash('Скрипт не найден', 'error')
-        return redirect(url_for('script_list'))  # Обновили ссылку
+        return redirect(url_for('script.script_list'))  # Обновили ссылку
     
     if request.method == 'POST':
         name = request.form['name']
@@ -96,7 +96,7 @@ def script_edit(script_id):  # Изменили имя с edit_script на scrip
             ''', (name, description, filename, content, script_id))
             db.commit()
             flash('Скрипт успешно обновлен!', 'success')
-            return redirect(url_for('script_list'))  # Обновили ссылку
+            return redirect(url_for('script.script_list'))  # Обновили ссылку
         except Exception as e:
             flash(f'Ошибка при обновлении скрипта: {str(e)}', 'error')
     
@@ -117,7 +117,7 @@ def script_delete(script_id):  # Изменили имя с delete_script на s
     except Exception as e:
         flash(f'Ошибка при удалении скрипта: {str(e)}', 'error')
     
-    return redirect(url_for('script_list'))  # Обновили ссылку
+    return redirect(url_for('script.script_list'))  # Обновили ссылку
 
 @bluprint_script_routes.route('/run_script/<int:script_id>')
 def script_run(script_id):  # Изменили имя с run_script на script_run
@@ -127,7 +127,7 @@ def script_run(script_id):  # Изменили имя с run_script на script_
     
     if not script:
         flash('Скрипт не найден', 'error')
-        return redirect(url_for('script_list'))  # Обновили ссылку
+        return redirect(url_for('script.script_list'))  # Обновили ссылку
     
     try:
         # Определяем тип скрипта по расширению
@@ -173,7 +173,7 @@ def script_results(script_id):  # Обратите внимание на имя 
     
     if not script:
         flash('Скрипт не найден', 'error')
-        return redirect(url_for('script_list'))
+        return redirect(url_for('script.script_list'))
     
     results = get_script_results(db, script_id, 20)
     
@@ -189,7 +189,7 @@ def script_view(script_id):  # Изменили имя с view_script на scrip
     
     if not script:
         flash('Скрипт не найден', 'error')
-        return redirect(url_for('script_list'))  # Обновили ссылку
+        return redirect(url_for('script.script_list'))  # Обновили ссылку
     
     return render_template('scripts/view_script.html', script=script)
 
@@ -201,7 +201,7 @@ def script_download(script_id):  # Изменили имя с download_script н
     
     if not script:
         flash('Скрипт не найден', 'error')
-        return redirect(url_for('script_list'))  # Обновили ссылку
+        return redirect(url_for('script.script_list'))  # Обновили ссылку
     
     # Создаем ответ с содержимым скрипта
     response = Response(
