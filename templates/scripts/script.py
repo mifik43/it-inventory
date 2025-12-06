@@ -175,7 +175,7 @@ def script_results(script_id):  # Обратите внимание на имя 
         flash('Скрипт не найден', 'error')
         return redirect(url_for('script.script_list'))
     
-    results = get_script_results(db, script_id, 20)
+    results = script_results(db, script_id, 20)
     
     return render_template('scripts/script_results.html', 
                          script=script, 

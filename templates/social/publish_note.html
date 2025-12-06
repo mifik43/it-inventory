@@ -1,0 +1,114 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-share"></i> Публикация заметки в социальных сетях
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Заметка: {{ note.title }}</h5>
+                        <p class="text-muted">{{ note.content[:200] }}...</p>
+                    </div>
+                    
+                    <form method="POST">
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Выберите платформы для публикации:</h6>
+                            <div class="row">
+                                {% for platform in platforms %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="platforms" value="{{ platform }}" 
+                                               id="platform_{{ platform }}">
+                                        <label class="form-check-label" for="platform_{{ platform }}">
+                                            <i class="bi 
+                                                {% if platform == 'twitter' %}bi-twitter text-info
+                                                {% elif platform == 'vk' %}bi-vk text-primary
+                                                {% elif platform == 'telegram' %}bi-telegram text-info
+                                                {% elif platform == 'instagram' %}bi-instagram text-danger
+                                                {% elif platform == 'odnoklassniki' %}bi-odnoklassniki text-warning
+                                                {% elif platform == 'rutube' %}bi-play-btn text-danger
+                                                {% endif %}"></i>
+                                            {{ platform|title }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2">Параметры публикации:</h6>
+                            <div class="form-group mb-3">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" 
+                                           name="publish_option" id="publish_now" 
+                                           value="now" checked>
+                                    <label class="form-check-label" for="publish_now">
+                                        Опубликовать сразу
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" 
+                                           name="publish_option" id="publish_schedule" 
+                                           value="schedule">
+                                    <label class="form-check-label" for="publish_schedule">
+                                        Запланировать публикацию
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="schedule_fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="scheduled_time">Дата и время публикации:</label>
+                                    <input type="datetime-local" class="form-control" 
+                                           id="scheduled_time" name="scheduled_time"
+                                           min="{{ min_date }}">
+                                    <small class="text-muted">Минимальное время: сейчас + 5 минут</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('notes.notes_list') }}" 
+                               class="btn btn-secondary me-md-2">
+                                <i class="bi bi-arrow-left"></i> Назад к заметкам
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Опубликовать
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const publishNow = document.getElementById('publish_now');
+    const publishSchedule = document.getElementById('publish_schedule');
+    const scheduleFields = document.getElementById('schedule_fields');
+    
+    function toggleScheduleFields() {
+        if (publishSchedule.checked) {
+            scheduleFields.style.display = 'block';
+        } else {
+            scheduleFields.style.display = 'none';
+        }
+    }
+    
+    publishNow.addEventListener('change', toggleScheduleFields);
+    publishSchedule.addEventListener('change', toggleScheduleFields);
+    
+    toggleScheduleFields();
+});
+</script>
+{% endblock %}

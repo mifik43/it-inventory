@@ -95,29 +95,33 @@
                             <p class="card-text">{{ note.content|replace('\n', '<br>')|safe }}</p>
                         </div>
                         <div class="card-footer bg-transparent">
-    <div class="btn-group w-100">
-        <a href="{{ url_for('notes.edit_note', note_id=note.id) }}" 
-           class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-pencil"></i>
-        </a>
-        <a href="{{ url_for('notes.toggle_pin_note', note_id=note.id) }}" 
-           class="btn btn-outline-warning btn-sm">
-            {% if note.is_pinned %}
-                <i class="bi bi-pin-angle"></i>
-            {% else %}
-                <i class="bi bi-pin-angle-fill"></i>
-            {% endif %}
-        </a>
-        <a href="{{ url_for('notes.delete_note', note_id=note.id) }}" 
-           class="btn btn-outline-danger btn-sm"
-           onclick="return confirm('Удалить заметку \"{{ note.title }}\"?')">
-            <i class="bi bi-trash"></i>
-        </a>
-    </div>
-    <small class="text-muted d-block mt-2">
-        Создано: {{ note.created_at[:10] }}
-    </small>
-</div>
+                            <div class="btn-group w-100">
+                                <a href="{{ url_for('notes.edit_note', note_id=note.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{{ url_for('social.publish_note', note_id=note.id) }}" 
+                                   class="btn btn-outline-success btn-sm" title="Опубликовать в соцсетях">
+                                    <i class="bi bi-share"></i>
+                                </a>
+                                <a href="{{ url_for('notes.toggle_pin_note', note_id=note.id) }}" 
+                                   class="btn btn-outline-warning btn-sm">
+                                    {% if note.is_pinned %}
+                                        <i class="bi bi-pin-angle"></i>
+                                    {% else %}
+                                        <i class="bi bi-pin-angle-fill"></i>
+                                    {% endif %}
+                                </a>
+                                <a href="{{ url_for('notes.delete_note', note_id=note.id) }}" 
+                                   class="btn btn-outline-danger btn-sm"
+                                   onclick="return confirm('Удалить заметку \"{{ note.title }}\"?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Создано: {{ note.created_at[:10] }}
+                            </small>
+                        </div>
                     </div>
                 </div>
                 {% else %}

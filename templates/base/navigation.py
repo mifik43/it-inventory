@@ -1,4 +1,3 @@
-
 from templates.roles.permissions import Permissions
 from flask import session, url_for
 
@@ -27,6 +26,9 @@ class MenuItem(DrawableMenuItem):
         self.permissions = permissions
 
     def is_allowed(self):
+        if not session.get('permissions'):
+            return False
+            
         if len(self.permissions) == 0:
             return True
 
@@ -44,14 +46,18 @@ class MenuItem(DrawableMenuItem):
         active = "active" if self.is_active(url) else ""
 
         if not self.is_allowed():
-            print("Not allowed")
             return ""
+
+        try:
+            url_for_result = url_for(self.url) if self.url and self.url != 'index' else '/'
+        except:
+            url_for_result = '#'
 
         return f"""
             <li>
                 <a
                     class="{self.button_class} {active}"
-                    href="{ "index" if self.url is None or self.url == '' else url_for(self.url) }">
+                    href="{url_for_result}">
                     <i class="bi {self.icon}"></i> {self.name}
                 </a>
             </li>
@@ -93,8 +99,7 @@ class DropDownMenu(SimpleMenu):
         return f"""
         <li class="nav-item dropdown" >
             <a 
-                class="nav-link dropdown-toggle 
-                {active}
+                class="nav-link dropdown-toggle {active}"
                 href="#" data-bs-toggle="dropdown">
                 <i class="bi {self.icon}"></i> {self.name}
             </a>
@@ -122,7 +127,6 @@ def create_simple_menu():
 
     return menu
 
-
 def create_menu():
     main_menu = DropDownMenu(name="На обслуживании", icon="bi-tools")
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-pc-display", name="Устройства", url="devices.devices", urls_to_be_active= ["devices.devices", "devices.add_device", "devices.edit_device"], permissions=[Permissions.devices_manage, Permissions.devices_read]))
@@ -133,16 +137,20 @@ def create_menu():
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-box",name="Программы", url="cubes.cubes", urls_to_be_active= ['cubes.cubes', 'cubes.add_cube', 'cubes.edit_cube'], permissions=[Permissions.cubes_manage, Permissions.cubes_read]))
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-building",name="Организации", url="organizations.organizations", urls_to_be_active= ['organizations.organizations', 'organizations.add_organization', 'organizations.edit_organization'], permissions=[Permissions.organizations_manage, Permissions.organizations_read]))
 
-
     return main_menu
 
+def create_social_menu():
+    menu = DropDownMenu(name="Соцсети", icon="bi-share")
+    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-clock-history", name="История публикаций", url="social.social_history", urls_to_be_active=['social.social_history'], permissions=[]))
+    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-calendar-event", name="Запланированные", url="social.scheduled_posts", urls_to_be_active=['social.scheduled_posts'], permissions=[]))
+    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-gear", name="Настройки платформ", url="social.social_platforms", urls_to_be_active=['social.social_platforms'], permissions=[]))
+    return menu
 
 def create_main_menu():
     menu = SimpleMenu(icon="bi-speedometer2")
-    
     menu.add_item(MenuItem(icon="bi-speedometer2", name="Дашборд", url="index", urls_to_be_active= ['index'], permissions=[]))
     menu.add_item(create_menu())
     menu.add_item(create_knowlege_base_menu())
     menu.add_item(create_simple_menu())
-
+    menu.add_item(create_social_menu())
     return menu

@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response
 from templates.base.database import init_db, get_db
 
+from templates.social.social_routes import bluprint_social_routes
+from templates.social.scheduler import SocialScheduler
 
 import socket
 from datetime import datetime
@@ -19,7 +21,7 @@ from templates.shifts.shifts import bluprint_shifts_routes
 from templates.network_scan.network_scanner import bluprint_network_scan_routes
 from templates.wtware.wtware import bluprint_wtware_routes
 from templates.scripts.script import bluprint_script_routes
-
+from templates.social.social_routes import bluprint_social_routes
 from templates.base.requirements import admin_required, login_required
 
 from excel_utils import (
@@ -39,6 +41,12 @@ from script_utils import execute_script, save_script_result, get_script_results
 from network_scanner import NetworkScanner
 
 from templates.base.navigation import create_main_menu
+
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
+
+social_scheduler = SocialScheduler(app)
 # Глобальный объект сканера
 
 
@@ -71,6 +79,7 @@ app.register_blueprint(bluprint_shifts_routes)
 app.register_blueprint(bluprint_network_scan_routes)
 app.register_blueprint(bluprint_wtware_routes)
 app.register_blueprint(bluprint_script_routes)
+app.register_blueprint(bluprint_social_routes)
 
 
 # Инициализация БД при запуске приложения
@@ -297,15 +306,23 @@ def get_local_ip():
 
 if __name__ == '__main__':
     local_ip = get_local_ip()
-    with app.app_context():
-        print("Зарегистрированные маршруты:")
-        for rule in app.url_map.iter_rules():
-            print(f"{rule.endpoint}: {rule.rule}")
+    social_scheduler.start()
+    #with app.app_context():
+    #    print("Зарегистрированные маршруты:")
+    #    for rule in app.url_map.iter_rules():
+    #        print(f"{rule.endpoint}: {rule.rule}")
 
     # Запускаем сервер с доступом из локальной сети
-    app.run(
-        debug=True, 
-        host='0.0.0.0',  # Доступ со всех интерфейсов
-        port=8000,       # Порт (можно изменить при необходимости)
-        threaded=True    # Для обработки нескольких запросов одновременно
-    )
+    try:
+        app.run(
+            debug=True, 
+            host='0.0.0.0',  # Доступ со всех интерфейсов
+            port=8000,       # Порт (можно изменить при необходимости)
+            threaded=True    # Для обработки нескольких запросов одновременно
+        )
+    except KeyboardInterrupt:
+        print("\nОстановка сервера...")
+        social_scheduler.stop()
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        social_scheduler.stop()
