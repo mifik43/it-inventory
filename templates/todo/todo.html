@@ -1,117 +1,96 @@
 {% extends "base/base.html" %}
 
 {% block content %}
-<div class="alert alert-info d-none">  <!-- d-none скроет блок после исправления -->
-    <strong>Отладочная информация:</strong><br>
-    show_completed: {{ show_completed }}<br>
-    Всего задач: {{ total_tasks }}<br>
-    Всего в БД: {{ all_tasks_total }}<br>
-    Выполнено в БД: {{ all_tasks_completed }}<br>
-    Количество задач в списке: {{ todos|length }}
-</div> 
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-12">
             <!-- Заголовок и кнопки -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="h3 mb-1">Система управления задачами IT-отдела</h1>
-                    <p class="text-muted">Управление задачами по обслуживанию организаций</p>
+                    <h1 class="h3 mb-1">Задачи</h1>
+                    <p class="text-muted">Список всех задач и дел</p>
                 </div>
-                <div class="btn-group">
-    <a href="{{ url_for('todo.add_todo') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Добавить задачу
-    </a>
-    
-    {% if show_completed %}
-        <a href="{{ url_for('todo.todo', show_completed='false') }}" 
-           class="btn btn-outline-secondary">
-            <i class="bi bi-eye-slash"></i> Скрыть выполненные
-        </a>
-    {% else %}
-        <a href="{{ url_for('todo.todo', show_completed='true') }}" 
-           class="btn btn-outline-secondary">
-            <i class="bi bi-eye"></i> Показать выполненные
-        </a>
-    {% endif %}
-</div>
+                <a href="{{ url_for('todo.add_todo') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Добавить задачу
+                </a>
             </div>
 
-            <!-- Статистика -->
-            <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-primary shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                        Активные задачи</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tasks }}</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="bi bi-list-task fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Фильтры -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-funnel"></i> Фильтры
+                    </h6>
                 </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-warning shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        В работе</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ in_progress }}</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="bi bi-play-circle fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('todo.todo') }}" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="organization_filter" class="form-label">Организация</label>
+                            <select class="form-control" id="organization_filter" name="organization_id">
+                                <option value="">Все организации</option>
+                                {% for org in organizations %}
+                                <option value="{{ org.id }}" 
+                                        {% if request.args.get('organization_id')|int == org.id %}selected{% endif %}>
+                                    {{ org.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
                         </div>
-                    </div>
+                        <div class="col-md-3">
+                            <label for="status_filter" class="form-label">Статус</label>
+                            <select class="form-control" id="status_filter" name="status">
+                                <option value="">Все статусы</option>
+                                <option value="Новая" {% if request.args.get('status') == 'Новая' %}selected{% endif %}>Новая</option>
+                                <option value="В работе" {% if request.args.get('status') == 'В работе' %}selected{% endif %}>В работе</option>
+                                <option value="На проверке" {% if request.args.get('status') == 'На проверке' %}selected{% endif %}>На проверке</option>
+                                <option value="Завершена" {% if request.args.get('status') == 'Завершена' %}selected{% endif %}>Завершена</option>
+                                <option value="Отложена" {% if request.args.get('status') == 'Отложена' %}selected{% endif %}>Отложена</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="priority_filter" class="form-label">Приоритет</label>
+                            <select class="form-control" id="priority_filter" name="priority">
+                                <option value="">Все приоритеты</option>
+                                <option value="Высокий" {% if request.args.get('priority') == 'Высокий' %}selected{% endif %}>Высокий</option>
+                                <option value="Средний" {% if request.args.get('priority') == 'Средний' %}selected{% endif %}>Средний</option>
+                                <option value="Низкий" {% if request.args.get('priority') == 'Низкий' %}selected{% endif %}>Низкий</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="assigned_to_filter" class="form-label">Назначена</label>
+                            <select class="form-control" id="assigned_to_filter" name="assigned_to">
+                                <option value="">Все</option>
+                                <option value="{{ session.user_id }}" {% if request.args.get('assigned_to')|int == session.user_id %}selected{% endif %}>Мне</option>
+                                <option value="0" {% if request.args.get('assigned_to') == '0' %}selected{% endif %}>Не назначена</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-filter"></i> Применить фильтр
+                            </button>
+                            <a href="{{ url_for('todo.todo') }}" class="btn btn-secondary ms-2">
+                                <i class="bi bi-x-circle"></i> Сбросить
+                            </a>
+                        </div>
+                    </form>
                 </div>
+            </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-success shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                        Выполнено</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ all_tasks_completed }}</div>
-                                    <div class="text-xs text-muted">Всего: {{ all_tasks_total }} задач</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="bi bi-check-circle fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-info shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        Фильтр</div>
-                                    <div class="mb-0">
-                                        {% if show_completed %}
-                                            <span class="badge bg-info">Показаны все задачи</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Скрыты выполненные</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="bi bi-funnel fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Быстрые фильтры -->
+            <div class="mb-4">
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('todo.todo') }}?status=Новая" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle"></i> Новые
+                    </a>
+                    <a href="{{ url_for('todo.todo') }}?status=В работе" class="btn btn-outline-warning">
+                        <i class="bi bi-hourglass-split"></i> В работе
+                    </a>
+                    <a href="{{ url_for('todo.todo') }}?assigned_to={{ session.user_id }}" class="btn btn-outline-info">
+                        <i class="bi bi-person"></i> Мои задачи
+                    </a>
+                    <a href="{{ url_for('todo.todo') }}?priority=Высокий" class="btn btn-outline-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Высокий приоритет
+                    </a>
                 </div>
             </div>
 
@@ -120,11 +99,16 @@
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
                         Список задач 
-                        <span class="badge bg-primary ms-2">{{ total_tasks }}</span>
+                        <span class="badge bg-primary ms-2">{{ todos|length }}</span>
                     </h6>
-                    <div class="text-muted small">
-                        {% if not show_completed %}
-                            <i class="bi bi-info-circle"></i> Выполненные задачи скрыты
+                    <div>
+                        <a href="{{ url_for('export_data', data_type='todos') }}" class="btn btn-success btn-sm me-2">
+                            <i class="bi bi-download"></i> Экспорт в Excel
+                        </a>
+                        {% if session.role == 'admin' %}
+                        <a href="{{ url_for('import_data', data_type='todos') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-upload"></i> Импорт из Excel
+                        </a>
                         {% endif %}
                     </div>
                 </div>
@@ -134,127 +118,104 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th width="5%"></th>
-                                    <th>Название</th>
+                                    <th>Задача</th>
+                                    <th>Организация</th>
                                     <th>Статус</th>
                                     <th>Приоритет</th>
-                                    <th>Организация</th>
-                                    <th>Срок выполнения</th>
-                                    <th>Дата создания</th>
-                                    <th width="15%">Действия</th>
+                                    <th>Срок</th>
+                                    <th>Назначена</th>
+                                    <th>Создана</th>
+                                    <th>Действия</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for task in todos %}
-                                <tr class="{% if task.is_completed %}table-success{% endif %}">
-                                    <td class="text-center">
-                                        {% if task.is_completed %}
-                                            <i class="bi bi-check-circle-fill text-success" title="Задача выполнена"></i>
-                                        {% else %}
-                                            <i class="bi bi-circle text-muted" title="Задача активна"></i>
+                                {% for todo in todos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ todo.title }}</strong>
+                                        {% if todo.description %}
+                                            <br><small class="text-muted">{{ todo.description[:100] }}{% if todo.description|length > 100 %}...{% endif %}</small>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <div class="d-flex align-items-start">
-                                            <div>
-                                                <strong class="{% if task.is_completed %}text-decoration-line-through text-muted{% endif %}">
-                                                    {{ task.title }}
-                                                </strong>
-                                                {% if task.description %}
-                                                    <br><small class="text-muted">{{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}</small>
-                                                {% endif %}
-                                                {% if task.is_completed and task.completed_at %}
-                                                    <br><small class="text-success">
-                                                        <i class="bi bi-check"></i> Выполнено: 
-                                                        {% if task.completed_at is string %}
-                                                            {{ task.completed_date }}
-                                                        {% else %}
-                                                            {{ task.completed_at.strftime('%d.%m.%Y %H:%M') }}
-                                                        {% endif %}
-                                                    </small>
-                                                {% endif %}
-                                            </div>
-                                        </div>
+                                        {% if todo.organization_name %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-building"></i> {{ todo.organization_name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <span class="badge 
-                                            {% if task.status == 'новая' %}bg-secondary
-                                            {% elif task.status == 'в работе' %}bg-primary
-                                            {% elif task.status == 'выполнена' %}bg-success
-                                            {% else %}bg-warning{% endif %}">
-                                            {{ task.status }}
+                                            {% if todo.status == 'Новая' %}bg-primary
+                                            {% elif todo.status == 'В работе' %}bg-warning
+                                            {% elif todo.status == 'На проверке' %}bg-info
+                                            {% elif todo.status == 'Завершена' %}bg-success
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ todo.status }}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge 
-                                            {% if task.priority == 'низкий' %}bg-success
-                                            {% elif task.priority == 'средний' %}bg-info
-                                            {% elif task.priority == 'высокий' %}bg-warning
-                                            {% else %}bg-danger{% endif %}">
-                                            {{ task.priority }}
+                                            {% if todo.priority == 'Высокий' %}bg-danger
+                                            {% elif todo.priority == 'Средний' %}bg-warning
+                                            {% else %}bg-info{% endif %}">
+                                            {{ todo.priority }}
                                         </span>
                                     </td>
-                                    <td>{{ task.organization_name or 'Не указана' }}</td>
-<td>
-    {% if task.due_date %}
-        {% if task.is_overdue %}
-            <span class="text-danger" title="Просрочено">
-                <i class="bi bi-exclamation-triangle"></i>
-                {% if task.due_date is string %}
-                    {{ task.due_date }}
-                {% else %}
-                    {{ task.due_date.strftime('%d.%m.%Y') }}
-                {% endif %}
-            </span>
-        {% else %}
-            {% if task.due_date is string %}
-                {{ task.due_date }}
-            {% else %}
-                {{ task.due_date.strftime('%d.%m.%Y') }}
-            {% endif %}
-        {% endif %}
-    {% else %}
-        <span class="text-muted">Не указан</span>
-    {% endif %}
-</td>
-<td>
-    {% if task.created_at %}
-        {% if task.created_at is string %}
-            {{ task.created_at[:10] }}
-        {% else %}
-            {{ task.created_at.strftime('%d.%m.%Y') }}
-        {% endif %}
-    {% endif %}
-</td>
+                                    <td>
+                                        {% if todo.due_date %}
+                                            {% set due_date = todo.due_date[:10] if todo.due_date else '' %}
+                                            {% set today = now().date()|string %}
+                                            {% if due_date < today %}
+                                                <span class="text-danger">
+                                                    <i class="bi bi-exclamation-triangle"></i> {{ due_date }}
+                                                </span>
+                                            {% elif due_date == today %}
+                                                <span class="text-warning">
+                                                    <i class="bi bi-clock"></i> Сегодня
+                                                </span>
+                                            {% else %}
+                                                {{ due_date }}
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if todo.assigned_to %}
+                                            <span class="badge bg-info">Назначена</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Не назначена</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ todo.created_at[:10] if todo.created_at else '' }}
+                                        </small>
+                                    </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            {% if not task.is_completed %}
-                                                <a href="{{ url_for('todo.complete_todo', todo_id=task.id) }}" 
-                                                   class="btn btn-outline-success" 
-                                                   title="Отметить как выполненную"
-                                                   onclick="return confirm('Отметить задачу \"{{ task.title }}\" как выполненную?')">
-                                                    <i class="bi bi-check-lg"></i>
-                                                </a>
-                                            {% else %}
-                                                <a href="{{ url_for('todo.reopen_todo', todo_id=task.id) }}" 
-                                                   class="btn btn-outline-warning" 
-                                                   title="Вернуть в работу"
-                                                   onclick="return confirm('Вернуть задачу \"{{ task.title }}\" в работу?')">
-                                                    <i class="bi bi-arrow-counterclockwise"></i>
-                                                </a>
-                                            {% endif %}
-                                            
-                                            <a href="{{ url_for('todo.edit_todo', todo_id=task.id) }}" 
+                                            <a href="{{ url_for('todo.edit_todo', todo_id=todo.id) }}" 
                                                class="btn btn-outline-primary" 
                                                title="Редактировать">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="{{ url_for('todo.delete_todo', todo_id=task.id) }}" 
+                                            <a href="{{ url_for('todo.delete_todo', todo_id=todo.id) }}" 
                                                class="btn btn-outline-danger" 
                                                title="Удалить"
-                                               onclick="return confirm('Вы уверены, что хотите удалить задачу \"{{ task.title }}\"?')">
+                                               onclick="return confirm('Вы уверены, что хотите удалить задачу \"{{ todo.title }}\"?')">
                                                 <i class="bi bi-trash"></i>
                                             </a>
+                                            {% if todo.status != 'Завершена' %}
+                                            <a href="{{ url_for('todo.complete_todo', todo_id=todo.id) }}" 
+                                               class="btn btn-outline-success" 
+                                               title="Завершить"
+                                               onclick="return confirm('Отметить задачу как завершенную?')">
+                                                <i class="bi bi-check-circle"></i>
+                                            </a>
+                                            {% endif %}
                                         </div>
                                     </td>
                                 </tr>
@@ -264,45 +225,12 @@
                     </div>
                     {% else %}
                     <div class="text-center py-5">
-                        <i class="bi bi-inbox display-1 text-muted"></i>
-                        <h4 class="text-muted mt-3">
-                            {% if show_completed %}
-                                Задачи не найдены
-                            {% else %}
-                                Активные задачи не найдены
-                            {% endif %}
-                        </h4>
-                        <p class="text-muted">
-                            {% if show_completed %}
-                                В системе пока нет задач
-                            {% else %}
-                                Все задачи выполнены или нет активных задач
-                            {% endif %}
-                        </p>
+                        <i class="bi bi-check-circle display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">Задачи не найдены</h4>
+                        <p class="text-muted">Добавьте первую задачу или измените фильтры</p>
                         <a href="{{ url_for('todo.add_todo') }}" class="btn btn-primary mt-3">
-                            <i class="bi bi-plus-circle"></i> Создать задачу
+                            <i class="bi bi-plus-circle"></i> Добавить задачу
                         </a>
-                        {% if not show_completed %}
-                            <a href="{{ url_for('todo.toggle_completed', show_completed=true) }}" class="btn btn-outline-secondary mt-3">
-                                <i class="bi bi-eye"></i> Показать выполненные задачи
-                            </a>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Информация о выполненных задачах -->
-                    {% if not show_completed   > 0 %}
-                    <div class="alert alert-info mt-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="bi bi-info-circle"></i>
-                                <strong>Есть выполненные задачи:</strong> 
-                                Сейчас скрыто {{ all_tasks_completed }} выполненных задач
-                            </div>
-<a href="{{ url_for('todo.todo', show_completed='true') }}" class="btn btn-sm btn-info">
-    Показать все задачи
-</a>
-                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -310,20 +238,4 @@
         </div>
     </div>
 </div>
-<!--<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-check-square me-2"></i>Задачи</h2>
-    <div>
-        <a href="{{ url_for('export_data', data_type='todos') }}" class="btn btn-success me-2">
-            <i class="bi bi-download"></i> Экспорт в Excel
-        </a>
-        {% if session.role == 'admin' %}
-        <a href="{{ url_for('import_data', data_type='todos') }}" class="btn btn-primary me-2">
-            <i class="bi bi-upload"></i> Импорт из Excel
-        </a>
-        {% endif %}
-        <a href="{{ url_for('todo.add_todo') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Добавить задачу
-        </a>
-    </div>
-</div>-->
 {% endblock %}

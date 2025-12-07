@@ -158,11 +158,13 @@
                                    class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-eye"></i> Читать
                                 </a>
-                                {% if session.get('user_id') and (article.author_id == session['user_id'] or session.get('role') == 'admin') %}
+                                
+                                <!-- Кнопка публикации в соцсети -->
                                 <a href="{{ url_for('social.publish_article', article_id=article.id) }}" 
                                    class="btn btn-outline-success btn-sm" title="Опубликовать в соцсетях">
                                     <i class="bi bi-share"></i>
                                 </a>
+                                
                                 <a href="{{ url_for('articles.edit_article', article_id=article.id) }}" 
                                    class="btn btn-outline-secondary btn-sm">
                                     <i class="bi bi-pencil"></i>
@@ -172,7 +174,6 @@
                                    onclick="return confirm('Удалить статью \"{{ article.title }}\"?')">
                                     <i class="bi bi-trash"></i>
                                 </a>
-                                {% endif %}
                             </div>
                         </div>
                     </div>

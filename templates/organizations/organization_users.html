@@ -1,0 +1,178 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Доступ к организации</h1>
+                    <p class="text-muted">
+                        Управление пользователями организации: <strong>{{ org.name }}</strong>
+                    </p>
+                </div>
+                <a href="{{ url_for('organizations.organizations') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к списку
+                </a>
+            </div>
+
+            <div class="row">
+                <!-- Текущие пользователи с доступом -->
+                <div class="col-md-6">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                Пользователи с доступом 
+                                <span class="badge bg-primary ms-2">{{ users_with_access|length }}</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if users_with_access %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Пользователь</th>
+                                            <th>Роль</th>
+                                            <th>Добавлен</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in users_with_access %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ user.username }}</strong>
+                                                {% if user.email %}
+                                                <br><small class="text-muted">{{ user.email }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if user.role == 'admin' %}bg-danger
+                                                    {% elif user.role == 'manager' %}bg-warning
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ user.role }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    {{ user.created_at[:10] if user.created_at else '-' }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('organizations.remove_user_from_organization', org_id=org.id, user_id=user.id) }}" 
+                                                   class="btn btn-sm btn-outline-danger"
+                                                   onclick="return confirm('Удалить доступ у пользователя {{ user.username }}?')">
+                                                    <i class="bi bi-trash"></i> Удалить
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-person-x display-4 text-muted"></i>
+                                <p class="text-muted mt-3">Нет пользователей с доступом</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Добавить новых пользователей -->
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-success">
+                                Добавить пользователя
+                                <span class="badge bg-success ms-2">{{ all_users|length }}</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if all_users %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Пользователь</th>
+                                            <th>Роль</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in all_users %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ user.username }}</strong>
+                                                {% if user.email %}
+                                                <br><small class="text-muted">{{ user.email }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if user.role == 'admin' %}bg-danger
+                                                    {% elif user.role == 'manager' %}bg-warning
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ user.role }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('organizations.add_user_to_organization', org_id=org.id, user_id=user.id) }}" 
+                                                   class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-plus-circle"></i> Добавить
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-person-check display-4 text-muted"></i>
+                                <p class="text-muted mt-3">Все пользователи уже имеют доступ</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Информация об организации -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="bi bi-info-circle"></i> Информация об организации
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Название:</strong> {{ org.name }}</p>
+                            <p><strong>Тип:</strong> 
+                                <span class="badge 
+                                    {% if org.type == 'ООО' %}bg-primary
+                                    {% elif org.type == 'ИП' %}bg-warning
+                                    {% else %}bg-info{% endif %}">
+                                    {{ org.type }}
+                                </span>
+                            </p>
+                            <p><strong>ИНН:</strong> {{ org.inn or '-' }}</p>
+                            <p><strong>Контактное лицо:</strong> {{ org.contact_person or '-' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Телефон:</strong> {{ org.phone or '-' }}</p>
+                            <p><strong>Email:</strong> {{ org.email or '-' }}</p>
+                            <p><strong>Адрес:</strong> {{ org.address or '-' }}</p>
+                            <p><strong>Примечания:</strong> {{ org.notes or '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

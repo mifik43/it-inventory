@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response
-from templates.base.database import init_db, get_db
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response, session
+
 
 from templates.social.social_routes import bluprint_social_routes
 from templates.social.scheduler import SocialScheduler
@@ -9,20 +9,23 @@ from datetime import datetime
 
 from templates.auth.users import bluprint_user_routes
 from templates.roles.roles_page import bluprint_roles_routes
-from templates.providers.providers import bluprint_provider_routes
-from templates.devices.devices import bluprint_devices_routes
-from templates.cubes.cubes import bluprint_cubes_routes, get_cubes
-from templates.guest_wifi.guest_wify import bluprint_guest_wifi_routes
+from templates.providers.providers1 import bluprint_provider_routes
+from templates.devices.devices2 import bluprint_devices_routes
+from templates.cubes.cubes1 import bluprint_cubes_routes, get_cubes
+from templates.guest_wifi.guest_wify1 import bluprint_guest_wifi_routes
 from templates.organizations.organizations import bluprint_organizations_routes
 from templates.knowledge.notes.notes import bluprint_notes_routes
 from templates.knowledge.articles.articles import bluprint_articles_routes
-from templates.todo.todo import bluprint_todo_routes
-from templates.shifts.shifts import bluprint_shifts_routes
+from templates.todo.todo1 import bluprint_todo_routes
+from templates.shifts.shifts1 import bluprint_shifts_routes
 from templates.network_scan.network_scanner import bluprint_network_scan_routes
-from templates.wtware.wtware import bluprint_wtware_routes
+from templates.wtware.wtware1 import bluprint_wtware_routes
 from templates.scripts.script import bluprint_script_routes
 from templates.social.social_routes import bluprint_social_routes
+from templates.base.requirements import check_permission_any
 from templates.base.requirements import admin_required, login_required
+from templates.base.api_routes import bluprint_api_routes
+from templates.base.database_utils import get_missing_columns, has_column
 
 from excel_utils import (
     export_any_type_to_exel, import_from_excel
@@ -80,7 +83,7 @@ app.register_blueprint(bluprint_network_scan_routes)
 app.register_blueprint(bluprint_wtware_routes)
 app.register_blueprint(bluprint_script_routes)
 app.register_blueprint(bluprint_social_routes)
-
+app.register_blueprint(bluprint_api_routes)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
@@ -99,6 +102,34 @@ def utility_processor():
 def inject_common_variables():
     return {
         'menu': create_main_menu()
+    }
+@app.context_processor
+def inject_common_variables():
+    return {
+        'menu': create_main_menu(),
+        'check_permission_any': check_permission_any  # Добавляем функцию для шаблонов
+    }
+
+@app.context_processor
+def inject_common_variables():
+    from templates.base.organization_utils import get_user_organizations_list
+    from flask import session
+    
+    user_id = session.get('user_id')
+    organizations = []
+    
+    if user_id:
+        # Получаем организации для текущего пользователя
+        # include_all=True для админов и менеджеров
+        user_role = session.get('role')
+        include_all = user_role in ['admin', 'manager']
+        organizations = get_user_organizations_list(user_id, include_all=include_all)
+    
+    return {
+        'menu': create_main_menu(),
+        'check_permission_any': check_permission_any,
+        'user_organizations': organizations,
+        'is_superadmin': session.get('role') in ['admin', 'manager']
     }
 
 @app.route('/')
@@ -288,10 +319,41 @@ def import_data(data_type):
                          simple_data_type=simple_data_type,  
                          page_title=f"Импорт {page_titles[data_type]}")
 
+@app.context_processor
+def inject_common_variables():
+    from templates.base.organization_utils import get_user_organizations_list
+    
+    user_id = session.get('user_id')
+    organizations = []
+    
+    if user_id:
+        organizations = get_user_organizations_list(user_id, include_all=True)
+    
+    return {
+        'menu': create_main_menu(),
+        'check_permission_any': check_permission_any,
+        'user_organizations': organizations,
+        'is_superadmin': session.get('role') in ['admin', 'manager']
+    }
 
 
-
-
+# В функции index или в отдельной функции проверки
+def check_and_apply_migrations():
+    """Проверяет и применяет необходимые миграции"""
+    missing_columns = get_missing_columns()
+    
+    if missing_columns:
+        print(f"ВНИМАНИЕ: В следующих таблицах отсутствует колонка organization_id: {missing_columns}")
+        print("Для корректной работы системы выполните миграцию:")
+        print("python migrations/add_organization_columns.py")
+        
+        # Автоматически применяем миграцию (опционально)
+        try:
+            from migrations.add_organization_columns import migrate_database
+            migrate_database()
+            print("Миграция успешно применена!")
+        except Exception as e:
+            print(f"Ошибка при применении миграции: {e}")
 
 def get_local_ip():
     """Получает локальный IP-адрес для доступа по сети"""
@@ -307,7 +369,8 @@ def get_local_ip():
 if __name__ == '__main__':
     local_ip = get_local_ip()
     social_scheduler.start()
-    #with app.app_context():
+    with app.app_context():
+        check_and_apply_migrations()
     #    print("Зарегистрированные маршруты:")
     #    for rule in app.url_map.iter_rules():
     #        print(f"{rule.endpoint}: {rule.rule}")

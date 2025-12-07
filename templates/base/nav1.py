@@ -97,13 +97,10 @@ class DropDownMenu(SimpleMenu):
         active = "active" if self.is_active(url) else ""
 
         return f"""
-        <li class="nav-item dropdown">
+        <li class="nav-item dropdown" >
             <a 
                 class="nav-link dropdown-toggle {active}"
-                href="#" 
-                role="button" 
-                data-bs-toggle="dropdown" 
-                aria-expanded="false">
+                href="#" data-bs-toggle="dropdown">
                 <i class="bi {self.icon}"></i> {self.name}
             </a>
             <ul class="dropdown-menu">
@@ -131,10 +128,14 @@ def create_simple_menu():
     return menu
 
 def create_organizations_menu():
-    """Создает выпадающее меню для организаций"""
+    """Создает меню для организаций с учетом прав доступа"""
     from flask import session
     
     menu = DropDownMenu(name="Организации", icon="bi-building")
+    
+    # Проверяем, является ли пользователь супер-админом или имеет глобальный доступ
+    user_role = session.get('role')
+    is_superadmin_or_manager = user_role in ['admin', 'manager']
     
     # Всегда добавляем пункт "Мои организации" для всех пользователей с правом чтения
     menu.add_item(MenuItem(
@@ -147,132 +148,44 @@ def create_organizations_menu():
     ))
     
     # Добавляем "Все организации" только для супер-админов и менеджеров
-    user_role = session.get('role') if hasattr(session, 'get') else None
-    if user_role in ['admin', 'manager']:
+    if is_superadmin_or_manager:
         menu.add_item(MenuItem(
             button_class="dropdown-item", 
             icon="bi-buildings",
             name="Все организации", 
             url="organizations.organizations", 
-            urls_to_be_active=[
-                'organizations.organizations', 
-                'organizations.add_organization', 
-                'organizations.edit_organization',
-                'organizations.organization_users',
-                'organizations.add_user_to_organization',
-                'organizations.remove_user_from_organization'
-            ], 
+            urls_to_be_active=['organizations.organizations', 'organizations.add_organization', 'organizations.edit_organization'], 
             permissions=[Permissions.organizations_manage, Permissions.organizations_read]
-        ))
-    
-    # Добавляем разделитель для админов/менеджеров
-    if user_role in ['admin', 'manager']:
-        menu.add_item(MenuItem(
-            button_class="dropdown-item", 
-            icon="bi-plus-circle",
-            name="Добавить организацию", 
-            url="organizations.add_organization", 
-            urls_to_be_active=['organizations.add_organization'], 
-            permissions=[Permissions.organizations_manage]
         ))
     
     return menu
 
 def create_menu():
-    """Создает главное меню 'На обслуживании'"""
     main_menu = DropDownMenu(name="На обслуживании", icon="bi-tools")
-    main_menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-pc-display", 
-        name="Устройства", 
-        url="devices.devices", 
-        urls_to_be_active= ["devices.devices", "devices.add_device", "devices.edit_device"], 
-        permissions=[Permissions.devices_manage, Permissions.devices_read]
-    ))
-    main_menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-wifi",
-        name="Провайдеры", 
-        url="providers.providers", 
-        urls_to_be_active= ['providers.providers', 'providers.add_provider', 'providers.edit_provider'], 
-        permissions=[Permissions.providers_manage, Permissions.providers_read]
-    ))
-    main_menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-router",
-        name="Гостевой WiFi", 
-        url="guest_wifi.guest_wifi", 
-        urls_to_be_active= ['guest_wifi.guest_wifi','guest_wifi.add_guest_wifi','guest_wifi.edit_guest_wifi'], 
-        permissions=[Permissions.guest_wifi_manage, Permissions.guest_wifi_read]
-    ))
-    main_menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-terminal",
-        name="WTware Конфигурации", 
-        url="wtware.wtware_list", 
-        urls_to_be_active= ['wtware.wtware_list', 'wtware.add_wtware', 'wtware.edit_wtware'], 
-        permissions=[]
-    ))
-    main_menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-clock-history",
-        name="История развертываний", 
-        url="wtware.wtware_deployments", 
-        urls_to_be_active= ['wtware.wtware_deployments'], 
-        permissions=[]
-    ))
-    main_menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-box",
-        name="Программы", 
-        url="cubes.cubes", 
-        urls_to_be_active= ['cubes.cubes', 'cubes.add_cube', 'cubes.edit_cube'], 
-        permissions=[Permissions.cubes_manage, Permissions.cubes_read]
-    ))
+    main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-pc-display", name="Устройства", url="devices.devices", urls_to_be_active= ["devices.devices", "devices.add_device", "devices.edit_device"], permissions=[Permissions.devices_manage, Permissions.devices_read]))
+    main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-wifi",name="Провайдеры", url="providers.providers", urls_to_be_active= ['providers.providers', 'providers.add_provider', 'providers.edit_provider'], permissions=[Permissions.providers_manage, Permissions.providers_read]))
+    main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-router",name="Гостевой WiFi", url="guest_wifi.guest_wifi", urls_to_be_active= ['guest_wifi.guest_wifi','guest_wifi.add_guest_wifi','guest_wifi.edit_guest_wifi'], permissions=[Permissions.guest_wifi_manage, Permissions.guest_wifi_read]))
+    main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-terminal",name="WTware Конфигурации", url="wtware.wtware_list", urls_to_be_active= ['wtware.wtware_list', 'add_wtware', 'edit_wtware'], permissions=[]))
+    main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-clock-history",name="История развертываний", url="wtware.wtware_deployments", urls_to_be_active= ['wtware.wtware_deployments'], permissions=[]))
+    main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-box",name="Программы", url="cubes.cubes", urls_to_be_active= ['cubes.cubes', 'cubes.add_cube', 'cubes.edit_cube'], permissions=[Permissions.cubes_manage, Permissions.cubes_read]))
+    
+    # Добавляем меню организаций
+    main_menu.add_item(create_organizations_menu())
     
     return main_menu
 
 def create_social_menu():
     menu = DropDownMenu(name="Соцсети", icon="bi-share")
-    menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-clock-history", 
-        name="История публикаций", 
-        url="social.social_history", 
-        urls_to_be_active=['social.social_history'], 
-        permissions=[]
-    ))
-    menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-calendar-event", 
-        name="Запланированные", 
-        url="social.scheduled_posts", 
-        urls_to_be_active=['social.scheduled_posts'], 
-        permissions=[]
-    ))
-    menu.add_item(MenuItem(
-        button_class="dropdown-item", 
-        icon="bi-gear", 
-        name="Настройки платформ", 
-        url="social.social_platforms", 
-        urls_to_be_active=['social.social_platforms'], 
-        permissions=[]
-    ))
+    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-clock-history", name="История публикаций", url="social.social_history", urls_to_be_active=['social.social_history'], permissions=[]))
+    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-calendar-event", name="Запланированные", url="social.scheduled_posts", urls_to_be_active=['social.scheduled_posts'], permissions=[]))
+    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-gear", name="Настройки платформ", url="social.social_platforms", urls_to_be_active=['social.social_platforms'], permissions=[]))
     return menu
 
 def create_main_menu():
-    """Создает основное меню навигации"""
     menu = SimpleMenu(icon="bi-speedometer2")
-    menu.add_item(MenuItem(
-        icon="bi-speedometer2", 
-        name="Дашборд", 
-        url="index", 
-        urls_to_be_active= ['index'], 
-        permissions=[]
-    ))
-    menu.add_item(create_menu())  # Меню "На обслуживании"
-    menu.add_item(create_organizations_menu())  # Отдельное меню организаций
-    menu.add_item(create_knowlege_base_menu())  # База знаний
-    menu.add_item(create_simple_menu())  # Простое меню
-    menu.add_item(create_social_menu())  # Соцсети
+    menu.add_item(MenuItem(icon="bi-speedometer2", name="Дашборд", url="index", urls_to_be_active= ['index'], permissions=[]))
+    menu.add_item(create_menu())
+    menu.add_item(create_knowlege_base_menu())
+    menu.add_item(create_simple_menu())
+    menu.add_item(create_social_menu())
     return menu

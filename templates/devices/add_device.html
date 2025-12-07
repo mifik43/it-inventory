@@ -1,90 +1,95 @@
 {% extends "base/base.html" %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <h2>Добавить новое устройство</h2>
-        
-        <form method="POST">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Название устройства *</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="model" class="form-label">Модель</label>
-                        <input type="text" class="form-control" id="model" name="model" placeholder="Например: XPS 13 9310">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="type" class="form-label">Тип устройства *</label>
-                        <select class="form-select" id="type" name="type" required>
-                            <option value="">Выберите тип</option>
-                            <option value="Ноутбук">Ноутбук</option>
-                            <option value="ПК">Стационарный ПК</option>
-                            <option value="Монитор">Монитор</option>
-                            <option value="Принтер">Принтер</option>
-                            <option value="Сканер">Сканер</option>
-                            <option value="Сервер">Сервер</option>
-                            <option value="Сетевое оборудование">Сетевое оборудование</option>
-                            <option value="Телефон">IP-телефон</option>
-                            <option value="Телефон">Мини ПК</option>
-                            <option value="Телефон">малина</option>
-                            <option value="ИБП">Источник бесперебойного питания</option>
-                            <option value="Другое">Другое</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="serial_number" class="form-label">Серийный номер *</label>
-                        <input type="text" class="form-control" id="serial_number" name="serial_number" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="mac_address" class="form-label">MAC-адрес</label>
-                        <input type="text" class="form-control" id="mac_address" name="mac_address" placeholder="00:1B:44:11:3A:B7">
-                    </div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> Добавить новое устройство
+                    </h4>
                 </div>
-                
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="ip_address" class="form-label">IP-адрес</label>
-                        <input type="text" class="form-control" id="ip_address" name="ip_address" placeholder="192.168.1.100">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="location" class="form-label">Местоположение *</label>
-                        <input type="text" class="form-control" id="location" name="location" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="status" class="form-label">Статус *</label>
-                        <select class="form-select" id="status" name="status" required>
-                            <option value="В использовании">В использовании</option>
-                            <option value="На складе">На складе</option>
-                            <option value="В ремонте">В ремонте</option>
-                            <option value="Списано">Списано</option>
-                            <option value="Резерв">Резерв</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="assigned_to" class="form-label">Закреплено за</label>
-                        <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="ФИО сотрудника">
-                    </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('devices.add_device') }}">
+                        <!-- Поля формы -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Название устройства *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Тип устройства *</label>
+                            <select class="form-control" id="type" name="type" required>
+                                <option value="">Выберите тип</option>
+                                <option value="Компьютер">Компьютер</option>
+                                <option value="Ноутбук">Ноутбук</option>
+                                <option value="Сервер">Сервер</option>
+                                <option value="Принтер">Принтер</option>
+                                <option value="МФУ">МФУ</option>
+                                <option value="Сетевое оборудование">Сетевое оборудование</option>
+                                <option value="Другое">Другое</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Поле организации только если есть колонка -->
+                        {% if has_organization_column %}
+                        <div class="mb-3">
+                            <label for="organization_id" class="form-label">Организация</label>
+                            <select class="form-control" id="organization_id" name="organization_id">
+                                <option value="">-- Без привязки к организации --</option>
+                                {% for org in organizations %}
+                                <option value="{{ org.id }}">{{ org.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                Выберите организацию, к которой относится устройство
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="serial_number" class="form-label">Серийный номер</label>
+                            <input type="text" class="form-control" id="serial_number" name="serial_number">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="inventory_number" class="form-label">Инвентарный номер</label>
+                            <input type="text" class="form-control" id="inventory_number" name="inventory_number">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Статус</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="В работе">В работе</option>
+                                <option value="В ремонте">В ремонте</option>
+                                <option value="Списано">Списано</option>
+                                <option value="Резерв">Резерв</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Расположение</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Примечания</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('devices.devices') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Сохранить
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            
-            <div class="mb-3">
-                <label for="specifications" class="form-label">Характеристики</label>
-                <textarea class="form-control" id="specifications" name="specifications" rows="3" placeholder="Процессор, RAM, HDD, особенности конфигурации..."></textarea>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">Добавить устройство</button>
-            <a href="{{ url_for('devices.devices') }}" class="btn btn-secondary">Отмена</a>
-        </form>
+        </div>
     </div>
 </div>
 {% endblock %}

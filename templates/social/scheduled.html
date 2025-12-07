@@ -1,0 +1,267 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и кнопки -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Запланированные публикации</h1>
+                    <p class="text-muted">Публикации, запланированные на будущее</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('social.social_history') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-clock-history"></i> История
+                    </a>
+                    <a href="{{ url_for('social.social_platforms') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-gear"></i> Настройки
+                    </a>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Ожидают публикации</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ scheduled_posts|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-calendar fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Сегодня</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {% set today_count = 0 %}
+                                        {% set today_str = today.strftime('%Y-%m-%d') %}
+                                        {% for post in scheduled_posts %}
+                                            {% if post.scheduled_time.startswith(today_str) %}
+                                                {% set today_count = today_count + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ today_count }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-calendar-day fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        На этой неделе</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {% set week_count = 0 %}
+                                        {% for post in scheduled_posts %}
+                                            {% set post_date = post.scheduled_time.split(' ')[0] %}
+                                            {% if post_date >= today.strftime('%Y-%m-%d') %}
+                                                {% set week_count = week_count + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ week_count }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-calendar-week fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Статей</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ scheduled_posts|selectattr("source_type", "equalto", "article")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-journal-text fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Список запланированных публикаций -->
+            {% if scheduled_posts %}
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Дата и время</th>
+                                    <th>Контент</th>
+                                    <th>Тип</th>
+                                    <th>Платформы</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for post in scheduled_posts %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ post.scheduled_time[:10] }}</strong><br>
+                                        <small class="text-muted">{{ post.scheduled_time[11:16] }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;">
+                                            {% if post.article_title %}
+                                                {{ post.article_title }}
+                                            {% elif post.note_title %}
+                                                {{ post.note_title }}
+                                            {% else %}
+                                                Неизвестный контент
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            {% if post.article_title %}
+                                                Статья ID: {{ post.source_id }}
+                                            {% elif post.note_title %}
+                                                Заметка ID: {{ post.source_id }}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if post.source_type == 'article' %}
+                                            <span class="badge bg-info">Статья</span>
+                                        {% elif post.source_type == 'note' %}
+                                            <span class="badge bg-warning">Заметка</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if post.platforms %}
+                                            {% for platform in post.platforms.split(',') %}
+                                                {% if platform == 'twitter' %}
+                                                    <span class="badge bg-info me-1" title="Twitter">
+                                                        <i class="bi bi-twitter"></i>
+                                                    </span>
+                                                {% elif platform == 'vk' %}
+                                                    <span class="badge bg-primary me-1" title="VK">
+                                                        <i class="bi bi-vk"></i>
+                                                    </span>
+                                                {% elif platform == 'telegram' %}
+                                                    <span class="badge bg-info me-1" title="Telegram">
+                                                        <i class="bi bi-telegram"></i>
+                                                    </span>
+                                                {% elif platform == 'instagram' %}
+                                                    <span class="badge bg-danger me-1" title="Instagram">
+                                                        <i class="bi bi-instagram"></i>
+                                                    </span>
+                                                {% elif platform == 'odnoklassniki' %}
+                                                    <span class="badge bg-warning me-1" title="Одноклассники">
+                                                        <i class="bi bi-odnoklassniki"></i>
+                                                    </span>
+                                                {% elif platform == 'rutube' %}
+                                                    <span class="badge bg-danger me-1" title="Rutube">
+                                                        <i class="bi bi-play-btn"></i>
+                                                    </span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if post.status == 'scheduled' %}
+                                            <span class="badge bg-warning">Запланировано</span>
+                                        {% elif post.status == 'processing' %}
+                                            <span class="badge bg-info">Обрабатывается</span>
+                                        {% elif post.status == 'completed' %}
+                                            <span class="badge bg-success">Завершено</span>
+                                        {% elif post.status == 'failed' %}
+                                            <span class="badge bg-danger">Ошибка</span>
+                                        {% elif post.status == 'cancelled' %}
+                                            <span class="badge bg-secondary">Отменено</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if post.status == 'scheduled' %}
+                                            <a href="{{ url_for('social.cancel_scheduled', post_id=post.id) }}" 
+                                               class="btn btn-outline-danger"
+                                               onclick="return confirm('Отменить запланированную публикацию?')">
+                                                <i class="bi bi-x-circle"></i> Отменить
+                                            </a>
+                                            {% endif %}
+                                            
+                                            {% if post.source_type == 'article' and post.article_title %}
+                                            <a href="{{ url_for('articles.view_article', article_id=post.source_id) }}" 
+                                               class="btn btn-outline-info"
+                                               title="Перейти к статье">
+                                                <i class="bi bi-arrow-right"></i>
+                                            </a>
+                                            {% elif post.source_type == 'note' and post.note_title %}
+                                            <a href="{{ url_for('notes.edit_note', note_id=post.source_id) }}" 
+                                               class="btn btn-outline-info"
+                                               title="Перейти к заметке">
+                                                <i class="bi bi-arrow-right"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-calendar-x display-1 text-muted"></i>
+                    <h4 class="text-muted mt-3">Нет запланированных публикаций</h4>
+                    <p class="text-muted">Вы можете запланировать публикацию статьи или заметки на будущее</p>
+                    <div class="mt-4">
+                        <a href="{{ url_for('articles.articles_list') }}" class="btn btn-primary me-2">
+                            <i class="bi bi-journal-text"></i> Запланировать статью
+                        </a>
+                        <a href="{{ url_for('notes.notes_list') }}" class="btn btn-warning">
+                            <i class="bi bi-sticky"></i> Запланировать заметку
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоматическое обновление каждые 30 секунд
+    setInterval(() => {
+        window.location.reload();
+    }, 30000);
+});
+</script>
+{% endblock %}

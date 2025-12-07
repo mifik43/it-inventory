@@ -176,13 +176,18 @@ def init_default_admin_role(db:sqlite3.Connection):
     
     if count == 0:
         # создаём роль админа
-        print("Ролей не найдено. Создаём роль админа по умолчанию")
+        print("Ролей не найдено. Создаём роли по умолчанию")
         admin_role = permissions.create_full_access_role()
         save_role(admin_role, db, False)
 
         reader_role = permissions.create_read_only_role()
         save_role(reader_role, db, False)
         
+        social_manager_role = permissions.create_social_manager_role()
+        save_role(social_manager_role, db, False)
+        
+        social_publisher_role = permissions.create_social_publisher_role()
+        save_role(social_publisher_role, db, False)
 
 def create_roles_tables(db:sqlite3.Connection):
     # Таблица ролей
@@ -212,7 +217,6 @@ def create_roles_tables(db:sqlite3.Connection):
                PRIMARY KEY (role_id, user_id)
             )
     ''')
-
 
     
     init_default_admin_role(db)

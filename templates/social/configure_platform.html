@@ -1,0 +1,95 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-gear"></i> Настройка платформы
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="platform_name" class="form-label">Название платформы:</label>
+                            <input type="text" class="form-control" id="platform_name" 
+                                   name="platform_name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="platform_type" class="form-label">Тип платформы:</label>
+                            <select class="form-select" id="platform_type" name="platform_type" required>
+                                <option value="">Выберите тип...</option>
+                                {% for platform in platform_types %}
+                                <option value="{{ platform }}">{{ platform|title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="api_key" class="form-label">API Key:</label>
+                                <input type="text" class="form-control" id="api_key" 
+                                       name="api_key">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="api_secret" class="form-label">API Secret:</label>
+                                <input type="password" class="form-control" id="api_secret" 
+                                       name="api_secret">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="access_token" class="form-label">Access Token:</label>
+                                <input type="text" class="form-control" id="access_token" 
+                                       name="access_token">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="token_secret" class="form-label">Token Secret:</label>
+                                <input type="password" class="form-control" id="token_secret" 
+                                       name="token_secret">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="group_id" class="form-label">Group ID:</label>
+                                <input type="text" class="form-control" id="group_id" 
+                                       name="group_id">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="channel_id" class="form-label">Channel ID:</label>
+                                <input type="text" class="form-control" id="channel_id" 
+                                       name="channel_id">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="is_active" name="is_active" value="1" checked>
+                                <label class="form-check-label" for="is_active">
+                                    Активна
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('social.social_platforms') }}" 
+                               class="btn btn-secondary me-md-2">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

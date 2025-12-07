@@ -13,7 +13,7 @@
                         <input type="text" class="form-control" id="name" name="name" 
                                value="{{ device.name }}" required>
                     </div>
-                    
+                    {% include 'base/organization_select.html' %}
                     <div class="mb-3">
                         <label for="model" class="form-label">Модель</label>
                         <input type="text" class="form-control" id="model" name="model" 

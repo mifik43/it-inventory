@@ -1,160 +1,270 @@
 {% extends "base/base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Провайдеры на объектах</h2>
-    {% if session.role == 'admin' %}
-        <a href="{{ url_for('providers.add_provider') }}" class="btn btn-primary">Добавить провайдера</a>
-    {% endif %}
-</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и кнопки -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Провайдеры</h1>
+                    <p class="text-muted">Список провайдеров и их услуг</p>
+                </div>
+                <a href="{{ url_for('providers.add_provider') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Добавить провайдера
+                </a>
+            </div>
 
-<form method="GET" action="{{ url_for('providers.provider_search') }}" class="mb-4">
-    <div class="input-group">
-        <input type="text" name="q" class="form-control" placeholder="Поиск по названию, договору, объекту, городу или контактному лицу..." 
-               value="{{ search_query or '' }}">
-        <button class="btn btn-outline-secondary" type="submit">Найти</button>
-    </div>
-</form>
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-wifi me-2"></i>Провайдеры</h2>
-    <div>
-        <a href="{{ url_for('export_data', data_type='providers.providers') }}" class="btn btn-success me-2">
-            <i class="bi bi-download"></i> Экспорт в Excel
-        </a>
-        {% if session.role == 'admin' %}
-        <a href="{{ url_for('import_data', data_type='providers.providers') }}" class="btn btn-primary me-2">
-            <i class="bi bi-upload"></i> Импорт из Excel
-        </a>
-        {% endif %}
-        <a href="{{ url_for('providers.add_provider') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Добавить провайдера
-        </a>
-    </div>
-</div>
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Провайдер</th>
-                <th>Услуга</th>
-                <th>Договор</th>
-                <th>Скорость</th>
-                <th>Стоимость</th>
-                <th>Объект</th>
-                <th>Город</th>
-                <th>Статус</th>
-                <th>Контакты</th>
-                {% if session.role == 'admin' %}
-                    <th>Действия</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for provider in providers %}
-            <tr>
-                <td>
-                    <strong>{{ provider.name }}</strong>
-                    {% if provider.notes %}
-                        <br><small class="text-muted">{{ provider.notes }}</small>
-                    {% endif %}
-                </td>
-                <td>{{ provider.service_type }}</td>
-                <td>
-                    {% if provider.contract_number %}
-                        {{ provider.contract_number }}
-                        {% if provider.contract_date %}
-                            <br><small class="text-muted">от {{ provider.contract_date }}</small>
-                        {% endif %}
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-                <td>{{ provider.speed or '-' }}</td>
-                <td>
-                    {% if provider.price and provider.price > 0 %}
-                        {{ "₽{:,.2f}".format(provider.price).replace(',', ' ') }} / мес
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-                <td>{{ provider.object_location }}</td>
-                <td>
-                    <span class="badge bg-info text-dark">{{ provider.city }}</span>
-                </td>
-                <td>
-                    <span class="badge 
-                        {% if provider.status == 'Активен' %}bg-success
-                        {% elif provider.status == 'Приостановлен' %}bg-warning
-                        {% else %}bg-secondary{% endif %}">
-                        {{ provider.status }}
-                    </span>
-                </td>
-                <td>
-                    {% if provider.contact_person %}
-                        <strong>{{ provider.contact_person }}</strong><br>
-                    {% endif %}
-                    {% if provider.phone %}
-                        📞 {{ provider.phone }}<br>
-                    {% endif %}
-                    {% if provider.email %}
-                        ✉️ {{ provider.email }}
-                    {% endif %}
-                </td>
-                {% if session.role == 'admin' %}
-                    <td>
-                        <a href="{{ url_for('providers.edit_provider', provider_id=provider.id) }}" class="btn btn-sm btn-outline-primary">Редактировать</a>
-                        <a href="{{ url_for('providers.delete_provider', provider_id=provider.id) }}" class="btn btn-sm btn-outline-danger" 
-                           onclick="return confirm('Удалить провайдера?')">Удалить</a>
-                    </td>
-                {% endif %}
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="{% if session.role == 'admin' %}10{% else %}9{% endif %}" class="text-center">Провайдеры не найдены</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+            <!-- Фильтры -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-funnel"></i> Фильтры
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('providers.providers') }}" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="organization_filter" class="form-label">Организация</label>
+                            <select class="form-control" id="organization_filter" name="organization_id">
+                                <option value="">Все организации</option>
+                                {% for org in organizations %}
+                                <option value="{{ org.id }}" 
+                                        {% if request.args.get('organization_id')|int == org.id %}selected{% endif %}>
+                                    {{ org.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="status_filter" class="form-label">Статус</label>
+                            <select class="form-control" id="status_filter" name="status">
+                                <option value="">Все статусы</option>
+                                <option value="Активен" {% if request.args.get('status') == 'Активен' %}selected{% endif %}>Активен</option>
+                                <option value="Приостановлен" {% if request.args.get('status') == 'Приостановлен' %}selected{% endif %}>Приостановлен</option>
+                                <option value="Отключен" {% if request.args.get('status') == 'Отключен' %}selected{% endif %}>Отключен</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="service_type_filter" class="form-label">Тип услуги</label>
+                            <select class="form-control" id="service_type_filter" name="service_type">
+                                <option value="">Все типы</option>
+                                <option value="Интернет" {% if request.args.get('service_type') == 'Интернет' %}selected{% endif %}>Интернет</option>
+                                <option value="Телефония" {% if request.args.get('service_type') == 'Телефония' %}selected{% endif %}>Телефония</option>
+                                <option value="Телевидение" {% if request.args.get('service_type') == 'Телевидение' %}selected{% endif %}>Телевидение</option>
+                                <option value="Мобильная связь" {% if request.args.get('service_type') == 'Мобильная связь' %}selected{% endif %}>Мобильная связь</option>
+                                <option value="Другое" {% if request.args.get('service_type') == 'Другое' %}selected{% endif %}>Другое</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-filter"></i> Применить фильтр
+                            </button>
+                            <a href="{{ url_for('providers.providers') }}" class="btn btn-secondary ms-2">
+                                <i class="bi bi-x-circle"></i> Сбросить
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-<!-- Статистика по провайдерам -->
-<div class="row mt-5">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Статистика по провайдерам</h5>
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Всего провайдеров</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ providers|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-wifi fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Активных</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ providers|selectattr("status", "equalto", "Активен")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Приостановлено</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ providers|selectattr("status", "equalto", "Приостановлен")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-pause-circle fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-danger shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                        Сумма/месяц</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ providers|sum(attribute='price')|round(2) }} ₽
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-currency-ruble fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <ul class="list-unstyled">
-                    <li><strong>Всего провайдеров:</strong> {{ providers|length }}</li>
-                    <li><strong>Активных:</strong> {{ providers|selectattr('status', 'equalto', 'Активен')|list|length }}</li>
-                    <li><strong>Городов:</strong> {{ providers|map(attribute='city')|unique|list|length }}</li>
-                    <li><strong>Ежемесячная стоимость:</strong> 
-                        {{ "₽{:,.2f}".format(providers|sum(attribute='price')).replace(',', ' ') }}
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Провайдеры по городам</h5>
-            </div>
-            <div class="card-body">
-                <ul class="list-unstyled">
-                    {% set cities = {} %}
-                    {% for provider in providers %}
-                        {% if provider.city in cities %}
-                            {% set _ = cities.update({provider.city: cities[provider.city] + 1}) %}
-                        {% else %}
-                            {% set _ = cities.update({provider.city: 1}) %}
+
+            <!-- Список провайдеров -->
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        Список провайдеров 
+                        <span class="badge bg-primary ms-2">{{ providers|length }}</span>
+                    </h6>
+                    <div>
+                        <a href="{{ url_for('export_data', data_type='providers.providers') }}" class="btn btn-success btn-sm me-2">
+                            <i class="bi bi-download"></i> Экспорт в Excel
+                        </a>
+                        {% if session.role == 'admin' %}
+                        <a href="{{ url_for('import_data', data_type='providers.providers') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-upload"></i> Импорт из Excel
+                        </a>
                         {% endif %}
-                    {% endfor %}
-                    {% for city, count in cities.items() %}
-                        <li><strong>{{ city }}:</strong> {{ count }} провайдеров</li>
-                    {% endfor %}
-                </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if providers %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Организация</th>
+                                    <th>Услуга</th>
+                                    <th>Тариф</th>
+                                    <th>Стоимость</th>
+                                    <th>Статус</th>
+                                    <th>Контакты</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for provider in providers %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ provider.name }}</strong>
+                                        {% if provider.notes %}
+                                            <br><small class="text-muted">{{ provider.notes[:50] }}{% if provider.notes|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if provider.organization_name %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-building"></i> {{ provider.organization_name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if provider.service_type == 'Интернет' %}bg-primary
+                                            {% elif provider.service_type == 'Телефония' %}bg-info
+                                            {% elif provider.service_type == 'Телевидение' %}bg-warning
+                                            {% elif provider.service_type == 'Мобильная связь' %}bg-success
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ provider.service_type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ provider.tariff_plan or '-' }}</td>
+                                    <td>
+                                        <strong>{{ provider.price|round(2) }} ₽</strong>
+                                        <br><small class="text-muted">{{ provider.payment_period or 'ежемесячно' }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if provider.status == 'Активен' %}bg-success
+                                            {% elif provider.status == 'Приостановлен' %}bg-warning
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ provider.status }}
+                                        </span>
+                                        {% if provider.contract_end %}
+                                            <br><small class="text-muted">до {{ provider.contract_end[:10] }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if provider.contact_person %}
+                                            <div>{{ provider.contact_person }}</div>
+                                        {% endif %}
+                                        {% if provider.phone %}
+                                            <div><a href="tel:{{ provider.phone }}">{{ provider.phone }}</a></div>
+                                        {% endif %}
+                                        {% if provider.email %}
+                                            <div><a href="mailto:{{ provider.email }}">{{ provider.email }}</a></div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('providers.edit_provider', provider_id=provider.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{{ url_for('providers.delete_provider', provider_id=provider.id) }}" 
+                                               class="btn btn-outline-danger" 
+                                               title="Удалить"
+                                               onclick="return confirm('Вы уверены, что хотите удалить провайдера \"{{ provider.name }}\"?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-wifi display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">Провайдеры не найдены</h4>
+                        <p class="text-muted">Добавьте первого провайдера или измените фильтры</p>
+                        <a href="{{ url_for('providers.add_provider') }}" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-circle"></i> Добавить провайдера
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

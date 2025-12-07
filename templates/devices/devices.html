@@ -1,90 +1,261 @@
 {% extends "base/base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Список устройств</h2>
-    {% if session.role == 'admin' %}
-        <a href="{{ url_for('devices.add_device') }}" class="btn btn-primary">Добавить устройство</a>
-    {% endif %}
-</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и кнопки -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Устройства</h1>
+                    <p class="text-muted">Список всех устройств в системе</p>
+                </div>
+                <a href="{{ url_for('devices.add_device') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Добавить устройство
+                </a>
+            </div>
 
-<form method="GET" action="{{ url_for('devices.search') }}" class="mb-4">
-    <div class="input-group">
-        <input type="text" name="q" class="form-control" placeholder="Поиск по названию, модели, серийному номеру или сотруднику..." 
-               value="{{ search_query or '' }}">
-        <button class="btn btn-outline-secondary" type="submit">Найти</button>
-    </div>
-</form>
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-pc-display me-2"></i>Устройства</h2>
-    <div>
-        <a href="{{ url_for('export_data', data_type='devices.devices') }}" class="btn btn-success me-2">
-            <i class="bi bi-download"></i> Экспорт в Excel
-        </a>
-        {% if session.role == 'admin' %}
-        <a href="{{ url_for('import_data', data_type='devices.devices') }}" class="btn btn-primary me-2">
-            <i class="bi bi-upload"></i> Импорт из Excel
-        </a>
-        {% endif %}
-        <a href="{{ url_for('devices.add_device') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Добавить устройство
-        </a>
-    </div>
-</div>
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Название</th>
-                <th>Модель</th>
-                <th>Тип</th>
-                <th>Серийный номер</th>
-                <th>Местоположение</th>
-                <th>Статус</th>
-                <th>Сотрудник</th>
-                {% if session.role == 'admin' %}
-                    <th>Действия</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for device in devices %}
-            <tr>
-                <td>
-                    <strong>{{ device.name }}</strong>
-                    {% if device.specifications %}
-                        <br><small class="text-muted">{{ device.specifications[:50] }}{% if device.specifications|length > 50 %}...{% endif %}</small>
+            <!-- Фильтры -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-funnel"></i> Фильтры
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('devices.devices') }}" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="organization_filter" class="form-label">Организация</label>
+                            <select class="form-control" id="organization_filter" name="organization_id">
+                                <option value="">Все организации</option>
+                                {% for org in organizations %}
+                                <option value="{{ org.id }}" 
+                                        {% if request.args.get('organization_id')|int == org.id %}selected{% endif %}>
+                                    {{ org.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="type_filter" class="form-label">Тип устройства</label>
+                            <select class="form-control" id="type_filter" name="type">
+                                <option value="">Все типы</option>
+                                <option value="Компьютер" {% if request.args.get('type') == 'Компьютер' %}selected{% endif %}>Компьютер</option>
+                                <option value="Ноутбук" {% if request.args.get('type') == 'Ноутбук' %}selected{% endif %}>Ноутбук</option>
+                                <option value="Сервер" {% if request.args.get('type') == 'Сервер' %}selected{% endif %}>Сервер</option>
+                                <option value="Принтер" {% if request.args.get('type') == 'Принтер' %}selected{% endif %}>Принтер</option>
+                                <option value="МФУ" {% if request.args.get('type') == 'МФУ' %}selected{% endif %}>МФУ</option>
+                                <option value="Сетевое оборудование" {% if request.args.get('type') == 'Сетевое оборудование' %}selected{% endif %}>Сетевое оборудование</option>
+                                <option value="Другое" {% if request.args.get('type') == 'Другое' %}selected{% endif %}>Другое</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="status_filter" class="form-label">Статус</label>
+                            <select class="form-control" id="status_filter" name="status">
+                                <option value="">Все статусы</option>
+                                <option value="В работе" {% if request.args.get('status') == 'В работе' %}selected{% endif %}>В работе</option>
+                                <option value="В ремонте" {% if request.args.get('status') == 'В ремонте' %}selected{% endif %}>В ремонте</option>
+                                <option value="Списано" {% if request.args.get('status') == 'Списано' %}selected{% endif %}>Списано</option>
+                                <option value="Резерв" {% if request.args.get('status') == 'Резерв' %}selected{% endif %}>Резерв</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-filter"></i> Применить фильтр
+                            </button>
+                            <a href="{{ url_for('devices.devices') }}" class="btn btn-secondary ms-2">
+                                <i class="bi bi-x-circle"></i> Сбросить
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Всего устройств</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ devices|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-pc-display fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        В работе</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ devices|selectattr("status", "equalto", "В работе")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        В ремонте</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ devices|selectattr("status", "equalto", "В ремонте")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-tools fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-danger shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                        Списано</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ devices|selectattr("status", "equalto", "Списано")|list|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-x-circle fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Список устройств -->
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        Список устройств 
+                        <span class="badge bg-primary ms-2">{{ devices|length }}</span>
+                    </h6>
+                    <div>
+                        <a href="{{ url_for('export_data', data_type='devices.devices') }}" class="btn btn-success btn-sm me-2">
+                            <i class="bi bi-download"></i> Экспорт в Excel
+                        </a>
+                        {% if session.role == 'admin' %}
+                        <a href="{{ url_for('import_data', data_type='devices.devices') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-upload"></i> Импорт из Excel
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if devices %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Тип</th>
+                                    <th>Организация</th>
+                                    <th>Инвентарный номер</th>
+                                    <th>Серийный номер</th>
+                                    <th>Статус</th>
+                                    <th>Расположение</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for device in devices %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ device.name }}</strong>
+                                        {% if device.notes %}
+                                            <br><small class="text-muted">{{ device.notes[:50] }}{% if device.notes|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if device.type == 'Компьютер' %}bg-primary
+                                            {% elif device.type == 'Ноутбук' %}bg-info
+                                            {% elif device.type == 'Сервер' %}bg-dark
+                                            {% elif device.type == 'Принтер' %}bg-success
+                                            {% elif device.type == 'МФУ' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ device.type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if device.organization_name %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-building"></i> {{ device.organization_name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ device.inventory_number or '-' }}</td>
+                                    <td>{{ device.serial_number or '-' }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if device.status == 'В работе' %}bg-success
+                                            {% elif device.status == 'В ремонте' %}bg-warning
+                                            {% elif device.status == 'Списано' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ device.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ device.location or '-' }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('devices.edit_device', device_id=device.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{{ url_for('devices.delete_device', device_id=device.id) }}" 
+                                               class="btn btn-outline-danger" 
+                                               title="Удалить"
+                                               onclick="return confirm('Вы уверены, что хотите удалить устройство \"{{ device.name }}\"?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-pc-display display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">Устройства не найдены</h4>
+                        <p class="text-muted">Добавьте первое устройство или измените фильтры</p>
+                        <a href="{{ url_for('devices.add_device') }}" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-circle"></i> Добавить устройство
+                        </a>
+                    </div>
                     {% endif %}
-                </td>
-                <td>{{ device.model or '-' }}</td>
-                <td>{{ device.type }}</td>
-                <td>{{ device.serial_number }}</td>
-                <td>{{ device.location }}</td>
-                <td>
-                    <span class="badge 
-                        {% if device.status == 'В использовании' %}bg-success
-                        {% elif device.status == 'На складе' %}bg-primary
-                        {% elif device.status == 'В ремонте' %}bg-warning
-                        {% elif device.status == 'Резерв' %}bg-info
-                        {% else %}bg-secondary{% endif %}">
-                        {{ device.status }}
-                    </span>
-                </td>
-                <td>{{ device.assigned_to or '-' }}</td>
-                {% if session.role == 'admin' %}
-                    <td>
-                        <a href="{{ url_for('devices.edit_device', device_id=device.id) }}" class="btn btn-sm btn-outline-primary">Редактировать</a>
-                        <a href="{{ url_for('devices.delete_device', device_id=device.id) }}" class="btn btn-sm btn-outline-danger" 
-                           onclick="return confirm('Удалить устройство?')">Удалить</a>
-                    </td>
-                {% endif %}
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="{% if session.role == 'admin' %}8{% else %}7{% endif %}" class="text-center">Устройства не найдены</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

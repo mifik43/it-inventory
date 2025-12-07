@@ -12,7 +12,7 @@
                         <label for="name" class="form-label">Название программы *</label>
                         <input type="text" class="form-control" id="name" name="name" value="{{ cube.name }}" required>
                     </div>
-                    
+                    {% include 'base/organization_select.html' %}
                     <div class="mb-3">
                         <label for="software_type" class="form-label">Тип программного обеспечения *</label>
                         <select class="form-select" id="software_type" name="software_type" required>

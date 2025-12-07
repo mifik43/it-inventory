@@ -1,0 +1,33 @@
+{% macro organization_filter(endpoint, organizations, selected_org=None) %}
+<div class="card shadow mb-4">
+    <div class="card-header">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-funnel"></i> Фильтры
+        </h6>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for(endpoint) }}" class="row g-3">
+            <div class="col-md-4">
+                <label for="organization_filter" class="form-label">Организация</label>
+                <select class="form-control" id="organization_filter" name="organization_id">
+                    <option value="">Все организации</option>
+                    {% for org in organizations %}
+                    <option value="{{ org.id }}" 
+                            {% if selected_org and selected_org == org.id %}selected{% endif %}>
+                        {{ org.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-filter"></i> Применить фильтр
+                </button>
+                <a href="{{ url_for(endpoint) }}" class="btn btn-secondary ms-2">
+                    <i class="bi bi-x-circle"></i> Сбросить
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endmacro %}

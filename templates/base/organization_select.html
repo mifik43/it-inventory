@@ -1,0 +1,21 @@
+<div class="mb-3">
+    <label for="organization_id" class="form-label">
+        <i class="bi bi-building"></i> Организация
+    </label>
+    <select class="form-control" id="organization_id" name="organization_id">
+        <option value="">-- Без привязки к организации --</option>
+        {% for org in organizations %}
+        <option value="{{ org.id }}" 
+                {% if selected_organization_id == org.id %}selected{% endif %}
+                {% if not org.id %}disabled{% endif %}>
+            {{ org.name }}
+        </option>
+        {% endfor %}
+    </select>
+    <small class="form-text text-muted">
+        Выберите организацию, к которой относится запись. 
+        {% if session.role not in ['admin', 'manager'] %}
+        <span class="text-warning">Вы видите только организации, к которым у вас есть доступ.</span>
+        {% endif %}
+    </small>
+</div>

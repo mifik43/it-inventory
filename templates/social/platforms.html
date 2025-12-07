@@ -1,0 +1,377 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и кнопки -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Настройки социальных платформ</h1>
+                    <p class="text-muted">Подключение и настройка API соцсетей</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('social.social_history') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-clock-history"></i> История
+                    </a>
+                    <a href="{{ url_for('social.scheduled_posts') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-calendar"></i> Запланированные
+                    </a>
+                </div>
+            </div>
+
+            <!-- Информация -->
+            <div class="alert alert-info mb-4">
+                <h5><i class="bi bi-info-circle"></i> Информация о настройке</h5>
+                <p class="mb-0">
+                    Для подключения социальных сетей необходимо получить API ключи на официальных сайтах платформ.
+                    После получения ключей введите их в соответствующие поля и нажмите "Сохранить".
+                </p>
+            </div>
+
+            <!-- Список платформ -->
+            <div class="row">
+                <!-- Twitter -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-twitter text-info"></i> Twitter (X)
+                            </h5>
+                            <a href="https://developer.twitter.com/" target="_blank" 
+                               class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-box-arrow-up-right"></i> Получить ключи
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('social.save_platform_config', platform='twitter') }}">
+                                <div class="mb-3">
+                                    <label class="form-label">API Key</label>
+                                    <input type="password" class="form-control" name="api_key" 
+                                           placeholder="Введите API ключ">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">API Secret</label>
+                                    <input type="password" class="form-control" name="api_secret" 
+                                           placeholder="Введите API секрет">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Access Token</label>
+                                    <input type="password" class="form-control" name="access_token" 
+                                           placeholder="Введите Access Token">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Access Secret</label>
+                                    <input type="password" class="form-control" name="access_secret" 
+                                           placeholder="Введите Access Secret">
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Сохранить настройки
+                                    </button>
+                                </div>
+                            </form>
+                            <hr>
+                            <div class="d-grid">
+                                <a href="{{ url_for('social.test_platform', platform='twitter') }}" 
+                                   class="btn btn-outline-info">
+                                    <i class="bi bi-plug"></i> Проверить подключение
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VK -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-vk text-primary"></i> ВКонтакте
+                            </h5>
+                            <a href="https://vk.com/dev" target="_blank" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-box-arrow-up-right"></i> Получить ключи
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('social.save_platform_config', platform='vk') }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Access Token</label>
+                                    <input type="password" class="form-control" name="access_token" 
+                                           placeholder="Введите Access Token">
+                                    <small class="text-muted">Получите токен через VK API</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">ID Группы</label>
+                                    <input type="text" class="form-control" name="group_id" 
+                                           placeholder="Введите ID группы (для публикации в группу)">
+                                    <small class="text-muted">Оставьте пустым для публикации на стену пользователя</small>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Сохранить настройки
+                                    </button>
+                                </div>
+                            </form>
+                            <hr>
+                            <div class="d-grid">
+                                <a href="{{ url_for('social.test_platform', platform='vk') }}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-plug"></i> Проверить подключение
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-telegram text-info"></i> Telegram
+                            </h5>
+                            <a href="https://t.me/BotFather" target="_blank" 
+                               class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-box-arrow-up-right"></i> Создать бота
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('social.save_platform_config', platform='telegram') }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Bot Token</label>
+                                    <input type="password" class="form-control" name="bot_token" 
+                                           placeholder="Введите токен бота">
+                                    <small class="text-muted">Получите у @BotFather</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Chat ID</label>
+                                    <input type="text" class="form-control" name="chat_id" 
+                                           placeholder="Введите ID чата или канала">
+                                    <small class="text-muted">ID чата, группы или канала для публикации</small>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Сохранить настройки
+                                    </button>
+                                </div>
+                            </form>
+                            <hr>
+                            <div class="d-grid">
+                                <a href="{{ url_for('social.test_platform', platform='telegram') }}" 
+                                   class="btn btn-outline-info">
+                                    <i class="bi bi-plug"></i> Проверить подключение
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instagram -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-instagram text-danger"></i> Instagram
+                            </h5>
+                            <span class="badge bg-warning">Требуется логин/пароль</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Внимание:</strong> Instagram требует использование логина и пароля аккаунта.
+                                Используйте отдельный аккаунт для бота.
+                            </div>
+                            <form method="POST" action="{{ url_for('social.save_platform_config', platform='instagram') }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Имя пользователя</label>
+                                    <input type="text" class="form-control" name="username" 
+                                           placeholder="Введите логин Instagram">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Пароль</label>
+                                    <input type="password" class="form-control" name="password" 
+                                           placeholder="Введите пароль Instagram">
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Сохранить настройки
+                                    </button>
+                                </div>
+                            </form>
+                            <hr>
+                            <div class="d-grid">
+                                <a href="{{ url_for('social.test_platform', platform='instagram') }}" 
+                                   class="btn btn-outline-danger">
+                                    <i class="bi bi-plug"></i> Проверить подключение
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Одноклассники -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-odnoklassniki text-warning"></i> Одноклассники
+                            </h5>
+                            <a href="https://apiok.ru/dev" target="_blank" 
+                               class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-box-arrow-up-right"></i> Получить ключи
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('social.save_platform_config', platform='odnoklassniki') }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Access Token</label>
+                                    <input type="password" class="form-control" name="access_token" 
+                                           placeholder="Введите Access Token">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Application Key</label>
+                                    <input type="password" class="form-control" name="application_key" 
+                                           placeholder="Введите Application Key">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Secret Key</label>
+                                    <input type="password" class="form-control" name="secret_key" 
+                                           placeholder="Введите Secret Key">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Group ID</label>
+                                    <input type="text" class="form-control" name="group_id" 
+                                           placeholder="Введите ID группы">
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Сохранить настройки
+                                    </button>
+                                </div>
+                            </form>
+                            <hr>
+                            <div class="d-grid">
+                                <a href="{{ url_for('social.test_platform', platform='odnoklassniki') }}" 
+                                   class="btn btn-outline-warning">
+                                    <i class="bi bi-plug"></i> Проверить подключение
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rutube -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-play-btn text-danger"></i> Rutube
+                            </h5>
+                            <span class="badge bg-info">Для видео</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Rutube предназначен для загрузки видео. Для публикации требуется видеофайл.
+                            </div>
+                            <form method="POST" action="{{ url_for('social.save_platform_config', platform='rutube') }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" name="email" 
+                                           placeholder="Введите email от аккаунта Rutube">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Пароль</label>
+                                    <input type="password" class="form-control" name="password" 
+                                           placeholder="Введите пароль от аккаунта Rutube">
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Сохранить настройки
+                                    </button>
+                                </div>
+                            </form>
+                            <hr>
+                            <div class="d-grid">
+                                <a href="{{ url_for('social.test_platform', platform='rutube') }}" 
+                                   class="btn btn-outline-danger">
+                                    <i class="bi bi-plug"></i> Проверить подключение
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Инструкция по настройке -->
+            <div class="card shadow mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-question-circle"></i> Инструкция по настройке</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="instructionsAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                    <i class="bi bi-twitter me-2"></i> Twitter (X)
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show" 
+                                 aria-labelledby="headingOne" data-bs-parent="#instructionsAccordion">
+                                <div class="accordion-body">
+                                    1. Перейдите на <a href="https://developer.twitter.com/" target="_blank">developer.twitter.com</a><br>
+                                    2. Создайте новое приложение<br>
+                                    3. Получите API Key и API Secret<br>
+                                    4. Сгенерируйте Access Token и Access Secret<br>
+                                    5. Введите полученные ключи в форму выше
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    <i class="bi bi-vk me-2"></i> ВКонтакте
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" 
+                                 aria-labelledby="headingTwo" data-bs-parent="#instructionsAccordion">
+                                <div class="accordion-body">
+                                    1. Перейдите в <a href="https://vk.com/dev" target="_blank">раздел для разработчиков VK</a><br>
+                                    2. Создайте новое приложение (тип "Standalone")<br>
+                                    3. Получите Access Token с правами wall, photos, groups<br>
+                                    4. Для публикации в группу укажите ее ID (отрицательное число)<br>
+                                    5. Введите полученные данные в форму выше
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                    <i class="bi bi-telegram me-2"></i> Telegram
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" 
+                                 aria-labelledby="headingThree" data-bs-parent="#instructionsAccordion">
+                                <div class="accordion-body">
+                                    1. Напишите <a href="https://t.me/BotFather" target="_blank">@BotFather</a> в Telegram<br>
+                                    2. Создайте нового бота с помощью команды /newbot<br>
+                                    3. Получите токен бота<br>
+                                    4. Чтобы получить Chat ID, добавьте бота в чат/канал и отправьте любое сообщение<br>
+                                    5. Перейдите по ссылке: https://api.telegram.org/bot{ВАШ_ТОКЕН}/getUpdates<br>
+                                    6. Найдите chat_id в ответе<br>
+                                    7. Введите данные в форму выше
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

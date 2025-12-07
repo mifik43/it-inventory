@@ -1,0 +1,367 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и кнопки -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">История публикаций в соцсетях</h1>
+                    <p class="text-muted">Все опубликованные материалы</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('social.scheduled_posts') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-calendar"></i> Запланированные
+                    </a>
+                    <a href="{{ url_for('social.social_platforms') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-gear"></i> Настройки
+                    </a>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Всего публикаций</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ posts|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-send fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Успешные</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {% set success_count = 0 %}
+                                        {% for post in posts %}
+                                            {% if post.results %}
+                                                {% set results = post.results_parsed %}
+                                                {% for platform, result in results.items() %}
+                                                    {% if result.success %}
+                                                        {% set success_count = success_count + 1 %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ success_count }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Платформ</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {% set platforms = [] %}
+                                        {% for post in posts %}
+                                            {% if post.platforms %}
+                                                {% for platform in post.platforms.split(',') %}
+                                                    {% if platform not in platforms %}
+                                                        {% set _ = platforms.append(platform) %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ platforms|length }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-share fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Последние 7 дней</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {% set week_count = 0 %}
+                                        {% for post in posts %}
+                                            {% if post.published_at %}
+                                                {% set post_date = post.published_at.split(' ')[0] if post.published_at else '' %}
+                                                {% if post_date >= today %}
+                                                    {% set week_count = week_count + 1 %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ week_count }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-calendar-week fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" placeholder="Поиск по контенту..." id="searchInput">
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="platformFilter">
+                                <option value="">Все платформы</option>
+                                <option value="twitter">Twitter</option>
+                                <option value="vk">VK</option>
+                                <option value="telegram">Telegram</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="odnoklassniki">Одноклассники</option>
+                                <option value="rutube">Rutube</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">Все статусы</option>
+                                <option value="success">Успешные</option>
+                                <option value="failed">С ошибками</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица истории -->
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="postsTable">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Контент</th>
+                                    <th>Источник</th>
+                                    <th>Платформы</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for post in posts %}
+                                <tr class="post-row" 
+                                    data-platforms="{{ post.platforms|default('', true) }}"
+                                    data-status="{% if post.results_parsed %}{% for platform, result in post.results_parsed.items() %}{% if not result.success %}failed{% endif %}{% endfor %}{% endif %}">
+                                    <td>
+                                        <small>
+                                            {% if post.published_at %}
+                                                {{ post.published_at[:16] }}
+                                            {% else %}
+                                                {{ post.created_at[:16] }}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;" 
+                                             title="{{ post.content }}">
+                                            {{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            {% if post.article_title %}
+                                                Статья: {{ post.article_title }}
+                                            {% elif post.note_title %}
+                                                Заметка: {{ post.note_title }}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if post.article_title %}
+                                            <span class="badge bg-info">Статья</span>
+                                        {% elif post.note_title %}
+                                            <span class="badge bg-warning">Заметка</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Текст</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if post.platforms %}
+                                            {% for platform in post.platforms.split(',') %}
+                                                {% if platform == 'twitter' %}
+                                                    <span class="badge bg-info me-1" title="Twitter">
+                                                        <i class="bi bi-twitter"></i>
+                                                    </span>
+                                                {% elif platform == 'vk' %}
+                                                    <span class="badge bg-primary me-1" title="VK">
+                                                        <i class="bi bi-vk"></i>
+                                                    </span>
+                                                {% elif platform == 'telegram' %}
+                                                    <span class="badge bg-info me-1" title="Telegram">
+                                                        <i class="bi bi-telegram"></i>
+                                                    </span>
+                                                {% elif platform == 'instagram' %}
+                                                    <span class="badge bg-danger me-1" title="Instagram">
+                                                        <i class="bi bi-instagram"></i>
+                                                    </span>
+                                                {% elif platform == 'odnoklassniki' %}
+                                                    <span class="badge bg-warning me-1" title="Одноклассники">
+                                                        <i class="bi bi-odnoklassniki"></i>
+                                                    </span>
+                                                {% elif platform == 'rutube' %}
+                                                    <span class="badge bg-danger me-1" title="Rutube">
+                                                        <i class="bi bi-play-btn"></i>
+                                                    </span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if post.results_parsed %}
+                                            {% set has_error = false %}
+                                            {% for platform, result in post.results_parsed.items() %}
+                                                {% if not result.success %}
+                                                    {% set has_error = true %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if has_error %}
+                                                <span class="badge bg-danger" title="Есть ошибки">
+                                                    <i class="bi bi-exclamation-triangle"></i> Ошибки
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle"></i> Успешно
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">Неизвестно</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                onclick="showPostDetails({{ post.id }})"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#detailsModal">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <i class="bi bi-send display-1 text-muted"></i>
+                                        <h4 class="text-muted mt-3">Публикаций не найдено</h4>
+                                        <p class="text-muted">Начните публиковать статьи или заметки в соцсети</p>
+                                        <a href="{{ url_for('articles.articles_list') }}" class="btn btn-primary mt-3">
+                                            <i class="bi bi-journal-text"></i> К статьям
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно с деталями -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsModalLabel">Детали публикации</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                <!-- Детали будут загружаться здесь -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const platformFilter = document.getElementById('platformFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const postRows = document.querySelectorAll('.post-row');
+
+    function filterPosts() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const platform = platformFilter.value;
+        const status = statusFilter.value;
+
+        postRows.forEach(row => {
+            const content = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const platforms = row.getAttribute('data-platforms').toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+
+            const matchesSearch = content.includes(searchTerm);
+            const matchesPlatform = !platform || platforms.includes(platform);
+            const matchesStatus = !status || (status === 'failed' && rowStatus === 'failed') || 
+                                  (status === 'success' && rowStatus !== 'failed');
+
+            if (matchesSearch && matchesPlatform && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    searchInput.addEventListener('input', filterPosts);
+    platformFilter.addEventListener('change', filterPosts);
+    statusFilter.addEventListener('change', filterPosts);
+});
+
+function showPostDetails(postId) {
+    // В реальном приложении здесь был бы AJAX запрос к серверу
+    // Для простоты покажем статические данные
+    const detailsContent = document.getElementById('detailsContent');
+    detailsContent.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-2">Загрузка деталей...</p>
+        </div>
+    `;
+    
+    // В реальном приложении:
+    // fetch('/social/post_details/' + postId)
+    //   .then(response => response.json())
+    //   .then(data => {
+    //       // Отображаем данные
+    //   });
+}
+</script>
+{% endblock %}

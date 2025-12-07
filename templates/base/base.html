@@ -119,6 +119,28 @@
             </div>
         </div>
     </div>
+{% if session.user_id %}
+<script>
+// Глобальная функция для проверки доступа к организации
+function checkOrganizationAccess(orgId) {
+    // Можно реализовать через AJAX или использовать предзагруженные данные
+    return true; // Временная заглушка
+}
+
+// Функция для загрузки организаций пользователя
+function loadUserOrganizations() {
+    fetch('/api/user/organizations')
+        .then(response => response.json())
+        .then(data => {
+            window.userOrganizations = data.organizations || [];
+        })
+        .catch(error => console.error('Error loading organizations:', error));
+}
+
+// Загружаем организации при загрузке страницы
+document.addEventListener('DOMContentLoaded', loadUserOrganizations);
+</script>
+{% endif %}
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -154,5 +176,13 @@
     </script>
 
     {% block scripts %}{% endblock %}
+        <script>
+        // Глобальная функция для проверки прав в JavaScript
+        window.checkPermission = function(permissionName) {
+            // Эта функция должна быть реализована на бэкенде
+            // или через API эндпоинт
+            return false; // Заглушка
+        };
+    </script>
 </body>
 </html>

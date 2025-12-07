@@ -1,5 +1,6 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
+from flask import g
 
 from templates.roles.database_roles import create_roles_tables, find_role_by_name, save_roles_to_user_by_id
 from templates.base.database_helper import get_db
@@ -48,7 +49,14 @@ def init_default_admin(db:sqlite3.Connection):
 
         set_role_for_user("admin", "SuperAdmin", db)
         set_role_for_user("user", "Reader", db)
+        
+DATABASE = 'database.db'
 
+def get_db():
+    if 'db' not in g:
+        g.db = sqlite3.connect(DATABASE)
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
 def init_db():
     db = get_db()
@@ -275,6 +283,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+    
     db.execute('''
         CREATE TABLE IF NOT EXISTS wtware_deployments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -285,6 +294,7 @@ def init_db():
             deployed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (config_id) REFERENCES wtware_configs (id)
         );        ''')
+    
     db.execute('''
         CREATE TABLE IF NOT EXISTS scripts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -343,6 +353,7 @@ def init_db():
             FOREIGN KEY (scan_id) REFERENCES network_scans (id)
         )
     ''')
+
     db.execute('''
         CREATE TABLE IF NOT EXISTS social_posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -367,7 +378,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS social_platforms (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             platform_name TEXT NOT NULL,
-            platform_type TEXT NOT NULL, -- twitter, vk, telegram, instagram, ok, rutube
+            platform_type TEXT NOT NULL,
             api_key TEXT,
             api_secret TEXT,
             access_token TEXT,
@@ -377,6 +388,7 @@ def init_db():
             is_active INTEGER DEFAULT 1,
             user_id INTEGER NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
@@ -395,8 +407,79 @@ def init_db():
         )
     ''')
 
+    db.execute('''
+            CREATE TABLE IF NOT EXISTS user_organizations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                organization_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                FOREIGN KEY (organization_id) REFERENCES organizations (id) ON DELETE CASCADE,
+                UNIQUE(user_id, organization_id)
+            )
+        ''')
+     # После создания таблиц проверяем и добавляем недостающие колонки
+    add_organization_columns(db)
+    db.commit()
+
+def add_organization_columns(db):
+    """Добавляет колонку organization_id в таблицы, если она отсутствует"""
+    tables = [
+        'devices',
+        'providers', 
+        'guest_wifi',
+        'cubes',
+        'wtware_configs',
+        'shifts',
+        'notes',
+        'articles',
+        'todos'
+    ]
+    
+    for table in tables:
+        try:
+            # Проверяем, существует ли колонка organization_id
+            db.execute(f"SELECT organization_id FROM {table} LIMIT 1")
+        except sqlite3.OperationalError:
+            # Колонки нет, добавляем
+            db.execute(f'''
+                ALTER TABLE {table} 
+                ADD COLUMN organization_id INTEGER REFERENCES organizations(id)
+            ''')
+            print(f"Added organization_id column to {table}")
+            
+            # Создаем индекс
+            db.execute(f'''
+                CREATE INDEX IF NOT EXISTS idx_{table}_organization 
+                ON {table}(organization_id)
+            ''')
+    
+    # Проверяем и создаем таблицу user_organizations, если ее нет
+    try:
+        db.execute("SELECT 1 FROM user_organizations LIMIT 1")
+    except sqlite3.OperationalError:
+        db.execute('''
+            CREATE TABLE IF NOT EXISTS user_organizations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                organization_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                FOREIGN KEY (organization_id) REFERENCES organizations (id) ON DELETE CASCADE,
+                UNIQUE(user_id, organization_id)
+            )
+        ''')
+    
+    db.execute('CREATE INDEX IF NOT EXISTS idx_user_organizations_user ON user_organizations(user_id)')
+    db.execute('CREATE INDEX IF NOT EXISTS idx_user_organizations_org ON user_organizations(organization_id)')
+    
     # Добавляем администратора по умолчанию
     create_roles_tables(db)
     init_default_admin(db)
     
     db.commit()
+
+def close_db(e=None):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()

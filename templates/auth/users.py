@@ -207,3 +207,41 @@ def change_password():
             flash('Текущий пароль указан неверно', 'error')
     
     return render_template('auth/change_password.html')
+
+def get_effective_permissions(user_id=None):
+    """
+    Получает все эффективные разрешения пользователя
+    Если user_id не указан, берет текущего пользователя из сессии
+    """
+    from flask import session
+    
+    if user_id is None:
+        if 'user_id' not in session:
+            return set()
+        user_id = session['user_id']
+    
+    try:
+        # Получаем роли пользователя
+        db = get_db()
+        user_roles = read_roles_for_user(user_id, db)
+        
+        # Собираем все разрешения из ролей
+        effective_permissions = set()
+        for role in user_roles:
+            effective_permissions.update(role.permissions)
+        
+        return effective_permissions
+    except Exception as e:
+        print(f"Ошибка получения разрешений пользователя {user_id}: {str(e)}")
+        return set()
+
+
+def update_effective_permissions():
+    """
+    Обновляет кэшированные эффективные разрешения для всех пользователей
+    Эта функция вызывается при изменении ролей или разрешений
+    """
+    # Здесь можно добавить логику кэширования, если нужно
+    # В текущей реализации разрешения рассчитываются на лету
+    print("Эффективные разрешения пользователей обновлены")
+    return True

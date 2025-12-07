@@ -27,6 +27,12 @@ class Permissions(enum.StrEnum):
     shifts_manage = "shifts_manage"
     todo_read = "todo_read"
     todo_manage = "todo_manage"
+    social_read = "social_read"
+    social_manage = "social_manage"
+    social_publish = "social_publish"
+    social_schedule = "social_schedule"
+    social_platforms_manage = "social_platforms_manage"
+    organizations_view_all = 0x0800  # Видеть все организации (для супер-админов и менеджеров)
 
     def to_name(p):
         if p == Permissions.users_read:
@@ -73,6 +79,17 @@ class Permissions(enum.StrEnum):
             return "Чтение списка задач"
         elif p == Permissions.todo_manage:
             return "Управление списком задач"
+        # Новые описания для прав автопостинга
+        elif p == Permissions.social_read:
+            return "Чтение истории публикаций в соцсетях"
+        elif p == Permissions.social_manage:
+            return "Управление публикациями в соцсетях"
+        elif p == Permissions.social_publish:
+            return "Публикация в соцсети"
+        elif p == Permissions.social_schedule:
+            return "Планирование публикаций"
+        elif p == Permissions.social_platforms_manage:
+            return "Управление настройками платформ"
     
     def get_names():
         names = dict()
@@ -137,4 +154,41 @@ def create_read_only_role():
         if str(p).endswith("read"):
             role.add_permission(p)
 
+    return role
+
+# Новая роль для автопостинга
+def create_social_manager_role():
+    role = Role(id=None, name="SocialManager", description="Менеджер социальных сетей", permissions=set())
+    
+    # Базовые права чтения
+    social_permissions = [
+        Permissions.social_read,
+        Permissions.social_manage,
+        Permissions.social_publish,
+        Permissions.social_schedule,
+        Permissions.social_platforms_manage,
+        # Для публикации статей и заметок
+        Permissions.articles_read,
+        Permissions.notes_read,
+    ]
+    
+    for p in social_permissions:
+        role.add_permission(p)
+    
+    return role
+
+# Роль для публикации контента
+def create_social_publisher_role():
+    role = Role(id=None, name="SocialPublisher", description="Публикатор контента в соцсети", permissions=set())
+    
+    publisher_permissions = [
+        Permissions.social_read,
+        Permissions.social_publish,
+        Permissions.articles_read,
+        Permissions.notes_read,
+    ]
+    
+    for p in publisher_permissions:
+        role.add_permission(p)
+    
     return role

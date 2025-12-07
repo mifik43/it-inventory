@@ -100,10 +100,13 @@
                                    class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                
+                                <!-- Кнопка публикации в соцсети -->
                                 <a href="{{ url_for('social.publish_note', note_id=note.id) }}" 
                                    class="btn btn-outline-success btn-sm" title="Опубликовать в соцсетях">
                                     <i class="bi bi-share"></i>
                                 </a>
+                                
                                 <a href="{{ url_for('notes.toggle_pin_note', note_id=note.id) }}" 
                                    class="btn btn-outline-warning btn-sm">
                                     {% if note.is_pinned %}

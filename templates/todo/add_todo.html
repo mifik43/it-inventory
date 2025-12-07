@@ -40,7 +40,19 @@
                     </div>
                 </div>
             </div>
-            
+            <div class="mb-3">
+    <label for="organization_id" class="form-label">Организация</label>
+    <select class="form-control" id="organization_id" name="organization_id">
+        <option value="">-- Без организации --</option>
+        {% for org in organizations %}
+        <option value="{{ org.id }}" 
+                {% if todo and todo.organization_id == org.id %}selected{% endif %}>
+            {{ org.name }}
+        </option>
+        {% endfor %}
+    </select>
+    <small class="form-text text-muted">Выберите организацию, к которой относится задача</small>
+</div>
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
@@ -65,5 +77,6 @@
             <a href="{{ url_for('todo.todo') }}" class="btn btn-secondary">Отмена</a>
         </form>
     </div>
+    
 </div>
 {% endblock %}
