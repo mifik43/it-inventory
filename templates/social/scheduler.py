@@ -7,6 +7,7 @@ import logging
 
 from templates.base.database import get_db
 from .social_manager import SocialMediaManager
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class SocialScheduler:
             
             # Получаем посты, которые нужно опубликовать
             now = datetime.now()
-            scheduled_posts = db.execute('''
+            scheduled_posts = db.execute(text('''
                 SELECT sp.*, 
                        a.content as article_content, a.title as article_title,
                        n.content as note_content, n.title as note_title
@@ -67,7 +68,7 @@ class SocialScheduler:
                 WHERE sp.status = 'scheduled' 
                 AND sp.scheduled_time <= ?
                 ORDER BY sp.scheduled_time
-            ''', (now,)).fetchall()
+            '''), (now,)).fetchall()
             
             for post in scheduled_posts:
                 try:
@@ -94,11 +95,11 @@ class SocialScheduler:
                     else:
                         source_id_field = 'note_id'
                     
-                    db.execute(f'''
+                    db.execute(text(f'''
                         INSERT INTO social_posts 
                         ({source_id_field}, content, platforms, results, status, user_id, published_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ''', (post['source_id'], content, json.dumps(platforms), 
+                    '''), (post['source_id'], content, json.dumps(platforms), 
                           json.dumps(results), 'published', post['user_id'], now))
                     
                     # Обновляем статус запланированного поста
@@ -108,11 +109,11 @@ class SocialScheduler:
                     else:
                         new_status = 'failed'
                     
-                    db.execute('''
+                    db.execute(text('''
                         UPDATE scheduled_posts 
                         SET status = ?, completed_at = ?
                         WHERE id = ?
-                    ''', (new_status, now, post['id']))
+                    '''), (new_status, now, post['id']))
                     
                     db.commit()
                     
@@ -131,11 +132,11 @@ class SocialScheduler:
         with self.app.app_context():
             db = get_db()
             
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO scheduled_posts 
                 (source_type, source_id, platforms, scheduled_time, user_id)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (source_type, source_id, json.dumps(platforms), scheduled_time, user_id))
+            '''), (source_type, source_id, json.dumps(platforms), scheduled_time, user_id))
             
             db.commit()
             logger.info(f"Запланирована новая публикация на {scheduled_time}")

@@ -1,16 +1,17 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
 
 from datetime import datetime
+from sqlalchemy import text
 
 bluprint_todo_routes = Blueprint("todo", __name__)
 
 
 @bluprint_todo_routes.route('/todo')
-@permission_required(Permissions.todo_read)
+@permissions_required(Permissions.todo_read)
 def todo():
     db = get_db()
     
@@ -77,12 +78,12 @@ def todo():
         processed_todos.append(task_dict)
     
     # Статистика для отображения - ИСПРАВЛЕННЫЙ ЗАПРОС
-    all_tasks_stats = db.execute('''
+    all_tasks_stats = db.execute(text('''
         SELECT 
             COUNT(*) as total,
             COALESCE(SUM(is_completed), 0) as completed_total
         FROM todos
-    ''').fetchone()
+    ''')).fetchone()
     
     # Статистика для отображения
     total_tasks = len(processed_todos)
@@ -100,7 +101,7 @@ def todo():
                          today=today)
 
 @bluprint_todo_routes.route('/add_todo', methods=['GET', 'POST'])
-@permission_required(Permissions.todo_manage)
+@permissions_required(Permissions.todo_manage)
 def add_todo():
     db = get_db()
     organizations = db.execute('SELECT * FROM organizations ORDER BY name').fetchall()
@@ -128,10 +129,10 @@ def add_todo():
                 return render_template('todo/add_todo.html', organizations=organizations)
         
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO todos (title, description, status, priority, organization_id, due_date)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (title, description, status, priority, organization_id, due_date))
+            '''), (title, description, status, priority, organization_id, due_date))
             db.commit()
             flash('Задача успешно добавлена!', 'success')
             return redirect(url_for('todo.todo'))
@@ -141,18 +142,18 @@ def add_todo():
     return render_template('todo/add_todo.html', organizations=organizations)
 
 @bluprint_todo_routes.route('/edit_todo/<int:todo_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.todo_manage)
+@permissions_required(Permissions.todo_manage)
 def edit_todo(todo_id):
     db = get_db()
     organizations = db.execute('SELECT * FROM organizations ORDER BY name').fetchall()
     
     # Получаем задачу
-    task = db.execute('''
+    task = db.execute(text('''
         SELECT t.*, o.name as organization_name 
         FROM todos t 
         LEFT JOIN organizations o ON t.organization_id = o.id 
         WHERE t.id = ?
-    ''', (todo_id,)).fetchone()
+    '''), (todo_id,)).fetchone()
     
     if not task:
         flash('Задача не найдена', 'error')
@@ -200,12 +201,12 @@ def edit_todo(todo_id):
             completed_at = None
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE todos SET 
                 title=?, description=?, status=?, priority=?, organization_id=?, due_date=?,
                 is_completed=?, completed_at=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id=?
-            ''', (title, description, status, priority, organization_id, due_date, 
+            '''), (title, description, status, priority, organization_id, due_date, 
                   is_completed, completed_at, todo_id))
             db.commit()
             flash('Задача успешно обновлена!', 'success')
@@ -216,7 +217,7 @@ def edit_todo(todo_id):
     return render_template('todo/edit_todo.html', task=task_dict, organizations=organizations)
 
 @bluprint_todo_routes.route('/delete_todo/<int:todo_id>')
-@permission_required(Permissions.todo_manage)
+@permissions_required(Permissions.todo_manage)
 def delete_todo(todo_id):
     db = get_db()
     try:
@@ -229,19 +230,19 @@ def delete_todo(todo_id):
     return redirect(url_for('todo.todo'))
 
 @bluprint_todo_routes.route('/complete_todo/<int:todo_id>')
-@permission_required(Permissions.todo_manage)
+@permissions_required(Permissions.todo_manage)
 def complete_todo(todo_id):
     """Отметить задачу как выполненную"""
     db = get_db()
     try:
-        db.execute('''
+        db.execute(text('''
             UPDATE todos SET 
             status = 'выполнена', 
             is_completed = 1,
             completed_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        ''', (todo_id,))
+        '''), (todo_id,))
         db.commit()
         flash('Задача отмечена как выполненная!', 'success')
     except Exception as e:
@@ -250,19 +251,19 @@ def complete_todo(todo_id):
     return redirect(url_for('todo.todo'))
 
 @bluprint_todo_routes.route('/reopen_todo/<int:todo_id>')
-@permission_required(Permissions.todo_manage)
+@permissions_required(Permissions.todo_manage)
 def reopen_todo(todo_id):
     """Вернуть задачу в работу"""
     db = get_db()
     try:
-        db.execute('''
+        db.execute(text('''
             UPDATE todos SET 
             status = 'в работе', 
             is_completed = 0,
             completed_at = NULL,
             updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        ''', (todo_id,))
+        '''), (todo_id,))
         db.commit()
         flash('Задача возвращена в работу!', 'success')
     except Exception as e:
@@ -271,7 +272,7 @@ def reopen_todo(todo_id):
     return redirect(url_for('todo.todo'))
 
 @bluprint_todo_routes.route('/toggle_completed')
-@permission_required(Permissions.todo_manage)
+@permissions_required(Permissions.todo_manage)
 def toggle_completed():
     """Переключить отображение выполненных задач"""
     show_completed = request.args.get('show_completed', 'false') == 'true'

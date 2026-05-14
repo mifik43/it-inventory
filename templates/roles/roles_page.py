@@ -3,7 +3,7 @@ from templates.base.database import get_db
 from templates.roles.database_roles import read_all_roles, save_role, update_role, find_role_by_id, remove_role
 from templates.roles.permissions import Role, Permissions
 
-from templates.base.requirements import permission_required, permissions_required_any, permissions_required_all
+from templates.base.requirements import permissions_required, permissions_required, permissions_required_all, get_current_user
 
 import templates.auth.users as users
 
@@ -11,12 +11,12 @@ bluprint_roles_routes = Blueprint("roles", __name__)
 
 
 @bluprint_roles_routes.route('/roles')
-@permissions_required_any([Permissions.roles_read, Permissions.roles_manage])
+@permissions_required_all([Permissions.roles_read, Permissions.roles_manage])
 def roles():
 
     roles = read_all_roles()
 
-    return render_template('roles/roles.html', roles=roles)
+    return render_template('roles/roles.html', roles=roles, current_user=get_current_user())
 
 @bluprint_roles_routes.route('/create_role', methods=['GET', 'POST'])
 @permissions_required_all([Permissions.roles_read, Permissions.roles_manage])
@@ -38,7 +38,7 @@ def create_role():
         
         return redirect(url_for('roles.roles'))
     
-    return render_template('roles/create_role.html', permissions=Permissions.get_names())
+    return render_template('roles/create_role.html', permissions=Permissions.get_names(), current_user=get_current_user())
 
 @bluprint_roles_routes.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
 @permissions_required_all([Permissions.roles_read, Permissions.roles_manage])
@@ -54,17 +54,20 @@ def edit_role(role_id):
                 role.add_permission(p)
 
         update_role(role)
-        users.update_effective_permissions()
         
         return redirect(url_for('roles.roles'))
     
     role:Role = find_role_by_id(role_id)
-    permissions=Permissions.get_names()
-    
+    #permissions=Permissions.get_names()
+    try:
+        permissions=Permissions.get_names()
+    except TypeError:
+           # Временное решение - возвращаем пустой список
+        permissions = []
     for p in role.permissions:
         permissions[p]['checked'] = "checked"
 
-    return render_template('roles/edit_role.html', role=role, permissions=permissions)
+    return render_template('roles/edit_role.html', role=role, permissions=permissions, current_user=get_current_user())
         
 
 @bluprint_roles_routes.route('/delete_role/<int:role_id>')

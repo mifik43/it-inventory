@@ -1,15 +1,16 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
+from sqlalchemy import text
 
 bluprint_shifts_routes = Blueprint("shifts", __name__)
 
 
 
 @bluprint_shifts_routes.route('/shifts_list')
-@permission_required(Permissions.shifts_read)
+@permissions_required(Permissions.shifts_read)
 def shifts_list():
     db = get_db()
     
@@ -69,7 +70,7 @@ def shifts_list():
     all_users = db.execute('SELECT id, username FROM users ORDER BY username').fetchall()
     
     # Статистика
-    stats = db.execute('''
+    stats = db.execute(text('''
         SELECT 
             COUNT(*) as month_shifts,
             SUM(CASE WHEN shift_type = 'Утро' THEN 1 ELSE 0 END) as morning_shifts,
@@ -77,7 +78,7 @@ def shifts_list():
             SUM(CASE WHEN shift_type = 'Ночь' THEN 1 ELSE 0 END) as night_shifts
         FROM shifts 
         WHERE shift_date BETWEEN ? AND ?
-    ''', (date_from_str, date_to_str)).fetchone()
+    '''), (date_from_str, date_to_str)).fetchone()
     
     # Данные для календаря
     calendar_dates = []
@@ -106,7 +107,7 @@ def shifts_list():
                          calendar_users=calendar_users)
 
 @bluprint_shifts_routes.route('/add_shift', methods=['GET', 'POST'])
-@permission_required(Permissions.shifts_manage)
+@permissions_required(Permissions.shifts_manage)
 def add_shift():
     db = get_db()
     users = db.execute('SELECT id, username FROM users ORDER BY username').fetchall()
@@ -135,10 +136,10 @@ def add_shift():
             return render_template('shifts/add_shift.html', users=users)
         
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO shifts (user_id, shift_date, shift_type, start_time, end_time, notes)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (user_id, shift_date, shift_type, start_time, end_time, notes))
+            '''), (user_id, shift_date, shift_type, start_time, end_time, notes))
             db.commit()
             flash('Смена успешно добавлена!', 'success')
             return redirect(url_for('shifts.shifts_list'))
@@ -148,16 +149,16 @@ def add_shift():
     return render_template('shifts/add_shift.html', users=users)
 
 @bluprint_shifts_routes.route('/edit_shift/<int:shift_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.shifts_manage)
+@permissions_required(Permissions.shifts_manage)
 def edit_shift(shift_id):
     db = get_db()
     
-    shift = db.execute('''
+    shift = db.execute(text('''
         SELECT s.*, u.username 
         FROM shifts s 
         JOIN users u ON s.user_id = u.id 
         WHERE s.id = ?
-    ''', (shift_id,)).fetchone()
+    '''), (shift_id,)).fetchone()
     
     if not shift:
         flash('Смена не найдена', 'error')
@@ -189,11 +190,11 @@ def edit_shift(shift_id):
             return render_template('shifts/edit_shift.html', shift=shift, users=users)
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE shifts SET 
                 user_id=?, shift_date=?, shift_type=?, start_time=?, end_time=?, notes=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id=?
-            ''', (user_id, shift_date, shift_type, start_time, end_time, notes, shift_id))
+            '''), (user_id, shift_date, shift_type, start_time, end_time, notes, shift_id))
             db.commit()
             flash('Смена успешно обновлена!', 'success')
             return redirect(url_for('shifts.shifts_list'))
@@ -203,7 +204,7 @@ def edit_shift(shift_id):
     return render_template('shifts/edit_shift.html', shift=shift, users=users)
 
 @bluprint_shifts_routes.route('/delete_shift/<int:shift_id>')
-@permission_required(Permissions.shifts_manage)
+@permissions_required(Permissions.shifts_manage)
 def delete_shift(shift_id):
     db = get_db()
     

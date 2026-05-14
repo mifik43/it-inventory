@@ -151,3 +151,58 @@ def export_any_type_to_exel(data_type):
     exporter = mapping[data_type]['exporter']
     file = exporter()
     return filename, file
+
+def export_checklist_to_excel():
+    """Экспорт чек-листа в Excel"""
+    db = get_db()
+    tasks = db.execute('SELECT * FROM checklist_tasks ORDER BY stage, task_number').fetchall()
+    
+    # Создание Excel файла
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Чек-лист открытия площадки"
+    
+    # Заголовки
+    headers = ['№', 'Этап', 'Задача', 'Описание', 'Комментарий', 'Статус', 
+               'Плановая дата', 'Фактическая дата', 'Ответственный', 'Создано']
+    
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+        cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+    
+    # Данные
+    for row_num, task in enumerate(tasks, 2):
+        ws.cell(row=row_num, column=1, value=task['task_number'])
+        ws.cell(row=row_num, column=2, value=task['stage'])
+        ws.cell(row=row_num, column=3, value=task['task'])
+        ws.cell(row=row_num, column=4, value=task['task_description'])
+        ws.cell(row=row_num, column=5, value=task['comment'])
+        ws.cell(row=row_num, column=6, value=task['status'])
+        ws.cell(row=row_num, column=7, value=task['planned_date'])
+        ws.cell(row=row_num, column=8, value=task['actual_date'])
+        ws.cell(row=row_num, column=9, value=task['responsible'])
+        ws.cell(row=row_num, column=10, value=task['created_at'])
+    
+    # Автоширина колонок
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Сохранение в временный файл
+    import tempfile
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
+    wb.save(temp_file.name)
+    
+    filename = f"checklist_scandy_park_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return filename, temp_file.name

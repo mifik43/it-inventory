@@ -1,8 +1,9 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
+from sqlalchemy import text
 
 bluprint_script_routes = Blueprint("script", __name__)
 
@@ -13,7 +14,7 @@ bluprint_script_routes = Blueprint("script", __name__)
 def script_list():  # Изменили имя с scripts_list на script_list
     """Список всех скриптов"""
     db = get_db()
-    scripts = db.execute('''
+    scripts = db.execute(text('''
         SELECT s.*, 
                COUNT(sr.id) as execution_count,
                MAX(sr.executed_at) as last_executed
@@ -21,7 +22,7 @@ def script_list():  # Изменили имя с scripts_list на script_list
         LEFT JOIN script_results sr ON s.id = sr.script_id 
         GROUP BY s.id
         ORDER BY s.created_at DESC
-    ''').fetchall()
+    ''')).fetchall()
     
     return render_template('scripts/scripts_list.html', scripts=scripts)
 
@@ -48,10 +49,10 @@ def add_script():  # Изменили имя с add_script на script_add
         
         db = get_db()
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO scripts (name, description, filename, content)
                 VALUES (?, ?, ?, ?)
-            ''', (name, description, filename, content))
+            '''), (name, description, filename, content))
             db.commit()
             flash('Скрипт успешно добавлен!', 'success')
             return redirect(url_for('script.script_list'))  # Обновили ссылку
@@ -89,11 +90,11 @@ def script_edit(script_id):  # Изменили имя с edit_script на scrip
             return render_template('scripts/edit_script.html', script=script)
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE scripts SET 
                 name=?, description=?, filename=?, content=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id=?
-            ''', (name, description, filename, content, script_id))
+            '''), (name, description, filename, content, script_id))
             db.commit()
             flash('Скрипт успешно обновлен!', 'success')
             return redirect(url_for('script.script_list'))  # Обновили ссылку

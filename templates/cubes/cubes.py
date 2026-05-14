@@ -1,27 +1,29 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
+
+from sqlalchemy import text
 
 bluprint_cubes_routes = Blueprint("cubes", __name__)
 
 def get_cubes():
     db = get_db()
-    cubes_list = db.execute('''
+    cubes_list = db.execute(text('''
         SELECT * FROM software_cubes 
         ORDER BY created_at DESC
-    ''').fetchall()
+    ''')).fetchall()
     return cubes_list
 
 @bluprint_cubes_routes.route('/cubes')
-@permission_required(Permissions.cubes_read)
+@permissions_required(Permissions.cubes_read)
 def cubes():
     cubes_list = get_cubes()
     return render_template('cubes/cubes.html', cubes=cubes_list)
 
 @bluprint_cubes_routes.route('/add_cube', methods=['GET', 'POST'])
-@permission_required(Permissions.cubes_manage)
+@permissions_required(Permissions.cubes_manage)
 def add_cube():
     if request.method == 'POST':
         name = request.form['name']
@@ -51,12 +53,12 @@ def add_cube():
         
         db = get_db()
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO software_cubes 
                 (name, software_type, license_type, license_key, contract_number, contract_date, price, users_count, 
                  support_contact, phone, email, object_location, city, status, renewal_date, notes)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (name, software_type, license_type, license_key, contract_number, contract_date, price, users_count,
+            '''), (name, software_type, license_type, license_key, contract_number, contract_date, price, users_count,
                   support_contact, phone, email, object_location, city, status, renewal_date, notes))
             db.commit()
             flash('Кубик успешно добавлен!', 'success')
@@ -67,7 +69,7 @@ def add_cube():
     return render_template('cubes/add_cube.html')
 
 @bluprint_cubes_routes.route('/edit_cube/<int:cube_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.cubes_manage)
+@permissions_required(Permissions.cubes_manage)
 def edit_cube(cube_id):
     db = get_db()
     
@@ -98,12 +100,12 @@ def edit_cube(cube_id):
             users_count = 1
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE software_cubes SET 
                 name=?, software_type=?, license_type=?, license_key=?, contract_number=?, contract_date=?, price=?, users_count=?,
                 support_contact=?, phone=?, email=?, object_location=?, city=?, status=?, renewal_date=?, notes=?
                 WHERE id=?
-            ''', (name, software_type, license_type, license_key, contract_number, contract_date, price, users_count,
+            '''), (name, software_type, license_type, license_key, contract_number, contract_date, price, users_count,
                   support_contact, phone, email, object_location, city, status, renewal_date, notes, cube_id))
             db.commit()
             flash('Данные кубика успешно обновлены!', 'success')
@@ -115,7 +117,7 @@ def edit_cube(cube_id):
     return render_template('cubes/edit_cube.html', cube=cube)
 
 @bluprint_cubes_routes.route('/delete_cube/<int:cube_id>')
-@permission_required(Permissions.cubes_manage)
+@permissions_required(Permissions.cubes_manage)
 def delete_cube(cube_id):
     db = get_db()
     try:
@@ -128,15 +130,15 @@ def delete_cube(cube_id):
     return redirect(url_for('cubes.cubes'))
 
 @bluprint_cubes_routes.route('/cube_search')
-@permission_required(Permissions.cubes_read)
+@permissions_required(Permissions.cubes_read)
 def cube_search():
     query = request.args.get('q', '')
     db = get_db()
     
-    cubes_list = db.execute('''
+    cubes_list = db.execute(text('''
         SELECT * FROM software_cubes 
         WHERE name LIKE ? OR license_key LIKE ? OR contract_number LIKE ? OR object_location LIKE ? OR support_contact LIKE ?
         ORDER BY created_at DESC
-    ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
+    '''), (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
     
     return render_template('cubes/cubes.html', cubes=cubes_list, search_query=query)

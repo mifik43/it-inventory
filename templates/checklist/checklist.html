@@ -1,0 +1,182 @@
+<!-- templates/checklist/checklist.html -->
+{% extends "base/base.html" %}
+
+{% block title %}Чек-лист открытия площадки Scandy Park{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Чек-лист открытия площадки Scandy Park</h1>
+    
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Всего задач</h5>
+                    <p class="card-text display-4">{{ stats.total }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Выполнено</h5>
+                    <p class="card-text display-4">{{ stats.completed }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">В работе</h5>
+                    <p class="card-text display-4">{{ stats.in_progress }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-secondary">
+                <div class="card-body">
+                    <h5 class="card-title">Не начато</h5>
+                    <p class="card-text display-4">{{ stats.not_started }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Панель управления -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Управление чек-листом</h5>
+                    <div>
+                        <a href="{{ url_for('checklist.add_checklist_task') }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-plus-circle"></i> Добавить задачу
+                        </a>
+                        <a href="{{ url_for('checklist.checklist_stats') }}" class="btn btn-info btn-sm">
+                            <i class="bi bi-graph-up"></i> Статистика
+                        </a>
+                        <button class="btn btn-primary btn-sm" onclick="exportChecklist()">
+                            <i class="bi bi-file-excel"></i> Экспорт в Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Таблица задач -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Этап</th>
+                            <th>Категория</th>
+                            <th>Описание задачи</th>
+                            <th>Комментарий</th>
+                            <th>Статус</th>
+                            <th>Плановая дата</th>
+                            <th>Ответственный</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.task_number }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ task.stage }}</span>
+                            </td>
+                            <td>{{ task.category }}</td>
+                            <td>{{ task.task_description }}</td>
+                            <td>
+                                {% if task.comment %}
+                                <small class="text-muted">{{ task.comment }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if task.status == 'Выполнено' %}bg-success
+                                    {% elif task.status == 'В работе' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ task.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if task.planned_date %}
+                                {{ task.planned_date }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if task.responsible %}
+                                <span class="badge bg-info">{{ task.responsible }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                        Изменить статус
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" 
+                                               onclick="updateTaskStatus({{ task.id }}, 'Выполнено')">
+                                            Выполнено
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" 
+                                               onclick="updateTaskStatus({{ task.id }}, 'В работе')">
+                                            В работе
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" 
+                                               onclick="updateTaskStatus({{ task.id }}, 'Не начато')">
+                                            Не начато
+                                        </a></li>
+                                    </ul>
+                                    <a href="{{ url_for('checklist.edit_checklist_task', task_id=task.id) }}" 
+                                       class="btn btn-outline-secondary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{{ url_for('checklist.delete_checklist_task', task_id=task.id) }}" 
+                                          method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-outline-danger" 
+                                                onclick="return confirm('Удалить задачу?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTaskStatus(taskId, newStatus) {
+    fetch(`/checklist/${taskId}/update_status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({status: newStatus})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function exportChecklist() {
+    window.location.href = '/checklist/export';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,404 @@
+{% extends "base/base.html" %}
+
+{% block title %}Статистика чек-листа - Scandy Park{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-graph-up me-2"></i> Статистика чек-листа</h1>
+        <div>
+            <a href="{{ url_for('checklist.checklist') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i> Назад к чек-листу
+            </a>
+        </div>
+    </div>
+    
+    <!-- Общая статистика -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i> Общая статистика</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card text-white bg-primary mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Всего задач</h6>
+                                    <p class="card-text display-6">{{ total_tasks }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-success mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Выполнено</h6>
+                                    <p class="card-text display-6">{{ completed_tasks }}</p>
+                                    <small>{{ (completed_tasks / total_tasks * 100)|round(1) if total_tasks > 0 else 0 }}%</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-warning mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">В работе</h6>
+                                    <p class="card-text display-6">{{ in_progress_tasks }}</p>
+                                    <small>{{ (in_progress_tasks / total_tasks * 100)|round(1) if total_tasks > 0 else 0 }}%</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-secondary mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Не начато</h6>
+                                    <p class="card-text display-6">{{ not_started_tasks }}</p>
+                                    <small>{{ (not_started_tasks / total_tasks * 100)|round(1) if total_tasks > 0 else 0 }}%</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Прогресс выполнения -->
+                    <div class="mt-4">
+                        <h6>Общий прогресс выполнения</h6>
+                        <div class="progress" style="height: 30px;">
+                            {% set completed_percent = (completed_tasks / total_tasks * 100)|round(1) if total_tasks > 0 else 0 %}
+                            {% set in_progress_percent = (in_progress_tasks / total_tasks * 100)|round(1) if total_tasks > 0 else 0 %}
+                            {% set not_started_percent = (not_started_tasks / total_tasks * 100)|round(1) if total_tasks > 0 else 0 %}
+                            
+                            <div class="progress-bar bg-success" style="width: {{ completed_percent }}%">
+                                {{ completed_percent }}% Выполнено
+                            </div>
+                            <div class="progress-bar bg-warning" style="width: {{ in_progress_percent }}%">
+                                {{ in_progress_percent }}% В работе
+                            </div>
+                            <div class="progress-bar bg-secondary" style="width: {{ not_started_percent }}%">
+                                {{ not_started_percent }}% Не начато
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Статистика по этапам -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-layers me-2"></i> Статистика по этапам</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Этап</th>
+                                    <th>Всего задач</th>
+                                    <th>Выполнено</th>
+                                    <th>В работе</th>
+                                    <th>Не начато</th>
+                                    <th>% выполнения</th>
+                                    <th>Прогресс</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stage in stage_stats %}
+                                <tr>
+                                    <td><strong>{{ stage.stage }}</strong></td>
+                                    <td>{{ stage.total }}</td>
+                                    <td>
+                                        <span class="badge bg-success">{{ stage.completed }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ stage.in_progress }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ stage.not_started }}</span>
+                                    </td>
+                                    <td>
+                                        {% set stage_completion_rate = (stage.completed / stage.total * 100)|round(1) if stage.total > 0 else 0 %}
+                                        <span class="badge 
+                                            {% if stage_completion_rate >= 80 %}bg-success
+                                            {% elif stage_completion_rate >= 50 %}bg-warning
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ stage_completion_rate }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            {% set stage_completed_percent = (stage.completed / stage.total * 100)|round(1) if stage.total > 0 else 0 %}
+                                            {% set stage_in_progress_percent = (stage.in_progress / stage.total * 100)|round(1) if stage.total > 0 else 0 %}
+                                            {% set stage_not_started_percent = (stage.not_started / stage.total * 100)|round(1) if stage.total > 0 else 0 %}
+                                            
+                                            <div class="progress-bar bg-success" style="width: {{ stage_completed_percent }}%" 
+                                                 title="Выполнено: {{ stage_completed_percent }}%">
+                                            </div>
+                                            <div class="progress-bar bg-warning" style="width: {{ stage_in_progress_percent }}%"
+                                                 title="В работе: {{ stage_in_progress_percent }}%">
+                                            </div>
+                                            <div class="progress-bar bg-secondary" style="width: {{ stage_not_started_percent }}%"
+                                                 title="Не начато: {{ stage_not_started_percent }}%">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Задачи с истекшим сроком -->
+    {% if overdue_tasks %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i> Задачи с истекшим сроком</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Найдено {{ overdue_tasks|length }} задач с истекшим сроком выполнения
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>№</th>
+                                    <th>Задача</th>
+                                    <th>Плановая дата</th>
+                                    <th>Статус</th>
+                                    <th>Просрочено на</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in overdue_tasks %}
+                                <tr class="table-danger">
+                                    <td>{{ task.task_number }}</td>
+                                    <td>
+                                        <strong>{{ task.task_description }}</strong><br>
+                                        <small class="text-muted">{{ task.stage }} / {{ task.category }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            {{ task.planned_date }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ task.status }}</span>
+                                    </td>
+                                    <td>
+                                        {% set today = now().date() if now is defined else 'сегодня' %}
+                                        <span class="badge bg-danger">
+                                            Просрочено
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('checklist.edit_checklist_task', task_id=task.id) }}" 
+                                               class="btn btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button class="btn btn-outline-success" 
+                                                    onclick="updateTaskStatus({{ task.id }}, 'Выполнено')">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Диаграммы (дополнительно) -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i> Распределение по статусам</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Простая круговая диаграмма на CSS -->
+                    <div class="d-flex justify-content-center">
+                        <div style="width: 200px; height: 200px; position: relative;">
+                            <div style="
+                                position: absolute;
+                                width: 200px;
+                                height: 200px;
+                                border-radius: 50%;
+                                background: conic-gradient(
+                                    #198754 {{ completed_percent }}%,
+                                    #ffc107 0 {{ completed_percent + in_progress_percent }}%,
+                                    #6c757d 0
+                                );
+                            "></div>
+                            <div style="
+                                position: absolute;
+                                width: 100px;
+                                height: 100px;
+                                border-radius: 50%;
+                                background: white;
+                                top: 50px;
+                                left: 50px;
+                            "></div>
+                            <div style="
+                                position: absolute;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                font-weight: bold;
+                                font-size: 24px;
+                            ">
+                                {{ completion_rate|round(1) }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span><span class="badge bg-success me-2">■</span> Выполнено: {{ completed_tasks }} ({{ completed_percent }}%)</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span><span class="badge bg-warning me-2">■</span> В работе: {{ in_progress_tasks }} ({{ in_progress_percent }}%)</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span><span class="badge bg-secondary me-2">■</span> Не начато: {{ not_started_tasks }} ({{ not_started_percent }}%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i> Следующие задачи</h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_tasks %}
+                    <div class="list-group">
+                        {% for task in upcoming_tasks[:5] %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ task.task_description }}</h6>
+                                <small>
+                                    <span class="badge bg-info">{{ task.planned_date }}</span>
+                                </small>
+                            </div>
+                            <p class="mb-1 small text-muted">{{ task.stage }} / {{ task.category }}</p>
+                            <small>
+                                <span class="badge 
+                                    {% if task.status == 'Выполнено' %}bg-success
+                                    {% elif task.status == 'В работе' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ task.status }}
+                                </span>
+                                {% if task.responsible %}
+                                <span class="badge bg-primary ms-2">{{ task.responsible }}</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="{{ url_for('checklist.checklist') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-list-ul me-1"></i> Все задачи
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">Нет предстоящих задач</h5>
+                        <p class="text-muted">Все задачи либо выполнены, либо не имеют срока выполнения</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Экспорт данных -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-download me-2"></i> Экспорт данных</h5>
+                </div>
+                <div class="card-body">
+                    <p>Вы можете экспортировать статистику и данные чек-листа в различных форматах:</p>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('checklist.export_checklist') }}" class="btn btn-primary">
+                            <i class="bi bi-file-excel me-2"></i> Экспорт в Excel
+                        </a>
+                        <button class="btn btn-secondary" onclick="printStatistics()">
+                            <i class="bi bi-printer me-2"></i> Печать отчета
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTaskStatus(taskId, newStatus) {
+    fetch(`/checklist/${taskId}/update_status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({status: newStatus})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function printStatistics() {
+    window.print();
+}
+
+// Обновляем статистику каждые 30 секунд (опционально)
+setTimeout(() => {
+    location.reload();
+}, 30000);
+</script>
+
+<style>
+@media print {
+    .btn, .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6 !important;
+        box-shadow: none !important;
+    }
+    
+    .progress-bar {
+        border: 1px solid #000;
+    }
+}
+</style>
+{% endblock %}

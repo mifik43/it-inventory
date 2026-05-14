@@ -10,25 +10,25 @@ import json
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
-
+from sqlalchemy import text
 
 bluprint_network_scan_routes = Blueprint("network_scan", __name__)
 
 # ========== МАРШРУТЫ ДЛЯ СКАНИРОВАНИЯ СЕТИ ==========
 @bluprint_network_scan_routes.route('/network_scan')
-@permission_required(Permissions.guest_wifi_manage)
+@permissions_required(Permissions.guest_wifi_manage)
 def network_scan():
     """Главная страница сканирования сети"""
     db = get_db()
     
     # Получаем последние сканирования
-    scans = db.execute('''
+    scans = db.execute(text('''
         SELECT * FROM network_scans 
         ORDER BY created_at DESC 
         LIMIT 10
-    ''').fetchall()
+    ''')).fetchall()
     
     return render_template('network_scan/network_scan.html', scans=scans)
 
@@ -59,10 +59,10 @@ def start_network_scan():
     
     try:
         # Создаем запись о сканировании
-        scan_id = db.execute('''
+        scan_id = db.execute(text('''
             INSERT INTO network_scans (name, scan_type, target_range, status)
             VALUES (?, ?, ?, ?)
-        ''', (scan_name, scan_type, target_range, 'running')).lastrowid
+        '''), (scan_name, scan_type, target_range, 'running')).lastrowid
         db.commit()
         
         # Запускаем сканирование в отдельном потоке
@@ -91,11 +91,11 @@ def run_network_scan_background(scan_id, scan_type, target_range):
             
             # Сохраняем найденные устройства
             for device in devices:
-                db.execute('''
+                db.execute(text('''
                     INSERT INTO network_devices 
                     (scan_id, ip_address, mac_address, hostname, vendor, os_info, ports, response_time)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
+                '''), (
                     scan_id,
                     device['ip_address'],
                     device.get('mac_address', 'Unknown'),
@@ -107,23 +107,23 @@ def run_network_scan_background(scan_id, scan_type, target_range):
                 ))
             
             # Обновляем статус сканирования
-            db.execute('''
+            db.execute(text('''
                 UPDATE network_scans 
                 SET status = 'completed', 
                     devices_found = ?,
                     completed_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            ''', (len(devices), scan_id))
+            '''), (len(devices), scan_id))
             db.commit()
             
         except Exception as e:
             # В случае ошибки обновляем статус
-            db.execute('''
+            db.execute(text('''
                 UPDATE network_scans 
                 SET status = 'failed',
                     notes = ?
                 WHERE id = ?
-            ''', (str(e), scan_id))
+            '''), (str(e), scan_id))
             db.commit()
 
 @bluprint_network_scan_routes.route('/network_scan/<int:scan_id>')
@@ -133,11 +133,11 @@ def network_scan_results(scan_id):
     db = get_db()
     
     scan = db.execute('SELECT * FROM network_scans WHERE id = ?', (scan_id,)).fetchone()
-    devices = db.execute('''
+    devices = db.execute(text('''
         SELECT * FROM network_devices 
         WHERE scan_id = ? 
         ORDER BY ip_address
-    ''', (scan_id,)).fetchall()
+    '''), (scan_id,)).fetchall()
     
     # Парсим JSON для портов
     processed_devices = []
@@ -177,12 +177,12 @@ def network_devices():
     """Список всех обнаруженных устройств"""
     db = get_db()
     
-    devices = db.execute('''
+    devices = db.execute(text('''
         SELECT nd.*, ns.name as scan_name, ns.created_at as scan_date
         FROM network_devices nd
         JOIN network_scans ns ON nd.scan_id = ns.id
         ORDER BY nd.last_seen DESC
-    ''').fetchall()
+    ''')).fetchall()
     
     # Обрабатываем порты
     processed_devices = []
@@ -271,12 +271,12 @@ def ping_device(ip):
 def device_info(device_id):
     """Информация об устройстве"""
     db = get_db()
-    device = db.execute('''
+    device = db.execute(text('''
         SELECT nd.*, ns.name as scan_name 
         FROM network_devices nd
         JOIN network_scans ns ON nd.scan_id = ns.id
         WHERE nd.id = ?
-    ''', (device_id,)).fetchone()
+    '''), (device_id,)).fetchone()
     
     if device:
         device_dict = dict(device)

@@ -1,37 +1,39 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
 
 from datetime import datetime
+from sqlalchemy import text
+
 
 bluprint_notes_routes = Blueprint("notes", __name__)
 
 
 @bluprint_notes_routes.route('/notes')
-@permission_required(Permissions.notes_read)
+@permissions_required(Permissions.notes_read)
 def notes_list():
     db = get_db()
-    notes = db.execute('''
+    notes = db.execute(text('''
         SELECT n.*, u.username as author_name 
         FROM notes n 
         JOIN users u ON n.author_id = u.id 
         WHERE n.author_id = ?
         ORDER BY n.is_pinned DESC, n.updated_at DESC
-    ''', (session['user_id'],)).fetchall()
+    '''), (session['user_id'],)).fetchall()
     
     # Статистика для сегодня
     today = datetime.now().strftime('%Y-%m-%d')
-    today_created = db.execute('''
+    today_created = db.execute(text('''
         SELECT COUNT(*) as count FROM notes 
         WHERE DATE(created_at) = ? AND author_id = ?
-    ''', (today, session['user_id'])).fetchone()['count']
+    '''), (today, session['user_id'])).fetchone()['count']
     
     return render_template('knowledge/notes/notes.html', notes=notes, today_created=today_created)
 
 @bluprint_notes_routes.route('/add_note', methods=['GET', 'POST'])
-@permission_required(Permissions.notes_manage)
+@permissions_required(Permissions.notes_manage)
 def add_note():
     if request.method == 'POST':
         title = request.form['title']
@@ -45,10 +47,10 @@ def add_note():
         
         db = get_db()
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO notes (title, content, color, is_pinned, author_id)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (title, content, color, is_pinned, session['user_id']))
+            '''), (title, content, color, is_pinned, session['user_id']))
             db.commit()
             flash('Заметка успешно создана!', 'success')
             return redirect(url_for('notes.notes_list'))
@@ -61,7 +63,7 @@ def add_note():
 
 
 @bluprint_notes_routes.route('/delete_note/<int:note_id>')
-@permission_required(Permissions.notes_manage)
+@permissions_required(Permissions.notes_manage)
 def delete_note(note_id):
     db = get_db()
     note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 
@@ -81,7 +83,7 @@ def delete_note(note_id):
     return redirect(url_for('notes.notes_list'))
 
 @bluprint_notes_routes.route('/edit_note/<int:note_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.notes_manage)
+@permissions_required(Permissions.notes_manage)
 def edit_note(note_id):
     db = get_db()
     note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 
@@ -102,11 +104,11 @@ def edit_note(note_id):
             return render_template('knowledge/notes/edit_note.html', note=note)
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE notes SET 
                 title=?, content=?, color=?, is_pinned=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id=?
-            ''', (title, content, color, is_pinned, note_id))
+            '''), (title, content, color, is_pinned, note_id))
             db.commit()
             flash('Заметка успешно обновлена!', 'success')
             return redirect(url_for('notes.notes_list'))
@@ -116,7 +118,7 @@ def edit_note(note_id):
     return render_template('knowledge/notes/edit_note.html', note=note)
 
 @bluprint_notes_routes.route('/toggle_pin_note/<int:note_id>')
-@permission_required(Permissions.notes_manage)
+@permissions_required(Permissions.notes_manage)
 def toggle_pin_note(note_id):
     db = get_db()
     note = db.execute('SELECT * FROM notes WHERE id = ? AND author_id = ?', 

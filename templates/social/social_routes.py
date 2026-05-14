@@ -1,26 +1,85 @@
+import sys
+import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from datetime import datetime, timedelta
 import json
-
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, login_required
+from templates.base.requirements import permissions_required, login_required
 from templates.roles.permissions import Permissions
+from sqlalchemy import text
 
-bluprint_social_routes = Blueprint("social", __name__)
+#bluprint_social_routes = Blueprint("social", __name__)
+bluprint_social_routes = Blueprint('social', __name__, template_folder='templates')
+
+class SocialPermissions:
+    social_manage = 'social_manage'
+    social_read = 'social_read'
+
+@bluprint_social_routes.route('/social')
+@login_required
+@permissions_required([SocialPermissions.social_read, SocialPermissions.social_manage])
+def social_index():
+    """Главная страница социальных сетей"""
+    return render_template('social/index.html')
+
+
+@bluprint_social_routes.route('/social/history')
+@login_required
+@permissions_required([SocialPermissions.social_read, SocialPermissions.social_manage])
+def social_history():
+    """История публикаций в соцсетях"""
+    db = get_db()
+    
+    # Получаем историю публикаций
+    history = db.execute(text('''
+        SELECT * FROM social_posts 
+        ORDER BY scheduled_time DESC 
+        LIMIT 50
+    ''')).fetchall()
+    
+    return render_template('social/history.html', history=history)
+
+@bluprint_social_routes.route('/social/scheduled')
+@login_required
+@permissions_required([SocialPermissions.social_read, SocialPermissions.social_manage])
+def scheduled_posts():
+    """Запланированные публикации"""
+    db = get_db()
+    
+    # Получаем запланированные публикации
+    scheduled = db.execute(text('''
+        SELECT * FROM social_posts 
+        WHERE status = 'scheduled' 
+        ORDER BY scheduled_time ASC
+    ''')).fetchall()
+    
+    return render_template('social/scheduled.html', scheduled=scheduled)
+
+@bluprint_social_routes.route('/social/platforms')
+@login_required
+@permissions_required([SocialPermissions.social_manage])
+def social_platforms():
+    """Настройки платформ социальных сетей"""
+    db = get_db()
+    
+    # Получаем настройки платформ
+    platforms = db.execute('SELECT * FROM social_platforms ORDER BY name').fetchall()
+    
+    return render_template('social/platforms.html', platforms=platforms)
 
 @bluprint_social_routes.route('/social/publish/article/<int:article_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def publish_article(article_id):
     """Публикация статьи в социальные сети"""
     db = get_db()
     
     # Получаем статью
-    article = db.execute('''
+    article = db.execute(text('''
         SELECT a.*, u.username as author_name 
         FROM articles a 
         JOIN users u ON a.author_id = u.id 
         WHERE a.id = ?
-    ''', (article_id,)).fetchone()
+    '''), (article_id,)).fetchone()
     
     if not article:
         flash('Статья не найдена', 'error')
@@ -50,11 +109,11 @@ def publish_article(article_id):
         
         # Сохраняем информацию о публикации
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO social_posts 
                 (article_id, content, platforms, status, user_id)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (article_id, content, json.dumps(platforms), 
+            '''), (article_id, content, json.dumps(platforms), 
                   'published', session['user_id']))
             
             db.commit()
@@ -71,18 +130,18 @@ def publish_article(article_id):
                          min_date=(datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M'))
 
 @bluprint_social_routes.route('/social/publish/note/<int:note_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.notes_manage)
+@permissions_required(Permissions.notes_manage)
 def publish_note(note_id):
     """Публикация заметки в социальные сети"""
     db = get_db()
     
     # Получаем заметку
-    note = db.execute('''
+    note = db.execute(text('''
         SELECT n.*, u.username as author_name 
         FROM notes n 
         JOIN users u ON n.author_id = u.id 
         WHERE n.id = ? AND n.author_id = ?
-    ''', (note_id, session['user_id'])).fetchone()
+    '''), (note_id, session['user_id'])).fetchone()
     
     if not note:
         flash('Заметка не найдена', 'error')
@@ -104,11 +163,11 @@ def publish_note(note_id):
         
         # Сохраняем информацию о публикации
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO social_posts 
                 (note_id, content, platforms, status, user_id)
                 VALUES (?, ?, ?, ?, ?)
-            ''', (note_id, content, json.dumps(platforms), 
+            '''), (note_id, content, json.dumps(platforms), 
                   'published', session['user_id']))
             
             db.commit()
@@ -124,56 +183,6 @@ def publish_note(note_id):
                          platforms=['twitter', 'vk', 'telegram', 'instagram', 'odnoklassniki', 'rutube'],
                          min_date=(datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M'))
 
-@bluprint_social_routes.route('/social/history')
-@login_required
-def social_history():
-    """История публикаций в социальные сети"""
-    db = get_db()
-    
-    posts = db.execute('''
-        SELECT sp.*, 
-               a.title as article_title, 
-               n.title as note_title,
-               u.username as publisher_name
-        FROM social_posts sp
-        LEFT JOIN articles a ON sp.article_id = a.id
-        LEFT JOIN notes n ON sp.note_id = n.id
-        JOIN users u ON sp.user_id = u.id
-        WHERE sp.user_id = ?
-        ORDER BY sp.created_at DESC
-        LIMIT 50
-    ''', (session['user_id'],)).fetchall()
-    
-    # Парсим результаты для отображения
-    for post in posts:
-        if post['platforms']:
-            try:
-                post['platforms_parsed'] = json.loads(post['platforms'])
-            except:
-                post['platforms_parsed'] = []
-    
-    return render_template('social/history.html', posts=posts)
-
-@bluprint_social_routes.route('/social/scheduled')
-@login_required
-def scheduled_posts():
-    """Список запланированных публикаций"""
-    db = get_db()
-    
-    scheduled = db.execute('''
-        SELECT sp.*, 
-               a.title as article_title, 
-               n.title as note_title,
-               u.username as publisher_name
-        FROM social_posts sp
-        LEFT JOIN articles a ON sp.article_id = a.id
-        LEFT JOIN notes n ON sp.note_id = n.id
-        JOIN users u ON sp.user_id = u.id
-        WHERE sp.user_id = ? AND sp.status = 'scheduled'
-        ORDER BY sp.scheduled_time ASC
-    ''', (session['user_id'],)).fetchall()
-    
-    return render_template('social/scheduled.html', scheduled_posts=scheduled)
 
 @bluprint_social_routes.route('/social/cancel_scheduled/<int:post_id>')
 @login_required

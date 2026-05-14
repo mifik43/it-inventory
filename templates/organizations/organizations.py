@@ -1,18 +1,19 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
+from sqlalchemy import text
 
 bluprint_organizations_routes = Blueprint("organizations", __name__)
 
 
 
 @bluprint_organizations_routes.route('/organizations')
-@permission_required(Permissions.organizations_read)
+@permissions_required(Permissions.organizations_read)
 def organizations():
     db = get_db()
-    organizations_list = db.execute('''
+    organizations_list = db.execute(text('''
         SELECT * FROM organizations 
         ORDER BY 
             CASE type
@@ -22,11 +23,11 @@ def organizations():
                 ELSE 4
             END,
             name
-    ''').fetchall()
+    ''')).fetchall()
     return render_template('organizations/organizations.html', organizations=organizations_list)
 
 @bluprint_organizations_routes.route('/add_organization', methods=['GET', 'POST'])
-@permission_required(Permissions.organizations_manage)
+@permissions_required(Permissions.organizations_manage)
 def add_organization():
     if request.method == 'POST':
         name = request.form['name']
@@ -45,10 +46,10 @@ def add_organization():
         
         db = get_db()
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO organizations (name, type, inn, contact_person, phone, email, address, notes)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (name, org_type, inn, contact_person, phone, email, address, notes))
+            '''), (name, org_type, inn, contact_person, phone, email, address, notes))
             db.commit()
             flash('Организация успешно добавлена!', 'success')
             return redirect(url_for('organizations.organizations'))
@@ -58,7 +59,7 @@ def add_organization():
     return render_template('organizations/add_organization.html')
 
 @bluprint_organizations_routes.route('/edit_organization/<int:org_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.organizations_manage)
+@permissions_required(Permissions.organizations_manage)
 def edit_organization(org_id):
     db = get_db()
     
@@ -83,11 +84,11 @@ def edit_organization(org_id):
             return render_template('organizations/edit_organization.html', org=org)
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE organizations SET 
                 name=?, type=?, inn=?, contact_person=?, phone=?, email=?, address=?, notes=?
                 WHERE id=?
-            ''', (name, org_type, inn, contact_person, phone, email, address, notes, org_id))
+            '''), (name, org_type, inn, contact_person, phone, email, address, notes, org_id))
             db.commit()
             flash('Данные организации успешно обновлены!', 'success')
             return redirect(url_for('organizations.organizations'))
@@ -97,7 +98,7 @@ def edit_organization(org_id):
     return render_template('organizations/edit_organization.html', org=org)
 
 @bluprint_organizations_routes.route('/delete_organization/<int:org_id>')
-@permission_required(Permissions.organizations_manage)
+@permissions_required(Permissions.organizations_manage)
 def delete_organization(org_id):
     db = get_db()
     

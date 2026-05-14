@@ -1,32 +1,63 @@
 import enum
 
-import templates.roles.database_roles as db_helper
-
 
 # список всех разрешений
-class Permissions(enum.StrEnum):
-    users_read = "users_read"
-    users_manage = "users_manage"
-    roles_read = "roles_read"
-    roles_manage = "roles_manage"
-    devices_read = "devices_read"
-    devices_manage = "devices_manage"
-    providers_read = "providers_read"
-    providers_manage = "providers_manage"
-    articles_read = "articles_read"
-    articles_manage = "articles_manage"
-    notes_read = "notes_read"
-    notes_manage = "notes_manage"
-    cubes_read = "cubes_read"
-    cubes_manage = "cubes_manage"
-    guest_wifi_read = "guest_wifi_read"
-    guest_wifi_manage = "guest_wifi_manage"
-    organizations_read = "organizations_read"
-    organizations_manage = "organizations_manage"
-    shifts_read = "shifts_read"
-    shifts_manage = "shifts_manage"
-    todo_read = "todo_read"
-    todo_manage = "todo_manage"
+class Permissions(enum.Enum):
+    # Ваши разрешения
+    VIEW_DASHBOARD = "view_dashboard"
+    EDIT_USERS = "edit_users"
+    # Пользователи
+    users_read = 'users_read'
+    users_manage = 'users_manage'
+    
+    # Роли
+    roles_read = 'roles_read'
+    roles_manage = 'roles_manage'
+    
+    # Устройства
+    devices_read = 'devices_read'
+    devices_manage = 'devices_manage'
+    
+    # Провайдеры
+    providers_read = 'providers_read'
+    providers_manage = 'providers_manage'
+    
+    # Гостевой WiFi
+    guest_wifi_read = 'guest_wifi_read'
+    guest_wifi_manage = 'guest_wifi_manage'
+    
+    # Кубы (программы)
+    cubes_read = 'cubes_read'
+    cubes_manage = 'cubes_manage'
+    
+    # Организации
+    organizations_read = 'organizations_read'
+    organizations_manage = 'organizations_manage'
+    
+    # Статьи
+    articles_read = 'articles_read'
+    articles_manage = 'articles_manage'
+    
+    # Заметки
+    notes_read = 'notes_read'
+    notes_manage = 'notes_manage'
+    
+    # Задачи
+    todo_read = 'todo_read'
+    todo_manage = 'todo_manage'
+    
+    # Смены
+    shifts_manage = 'shifts_manage'
+    shifts_read = 'shifts_read'
+    
+    # Социальные сети
+    social_read = 'social_read'
+    social_manage = 'social_manage'
+    
+    # Для чек-листа (добавьте при необходимости)
+    checklist_read = 'checklist_read'
+    checklist_manage = 'checklist_manage'
+    checklist_export = 'checklist_export'
 
     def to_name(p):
         if p == Permissions.users_read:
@@ -73,6 +104,12 @@ class Permissions(enum.StrEnum):
             return "Чтение списка задач"
         elif p == Permissions.todo_manage:
             return "Управление списком задач"
+        elif p == Permissions.checklist_read:
+            return "Чтение чеклиста"
+        elif p == Permissions.checklist_manage:
+            return "Управление чеклистом"
+        elif p == Permissions.checklist_export:
+            return "Выгрузка чеклиста"
     
     def get_names():
         names = dict()
@@ -134,7 +171,7 @@ def create_read_only_role():
     role = Role(id=None, name="Reader", description="Роль с правами только на чтение", permissions=set())
 
     for p in Permissions:
-        if str(p).endswith("read"):
+        if p.value.endswith("read"):
             role.add_permission(p)
 
     return role

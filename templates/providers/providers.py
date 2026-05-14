@@ -1,23 +1,24 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
+from sqlalchemy import text
 
 bluprint_provider_routes = Blueprint("providers", __name__)
 
 @bluprint_provider_routes.route('/providers')
-@permission_required(Permissions.providers_read)
+@permissions_required(Permissions.providers_read)
 def providers():
     db = get_db()
-    providers_list = db.execute('''
+    providers_list = db.execute(text('''
         SELECT * FROM providers 
         ORDER BY created_at DESC
-    ''').fetchall()
+    ''')).fetchall()
     return render_template('providers/providers.html', providers=providers_list)
 
 @bluprint_provider_routes.route('/add_provider', methods=['GET', 'POST'])
-@permission_required(Permissions.providers_manage)
+@permissions_required(Permissions.providers_manage)
 def add_provider():
     if request.method == 'POST':
         name = request.form['name']
@@ -43,12 +44,12 @@ def add_provider():
         
         db = get_db()
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO providers 
                 (name, service_type, contract_number, contract_date, ip_range, speed, price, 
                  contact_person, phone, email, object_location, city, status, notes)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
+            '''), (
                 name, service_type, contract_number, contract_date, ip_range, speed, price,
                 contact_person, phone, email, object_location, city, status, notes
             ))
@@ -61,7 +62,7 @@ def add_provider():
     return render_template('providers/add_provider.html')
 
 @bluprint_provider_routes.route('/edit_provider/<int:provider_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.providers_manage)
+@permissions_required(Permissions.providers_manage)
 def edit_provider(provider_id):
     db = get_db()
     
@@ -88,12 +89,12 @@ def edit_provider(provider_id):
             price = 0
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE providers SET 
                 name=?, service_type=?, contract_number=?, contract_date=?, ip_range=?, speed=?, price=?,
                 contact_person=?, phone=?, email=?, object_location=?, city=?, status=?, notes=?
                 WHERE id=?
-            ''', (
+            '''), (
                 name, service_type, contract_number, contract_date, ip_range, speed, price,
                 contact_person, phone, email, object_location, city, status, notes, provider_id
             ))
@@ -107,7 +108,7 @@ def edit_provider(provider_id):
     return render_template('providers/edit_provider.html', provider=provider)
 
 @bluprint_provider_routes.route('/delete_provider/<int:provider_id>')
-@permission_required(Permissions.providers_manage)
+@permissions_required(Permissions.providers_manage)
 def delete_provider(provider_id):
     db = get_db()
     try:
@@ -120,15 +121,15 @@ def delete_provider(provider_id):
     return redirect(url_for('providers.providers'))
 
 @bluprint_provider_routes.route('/provider_search')
-@permission_required(Permissions.providers_read)
+@permissions_required(Permissions.providers_read)
 def provider_search():
     query = request.args.get('q', '')
     db = get_db()
     
-    providers_list = db.execute('''
+    providers_list = db.execute(text('''
         SELECT * FROM providers 
         WHERE name LIKE ? OR contract_number LIKE ? OR object_location LIKE ? OR city LIKE ? OR contact_person LIKE ?
         ORDER BY created_at DESC
-    ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
+    '''), (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
     
     return render_template('providers/providers.html', providers=providers_list, search_query=query)

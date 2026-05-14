@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
 
 from werkzeug.utils import secure_filename
@@ -9,6 +9,7 @@ from datetime import datetime
 import os
 import jsonify
 
+from sqlalchemy import text
 
 # Настройки для загрузки файлов
 UPLOAD_FOLDER = 'static/uploads'
@@ -25,16 +26,16 @@ os.makedirs(SCREENSHOTS_FOLDER, exist_ok=True)
 bluprint_articles_routes = Blueprint("articles", __name__)
 
 @bluprint_articles_routes.route('/articles_list')
-@permission_required(Permissions.articles_read)
+@permissions_required(Permissions.articles_read)
 def articles_list():
     db = get_db()
-    articles = db.execute('''
+    articles = db.execute(text('''
         SELECT a.*, u.username as author_name 
         FROM articles a 
         JOIN users u ON a.author_id = u.id 
         WHERE a.is_published = 1
         ORDER BY a.updated_at DESC
-    ''').fetchall()
+    ''')).fetchall()
     
     # Получаем уникальные категории для фильтра
     categories = db.execute('SELECT DISTINCT category FROM articles ORDER BY category').fetchall()
@@ -42,10 +43,10 @@ def articles_list():
     
     # Статистика для сегодня
     today = datetime.now().strftime('%Y-%m-%d')
-    today_updated = db.execute('''
+    today_updated = db.execute(text('''
         SELECT COUNT(*) as count FROM articles 
         WHERE DATE(updated_at) = ? AND is_published = 1
-    ''', (today,)).fetchone()['count']
+    '''), (today,)).fetchone()['count']
     
     return render_template('knowledge/articles/articles.html', 
                          articles=articles, 
@@ -55,7 +56,7 @@ def articles_list():
 
 
 @bluprint_articles_routes.route('/add_article', methods=['GET', 'POST'])
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def add_article():
     if request.method == 'POST':
         title = request.form['title']
@@ -72,10 +73,10 @@ def add_article():
         db = get_db()
         try:
             # Создаем статью
-            cursor = db.execute('''
+            cursor = db.execute(text('''
                 INSERT INTO articles (title, content, category, tags, author_id, is_published)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (title, content, category, tags, session['user_id'], is_published))
+            '''), (title, content, category, tags, session['user_id'], is_published))
             article_id = cursor.lastrowid
             
             # Обработка загруженных скриншотов
@@ -87,10 +88,10 @@ def add_article():
                     if file and file.filename:  # Проверяем, что файл выбран
                         screenshot_info = save_screenshot(file, article_id)
                         if screenshot_info:
-                            db.execute('''
+                            db.execute(text('''
                                 INSERT INTO article_screenshots (article_id, filename, original_filename, file_size)
                                 VALUES (?, ?, ?, ?)
-                            ''', (article_id, screenshot_info['filename'], 
+                            '''), (article_id, screenshot_info['filename'], 
                                   screenshot_info['original_filename'], screenshot_info['file_size']))
                             uploaded_count += 1
                 
@@ -110,7 +111,7 @@ def add_article():
 
 
 @bluprint_articles_routes.route('/delete_article/<int:article_id>')
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def delete_article(article_id):
     db = get_db()
     article = db.execute('SELECT * FROM articles WHERE id = ?', (article_id,)).fetchone()
@@ -142,7 +143,7 @@ def delete_article(article_id):
 # ========== МАРШРУТЫ ДЛЯ СКРИНШОТОВ СТАТЕЙ ==========
 
 @bluprint_articles_routes.route('/edit_article/<int:article_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def edit_article(article_id):
     db = get_db()
     article = db.execute('SELECT * FROM articles WHERE id = ?', (article_id,)).fetchone()
@@ -168,11 +169,11 @@ def edit_article(article_id):
             return render_template('knowledge/articles/edit_article.html', article=article, screenshots=get_article_screenshots(article_id))
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE articles SET 
                 title=?, content=?, category=?, tags=?, is_published=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id=?
-            ''', (title, content, category, tags, is_published, article_id))
+            '''), (title, content, category, tags, is_published, article_id))
             db.commit()
             
             # Обработка загруженных скриншотов
@@ -182,10 +183,10 @@ def edit_article(article_id):
                     if file and file.filename:  # Проверяем, что файл выбран
                         screenshot_info = save_screenshot(file, article_id)
                         if screenshot_info:
-                            db.execute('''
+                            db.execute(text('''
                                 INSERT INTO article_screenshots (article_id, filename, original_filename, file_size)
                                 VALUES (?, ?, ?, ?)
-                            ''', (article_id, screenshot_info['filename'], 
+                            '''), (article_id, screenshot_info['filename'], 
                                   screenshot_info['original_filename'], screenshot_info['file_size']))
                             db.commit()
             
@@ -200,7 +201,7 @@ def edit_article(article_id):
 
 
 @bluprint_articles_routes.route('/articles/<int:article_id>')
-@permission_required(Permissions.articles_read)
+@permissions_required(Permissions.articles_read)
 def view_article(article_id):
     db = get_db()
     
@@ -208,12 +209,12 @@ def view_article(article_id):
     db.execute('UPDATE articles SET views = views + 1 WHERE id = ?', (article_id,))
     db.commit()
     
-    article = db.execute('''
+    article = db.execute(text('''
         SELECT a.*, u.username as author_name 
         FROM articles a 
         JOIN users u ON a.author_id = u.id 
         WHERE a.id = ?
-    ''', (article_id,)).fetchone()
+    '''), (article_id,)).fetchone()
     
     if not article:
         flash('Статья не найдена', 'error')
@@ -225,7 +226,7 @@ def view_article(article_id):
 
 
 @bluprint_articles_routes.route('/articles/screenshot/<int:screenshot_id>/description', methods=['POST'])
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def update_screenshot_description(screenshot_id):
     """Обновляет описание скриншота"""
     db = get_db()
@@ -244,16 +245,16 @@ def update_screenshot_description(screenshot_id):
         return jsonify({'success': False, 'error': 'Нет прав доступа'})
     
     try:
-        db.execute('''
+        db.execute(text('''
             UPDATE article_screenshots SET description = ? WHERE id = ?
-        ''', (data['description'], screenshot_id))
+        '''), (data['description'], screenshot_id))
         db.commit()
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 @bluprint_articles_routes.route('/delete_screenshot/<int:screenshot_id>')
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def delete_screenshot(screenshot_id):
     """Удаляет скриншот"""
     db = get_db()
@@ -320,11 +321,11 @@ def save_screenshot(file, article_id):
 def get_article_screenshots(article_id):
     """Получает все скриншоты для статьи"""
     db = get_db()
-    return db.execute('''
+    return db.execute(text('''
         SELECT * FROM article_screenshots 
         WHERE article_id = ? 
         ORDER BY upload_order, created_at
-    ''', (article_id,)).fetchall()
+    '''), (article_id,)).fetchall()
 
 def delete_screenshot(screenshot_id):
     """Удаляет скриншот"""

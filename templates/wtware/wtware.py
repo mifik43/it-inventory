@@ -1,8 +1,9 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint
 
 from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from templates.base.requirements import permissions_required, permissions_required_all, permissions_required
 from templates.roles.permissions import Permissions
+from sqlalchemy import text
 
 bluprint_wtware_routes = Blueprint("wtware", __name__)
 
@@ -13,10 +14,10 @@ bluprint_wtware_routes = Blueprint("wtware", __name__)
 @bluprint_wtware_routes.route('/wtware')
 def wtware_list():
     db = get_db()
-    configs = db.execute('''
+    configs = db.execute(text('''
         SELECT * FROM wtware_configs 
         ORDER BY name, created_at DESC
-    ''').fetchall()
+    ''')).fetchall()
     return render_template('wtware/wtware_list.html', configs=configs)
 
 @bluprint_wtware_routes.route('/add_wtware', methods=['GET', 'POST'])
@@ -44,13 +45,13 @@ def add_wtware():
         
         db = get_db()
         try:
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO wtware_configs 
                 (name, version, server_ip, server_port, screen_width, screen_height,
                  auto_start, network_drive, printer_config, startup_script,
                  shutdown_script, custom_config, status, notes)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
+            '''), (
                 name, version, server_ip, server_port, screen_width, screen_height,
                 auto_start, network_drive, printer_config, startup_script,
                 shutdown_script, custom_config, status, notes
@@ -94,13 +95,13 @@ def edit_wtware(config_id):
             return render_template('wtware/edit_wtware.html', config=config)
         
         try:
-            db.execute('''
+            db.execute(text('''
                 UPDATE wtware_configs SET 
                 name=?, version=?, server_ip=?, server_port=?, screen_width=?, screen_height=?,
                 auto_start=?, network_drive=?, printer_config=?, startup_script=?,
                 shutdown_script=?, custom_config=?, status=?, notes=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id=?
-            ''', (
+            '''), (
                 name, version, server_ip, server_port, screen_width, screen_height,
                 auto_start, network_drive, printer_config, startup_script,
                 shutdown_script, custom_config, status, notes, config_id
@@ -133,11 +134,11 @@ def wtware_search():
     query = request.args.get('q', '')
     db = get_db()
     
-    configs = db.execute('''
+    configs = db.execute(text(f'''
         SELECT * FROM wtware_configs 
-        WHERE name LIKE ? OR server_ip LIKE ? OR version LIKE ? OR notes LIKE ?
+        WHERE name LIKE '%{query}%' OR server_ip LIKE '%{query}%' OR version LIKE '%{query}%' OR notes LIKE '%{query}%'
         ORDER BY name, created_at DESC
-    ''', (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
+    ''')).fetchall()
     
     return render_template('wtware/wtware_list.html', configs=configs, search_query=query)
 
@@ -278,18 +279,18 @@ def wtware_deploy_config(config_id):
             flash(f'Конфигурация успешно развернута на устройстве {device_ip}!', 'success')
             
             # Сохраняем информацию о развертывании
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO wtware_deployments (config_id, device_ip, status, deployed_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            ''', (config_id, device_ip, 'success'))
+            '''), (config_id, device_ip, 'success'))
             db.commit()
         else:
             flash(f'Ошибка развертывания: {message}', 'error')
             
-            db.execute('''
+            db.execute(text('''
                 INSERT INTO wtware_deployments (config_id, device_ip, status, error_message, deployed_at)
                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ''', (config_id, device_ip, 'error', message))
+            '''), (config_id, device_ip, 'error', message))
             db.commit()
         
     except ValueError:
@@ -423,13 +424,13 @@ def wtware_deployments():
     """История развертываний конфигураций"""
     db = get_db()
     
-    deployments = db.execute('''
+    deployments = db.execute(text('''
         SELECT d.*, w.name as config_name 
         FROM wtware_deployments d 
         JOIN wtware_configs w ON d.config_id = w.id 
         ORDER BY d.deployed_at DESC
         LIMIT 50
-    ''').fetchall()
+    ''')).fetchall()
     
     return render_template('wtware/wtware_deployments.html', deployments=deployments)
 
@@ -437,7 +438,7 @@ def wtware_deployments():
 def scripts_list():
     """Список всех скриптов"""
     db = get_db()
-    scripts = db.execute('''
+    scripts = db.execute(text('''
         SELECT s.*, 
                COUNT(sr.id) as execution_count,
                MAX(sr.executed_at) as last_executed
@@ -445,7 +446,7 @@ def scripts_list():
         LEFT JOIN script_results sr ON s.id = sr.script_id 
         GROUP BY s.id
         ORDER BY s.created_at DESC
-    ''').fetchall()
+    ''')).fetchall()
     
     return render_template('scripts/scripts_list.html', scripts=scripts)
 
@@ -527,11 +528,11 @@ def save_script_result(db, script_id, result):
     """
     Сохраняет результат выполнения скрипта в базу данных
     """
-    db.execute('''
+    db.execute(text('''
         INSERT INTO script_results 
         (script_id, output, success, error_message, execution_time)
         VALUES (?, ?, ?, ?, ?)
-    ''', (
+    '''), (
         script_id,
         result['output'],
         result['success'],
@@ -544,12 +545,12 @@ def get_script_results(db, script_id, limit=10):
     """
     Получает историю выполнения скрипта
     """
-    return db.execute('''
+    return db.execute(text('''
         SELECT * FROM script_results 
         WHERE script_id = ? 
         ORDER BY executed_at DESC 
         LIMIT ?
-    ''', (script_id, limit)).fetchall()
+    '''), (script_id, limit)).fetchall()
 
 
 

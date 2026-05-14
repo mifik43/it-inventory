@@ -1,0 +1,165 @@
+{# templates/auth/profile.html #}
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <!-- Карточка профиля -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>Профиль пользователя</h5>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Аватар (временный вариант - иконка или Gravatar) -->
+                    <div class="mb-3">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar }}" alt="Avatar" class="rounded-circle img-fluid" style="width: 120px; height: 120px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                                <i class="bi bi-person-fill text-white" style="font-size: 4rem;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <h4>{{ user.username }}</h4>
+                    <p class="text-muted">{{ user.email }}</p>
+                    
+                    <!-- Дополнительная информация -->
+                    <div class="text-start mt-3">
+                        {% if user.created_at %}
+                        <p><i class="bi bi-calendar3 me-2"></i>Регистрация: {{ user.created_at.strftime('%d.%m.%Y') }}</p>
+                        {% endif %}
+                        {% if user.phone %}
+                        <p><i class="bi bi-telephone me-2"></i>{{ user.phone }}</p>
+                        {% endif %}
+                        {% if user.position %}
+                        <p><i class="bi bi-briefcase me-2"></i>{{ user.position }}</p>
+                        {% endif %}
+                        {% if user.department %}
+                        <p><i class="bi bi-diagram-3 me-2"></i>{{ user.department }}</p>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+                    <a href="{{ url_for('users.profile') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil-square"></i> Редактировать профиль
+                    </a>
+                </div>
+            </div>
+
+            <!-- Карточка с организациями -->
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-building me-2"></i>Мои организации</h5>
+                </div>
+                <div class="card-body">
+                    {% if organizations %}
+                        <div class="list-group list-group-flush">
+                            {% for org in organizations %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ org.name }}</strong>
+                                        <br><small class="text-muted">{{ org.type }}</small>
+                                    </div>
+                                    {% if org.id == current_organization_id %}
+                                        <span class="badge bg-primary">Текущая</span>
+                                    {% else %}
+                                        <a href="{{ url_for('roles.switch_organization', org_id=org.id) }}" 
+                                           class="btn btn-sm btn-outline-secondary">
+                                            Переключиться
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Вы не привязаны ни к одной организации.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <!-- Карточка ролей -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Мои роли и разрешения</h5>
+                </div>
+                <div class="card-body">
+                    {% if roles %}
+                        <div class="row">
+                            {% for role in roles %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100 border-'secondary'">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                {{ role.name }}
+                                                {% if role.organization_id is none %}
+                                                    <span class="badge bg-secondary ms-1">Глобальная</span>
+                                                {% else %}
+                                                    <span class="badge bg-primary ms-1">Орг.</span>
+                                                {% endif %}
+                                            </h6>
+                                            <p class="card-text small">{{ role.description or 'Нет описания' }}</p>
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    Разрешений: {{ role.permissions|length }}
+                                                    {% if role.organization_name %}
+                                                        <br>Организация: {{ role.organization_name }}
+                                                    {% endif %}
+                                                </small>
+                                            </p>
+                                            <!-- Подробный список разрешений (скрыт по умолчанию) -->
+                                            <button class="btn btn-sm btn-link p-0" type="button" data-bs-toggle="collapse" 
+                                                    data-bs-target="#perms-{{ role.id }}" aria-expanded="false">
+                                                Показать разрешения
+                                            </button>
+                                            <div class="collapse mt-2" id="perms-{{ role.id }}">
+                                                <div class="small text-muted">
+                                                    {% for perm in role.permissions %}
+                                                        <span class="badge bg-light text-dark me-1 mb-1">{{ perm.value.replace('_', ' ') }}</span>
+                                                    {% else %}
+                                                        <span class="text-muted">Нет разрешений</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">У вас нет назначенных ролей.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Дополнительная карточка для настроек пользователя -->
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-sliders2 me-2"></i>Настройки аккаунта</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <a href="{{ url_for('users.change_password') }}" class="btn btn-outline-danger w-100 mb-2">
+                                <i class="bi bi-key"></i> Сменить пароль
+                            </a>
+                        </div>
+                        <div class="col-sm-6">
+                            <a href="{{ url_for('users.profile') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="bi bi-bell"></i> Уведомления
+                            </a>
+                        </div>
+                        <div class="col-sm-12">
+                            <a href="{{ url_for('users.logout') }}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-box-arrow-right"></i> Выйти из системы
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

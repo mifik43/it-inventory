@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash
 from templates.roles.database_roles import create_roles_tables, find_role_by_name, save_roles_to_user_by_id
 from templates.base.database_helper import get_db
 
+from sqlalchemy import text
+
 def find_user_id_by_name(user_name:str, db:sqlite3.Connection = get_db()):
     user = db.execute(f"SELECT id FROM users where username=\"{user_name}\"").fetchone()
     if user is None:
@@ -54,7 +56,7 @@ def init_db():
     db = get_db()
     
     # Таблица устройств
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS devices (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -69,21 +71,25 @@ def init_db():
             specifications TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
+    '''))
     
     # Таблица пользователей
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user',
+            role TEXT NOT NULL,
+            email TEXT,
+            full_name TEXT,
+            phone TEXT,
+            is_active INTEGER DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
+    '''))
     
     # Таблица провайдеров
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS providers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -102,10 +108,10 @@ def init_db():
             notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
+    '''))
     
     # Таблица кубиков (программное обеспечение)
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS software_cubes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -126,19 +132,19 @@ def init_db():
             notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
+    '''))
     
     # Таблица логов
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             action TEXT NOT NULL,
             user TEXT NOT NULL,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
+    '''))
     # Таблица организаций
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS organizations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -151,9 +157,9 @@ def init_db():
             notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
+    '''))
     # Таблица задач
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS todos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
@@ -168,9 +174,9 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (organization_id) REFERENCES organizations (id)
         )
-    ''')
+    '''))
     # Таблица смен
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS shifts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -183,9 +189,9 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
-    ''')
+    '''))
     # Таблица статей
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS articles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
@@ -199,10 +205,10 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (author_id) REFERENCES users (id)
         )
-    ''')
+    '''))
 
     # Таблица заметок
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS notes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
@@ -214,9 +220,9 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (author_id) REFERENCES users (id)
         )
-    ''')
+    '''))
     # Таблица для скриншотов статей
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS article_screenshots (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             article_id INTEGER NOT NULL,
@@ -228,10 +234,10 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
         )
-    ''')
+    '''))
 
     # Таблица по гостевому WIFI
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS guest_wifi (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             city TEXT NOT NULL,
@@ -253,9 +259,9 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-    ''')
+    '''))
     # Таблица wtware
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS wtware_configs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -274,8 +280,8 @@ def init_db():
             notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-    db.execute('''
+        )'''))
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS wtware_deployments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             config_id INTEGER NOT NULL,
@@ -284,8 +290,8 @@ def init_db():
             error_message TEXT,
             deployed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (config_id) REFERENCES wtware_configs (id)
-        );        ''')
-    db.execute('''
+        );        '''))
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS scripts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -295,10 +301,10 @@ def init_db():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
+    '''))
     
     # Таблица для хранения результатов выполнения скриптов
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS script_results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             script_id INTEGER,
@@ -309,10 +315,10 @@ def init_db():
             execution_time REAL,
             FOREIGN KEY (script_id) REFERENCES scripts (id)
         )
-    ''')
+    '''))
 
     # Таблица для хранения сессий сканирования
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS network_scans (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -324,10 +330,10 @@ def init_db():
             completed_at DATETIME,
             notes TEXT
         )
-    ''')
+    '''))
     
     # Таблица для хранения обнаруженных устройств
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS network_devices (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             scan_id INTEGER,
@@ -342,8 +348,8 @@ def init_db():
             last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (scan_id) REFERENCES network_scans (id)
         )
-    ''')
-    db.execute('''
+    '''))
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS social_posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             article_id INTEGER,
@@ -361,9 +367,9 @@ def init_db():
             FOREIGN KEY (note_id) REFERENCES notes (id),
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
-    ''')
+    '''))
     
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS social_platforms (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             platform_name TEXT NOT NULL,
@@ -379,9 +385,9 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
-    ''')
+    '''))
     
-    db.execute('''
+    db.execute(text('''
         CREATE TABLE IF NOT EXISTS scheduled_posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             source_type TEXT NOT NULL, -- article, note
@@ -393,8 +399,96 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
-    ''')
+    '''))
+    
+    db.execute(text('''
+        CREATE TABLE IF NOT EXISTS roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    '''))
 
+    db.execute(text('''
+        CREATE TABLE IF NOT EXISTS permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    '''))
+
+    db.execute(text('''
+        CREATE TABLE IF NOT EXISTS role_permissions (
+            role_id INTEGER,
+            permission_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (role_id) REFERENCES roles (id),
+            FOREIGN KEY (permission_id) REFERENCES permissions (id),
+            PRIMARY KEY (role_id, permission_id)
+        )
+    '''))
+
+    # Добавляем базовые роли
+    db.execute("INSERT OR IGNORE INTO roles (name, description) VALUES ('admin', 'Администратор')")
+    db.execute("INSERT OR IGNORE INTO roles (name, description) VALUES ('user', 'Пользователь')")
+    db.execute("INSERT OR IGNORE INTO roles (name, description) VALUES ('manager', 'Менеджер')")
+    
+    # Добавляем базовые разрешения из Permissions
+    from templates.roles.permissions import Permissions
+    permissions_list = [
+        (Permissions.users_read, 'Просмотр пользователей'),
+        (Permissions.users_manage, 'Управление пользователями'),
+        (Permissions.roles_read, 'Просмотр ролей'),
+        (Permissions.roles_manage, 'Управление ролями'),
+        (Permissions.devices_read, 'Просмотр устройств'),
+        (Permissions.devices_manage, 'Управление устройствами'),
+        (Permissions.providers_read, 'Просмотр провайдеров'),
+        (Permissions.providers_manage, 'Управление провайдерами'),
+        (Permissions.guest_wifi_read, 'Просмотр гостевого WiFi'),
+        (Permissions.guest_wifi_manage, 'Управление гостевым WiFi'),
+        (Permissions.cubes_read, 'Просмотр программ'),
+        (Permissions.cubes_manage, 'Управление программами'),
+        (Permissions.organizations_read, 'Просмотр организаций'),
+        (Permissions.organizations_manage, 'Управление организациями'),
+        (Permissions.articles_read, 'Просмотр статей'),
+        (Permissions.articles_manage, 'Управление статьями'),
+        (Permissions.notes_read, 'Просмотр заметок'),
+        (Permissions.notes_manage, 'Управление заметками'),
+        (Permissions.todo_read, 'Просмотр задач'),
+        (Permissions.todo_manage, 'Управление задачами'),
+        (Permissions.shifts_manage, 'Управление сменами'),
+    ]
+    
+    for perm_name, perm_desc in permissions_list:
+        db.execute(
+            "INSERT OR IGNORE INTO permissions (name, description) VALUES (?, ?)",
+            (perm_name, perm_desc)
+        )
+    
+    # Даем администратору все разрешения
+    admin_id = db.execute("SELECT id FROM roles WHERE name = 'admin'").fetchone()['id']
+    all_permissions = db.execute("SELECT id, name FROM permissions").fetchall()
+    
+    for perm in all_permissions:
+        db.execute(
+            "INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)",
+            (admin_id, perm['id'])
+        )
+    
+    # Создаем администратора по умолчанию, если его нет
+    from werkzeug.security import generate_password_hash
+    admin_exists = db.execute(
+        "SELECT id FROM users WHERE username = 'admin'"
+    ).fetchone()
+    
+    if not admin_exists:
+        password_hash = generate_password_hash('admin123')
+        db.execute(text('''
+            INSERT INTO users (username, password_hash, role, email, full_name, is_active)
+            VALUES (?, ?, ?, ?, ?, ?)
+        '''), ('admin', password_hash, 'admin', 'admin@example.com', 'Администратор', 1))
     # Добавляем администратора по умолчанию
     create_roles_tables(db)
     init_default_admin(db)

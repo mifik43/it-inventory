@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from database import get_db
 from flask import current_app
+from sqlalchemy import text
 
 class TelegramBot:
     def __init__(self, token=None, webhook_url=None):
@@ -75,11 +76,11 @@ def save_telegram_request(telegram_data):
         category = categorize_message(message_text)
         
         # Сохраняем заявку
-        cursor = db.execute('''
+        cursor = db.execute(text('''
             INSERT INTO telegram_requests 
             (telegram_id, username, first_name, last_name, message_text, category)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (telegram_id, username, first_name, last_name, message_text, category))
+        '''), (telegram_id, username, first_name, last_name, message_text, category))
         
         request_id = cursor.lastrowid
         db.commit()
@@ -136,11 +137,11 @@ def update_request_status(request_id, status, user_id=None):
     db = get_db()
     
     try:
-        db.execute('''
+        db.execute(text('''
             UPDATE telegram_requests 
             SET status = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        ''', (status, request_id))
+        '''), (status, request_id))
         
         db.commit()
         return True
@@ -152,11 +153,11 @@ def assign_request(request_id, user_id):
     db = get_db()
     
     try:
-        db.execute('''
+        db.execute(text('''
             UPDATE telegram_requests 
             SET assigned_to = ?, status = 'assigned', updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        ''', (user_id, request_id))
+        '''), (user_id, request_id))
         
         db.commit()
         return True
@@ -168,12 +169,12 @@ def add_response(request_id, response_text, user_id):
     db = get_db()
     
     try:
-        db.execute('''
+        db.execute(text('''
             UPDATE telegram_requests 
             SET response_text = ?, response_by = ?, response_at = CURRENT_TIMESTAMP,
                 status = 'completed', updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        ''', (response_text, user_id, request_id))
+        '''), (response_text, user_id, request_id))
         
         db.commit()
         return True
@@ -184,7 +185,7 @@ def get_request_stats():
     """Статистика по заявкам"""
     db = get_db()
     
-    stats = db.execute('''
+    stats = db.execute(text('''
         SELECT 
             COUNT(*) as total,
             SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_count,
@@ -192,6 +193,6 @@ def get_request_stats():
             SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count,
             COUNT(DISTINCT telegram_id) as unique_users
         FROM telegram_requests
-    ''').fetchone()
+    ''')).fetchone()
     
     return dict(stats) if stats else {}

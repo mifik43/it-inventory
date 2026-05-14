@@ -4,12 +4,14 @@ from datetime import datetime
 from templates.base.database import get_db
 from flask import send_file
 
+from sqlalchemy import text
+
 def export_guest_wifi_to_excel():
     """Экспорт данных гостевого WiFi в Excel"""
     db = get_db()
     
     # Получаем данные гостевого WiFi
-    wifi_data = db.execute('''
+    wifi_data = db.execute(text('''
         SELECT 
             city, price, organization, status, ssid, 
             password, ip_range, speed, contract_number,
@@ -18,7 +20,7 @@ def export_guest_wifi_to_excel():
             created_at, updated_at
         FROM guest_wifi 
         ORDER BY city, organization
-    ''').fetchall()
+    ''')).fetchall()
     
     # Преобразуем в DataFrame
     columns = [

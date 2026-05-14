@@ -1,11 +1,12 @@
 from database import get_db
 from datetime import datetime, timedelta
+from sqlalchemy import text
 
 def migrate_shifts():
     db = get_db()
     try:
         # Создаем таблицу смен
-        db.execute('''
+        db.execute(text('''
             CREATE TABLE IF NOT EXISTS shifts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -18,7 +19,7 @@ def migrate_shifts():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
-        ''')
+        '''))
         
         # Добавляем тестовые данные
         users = db.execute('SELECT id FROM users').fetchall()
@@ -47,10 +48,10 @@ def migrate_shifts():
                     ))
             
             for shift in test_shifts:
-                db.execute('''
+                db.execute(text('''
                     INSERT INTO shifts (user_id, shift_date, shift_type, start_time, end_time, notes)
                     VALUES (?, ?, ?, ?, ?, ?)
-                ''', shift)
+                '''), shift)
         
         db.commit()
         print("✅ Таблица смен успешно создана и заполнена тестовыми данными!")

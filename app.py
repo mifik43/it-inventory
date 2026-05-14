@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response
-from templates.base.database import init_db, get_db
+from config import config
+from logger import setup_logger
+from templates.base.database_helper import db, init_db, get_db
 
-from templates.social.social_routes import bluprint_social_routes
-from templates.social.scheduler import SocialScheduler
+#from templates.social.scheduler import SocialScheduler
 
 import socket
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import func
 
 from templates.auth.users import bluprint_user_routes
 from templates.roles.roles_page import bluprint_roles_routes
@@ -22,7 +24,8 @@ from templates.network_scan.network_scanner import bluprint_network_scan_routes
 from templates.wtware.wtware import bluprint_wtware_routes
 from templates.scripts.script import bluprint_script_routes
 from templates.social.social_routes import bluprint_social_routes
-from templates.base.requirements import admin_required, login_required
+from templates.base.requirements import login_required, get_current_user
+from templates.checklist.checklist import bluprint_checklist_routes
 
 from excel_utils import (
     export_any_type_to_exel, import_from_excel
@@ -42,28 +45,22 @@ from network_scanner import NetworkScanner
 
 from templates.base.navigation import create_main_menu
 
+from templates.social.scheduler import SocialScheduler
+
+# Импортируем модели
+from models import (
+    User, Device, Provider, SoftwareCube, Organization, Todo, 
+    Shift, Article, Note, GuestWifi, Log, SocialPost, Script
+)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
+app.config.from_object(config)
+
+# Инициализация логирования
+logger = setup_logger(app)
 
 social_scheduler = SocialScheduler(app)
 # Глобальный объект сканера
-
-
-#from telegram_utils import (
-#    save_telegram_request, get_telegram_requests, update_request_status,
-#    assign_request, add_response, get_request_stats, TelegramBot
-#)
-
-# Конфигурация Telegram бота
-#TELEGRAM_BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE'  # Заменить на реальный токен
-#TELEGRAM_WEBHOOK_URL = 'https://your-domain.com/webhook/telegram'  # Заменить на реальный URL
-
-# Инициализация бота
-#telegram_bot = TelegramBot(token=TELEGRAM_BOT_TOKEN, webhook_url=TELEGRAM_WEBHOOK_URL)
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-very-secret-key-change-in-production'
 
 app.register_blueprint(bluprint_user_routes)
 app.register_blueprint(bluprint_roles_routes)
@@ -80,11 +77,17 @@ app.register_blueprint(bluprint_network_scan_routes)
 app.register_blueprint(bluprint_wtware_routes)
 app.register_blueprint(bluprint_script_routes)
 app.register_blueprint(bluprint_social_routes)
-
+app.register_blueprint(bluprint_checklist_routes)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
-    init_db()
+    db.init_app(app)
+    db.create_all()
+    init_db(app)
+    
+    from templates.checklist.checklist import init_checklist_db, import_initial_checklist_data
+    init_checklist_db()
+    import_initial_checklist_data()
 
 # ========== ОСНОВНЫЕ МАРШРУТЫ ==========
 
@@ -103,89 +106,61 @@ def inject_common_variables():
 
 @app.route('/')
 def index():
-    db = get_db()
-    
+
+    if get_current_user() is None:
+        logger.info("Перенаправляем на страницу входа")
+        return render_template('auth/login.html')
+
     # Основная статистика
-    devices_count = db.execute('SELECT COUNT(*) as count FROM devices').fetchone()['count']
-    active_providers_count = db.execute('SELECT COUNT(*) as count FROM providers WHERE status = "Активен"').fetchone()['count']
-    total_monthly_cost = db.execute('SELECT SUM(price) as total FROM providers WHERE status = "Активен"').fetchone()['total'] or 0
-    users_count = db.execute('SELECT COUNT(*) as count FROM users').fetchone()['count']
+    devices_count = Device.query.count()
+    active_providers_count = Provider.query.filter_by(status="Активен").count()
+    total_monthly_cost = db.session.query(func.sum(Provider.price)).filter_by(status="Активен").scalar() or 0
+    users_count = User.query.count()
 
     # Статистика по статьям и заметкам
-    articles_count = db.execute('SELECT COUNT(*) as count FROM articles WHERE is_published = 1').fetchone()['count']
-    notes_count = db.execute('SELECT COUNT(*) as count FROM notes').fetchone()['count']
+    articles_count = Article.query.filter_by(is_published=True).count()
+    notes_count = Note.query.count()
     
     # Ближайшие смены (на сегодня и завтра)
-    from datetime import datetime, timedelta
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
     
-    upcoming_shifts = db.execute('''
-        SELECT s.*, u.username 
-        FROM shifts s 
-        JOIN users u ON s.user_id = u.id 
-        WHERE s.shift_date BETWEEN ? AND ?
-        ORDER BY s.shift_date, s.shift_type
-        LIMIT 10
-    ''', (today, tomorrow)).fetchall()
+    upcoming_shifts = db.session.query(Shift, User).join(User).filter(
+        Shift.shift_date.between(today, tomorrow)
+    ).order_by(Shift.shift_date, Shift.shift_type).limit(10).all()
 
     # Статистика по устройствам
-    devices_by_type = db.execute('''
-        SELECT type, COUNT(*) as count 
-        FROM devices 
-        GROUP BY type 
-        ORDER BY count DESC
-    ''').fetchall()
+    devices_by_type = db.session.query(
+        Device.type, func.count(Device.id).label('count')
+    ).group_by(Device.type).order_by(func.count(Device.id).desc()).all()
     
-    devices_by_status = db.execute('''
-        SELECT status, COUNT(*) as count 
-        FROM devices 
-        GROUP BY status 
-        ORDER BY count DESC
-    ''').fetchall()
+    devices_by_status = db.session.query(
+        Device.status, func.count(Device.id).label('count')
+    ).group_by(Device.status).order_by(func.count(Device.id).desc()).all()
     
     # Последние добавленные устройства
-    recent_devices = db.execute('''
-        SELECT * FROM devices 
-        ORDER BY created_at DESC 
-        LIMIT 5
-    ''').fetchall()
+    recent_devices = Device.query.order_by(Device.created_at.desc()).limit(5).all()
     
     # Активные провайдеры
-    active_providers = db.execute('''
-        SELECT * FROM providers 
-        WHERE status = "Активен" 
-        ORDER BY created_at DESC 
-        LIMIT 5
-    ''').fetchall()
+    active_providers = Provider.query.filter_by(status="Активен").order_by(Provider.created_at.desc()).limit(5).all()
     
     # Статистика по провайдерам по городам
-    providers_by_city = db.execute('''
-        SELECT city, COUNT(*) as count 
-        FROM providers 
-        GROUP BY city 
-        ORDER BY count DESC
-    ''').fetchall()
+    providers_by_city = db.session.query(
+        Provider.city, func.count(Provider.id).label('count')
+    ).group_by(Provider.city).order_by(func.count(Provider.id).desc()).all()
     
     # Стоимость по типам услуг
-    cost_by_service = db.execute('''
-        SELECT service_type, SUM(price) as total_cost 
-        FROM providers 
-        WHERE status = "Активен" 
-        GROUP BY service_type 
-        ORDER BY total_cost DESC
-    ''').fetchall()
-
-    # Статистика по Telegram заявкам
-    #telegram_stats = get_request_stats()
-    #new_requests_count = telegram_stats.get('new_count', 0)
-    #total_requests_count = telegram_stats.get('total', 0)
+    cost_by_service = db.session.query(
+        Provider.service_type, func.sum(Provider.price).label('total_cost')
+    ).filter_by(status="Активен").group_by(Provider.service_type).order_by(func.sum(Provider.price).desc()).all()
 
     cubes_list = get_cubes()
 
     total_cubes_price = 0
     for c in cubes_list:
         total_cubes_price += c['price']
+
+    current_user = get_current_user()
     
     return render_template('dashboard/index.html',
                         devices_count=devices_count,
@@ -205,15 +180,7 @@ def index():
                         total_cubes_price=total_cubes_price,
                         today=today,
                         tomorrow=tomorrow,
-                        #telegram_stats=telegram_stats,
-                        #new_requests_count=new_requests_count,
-                        #total_requests_count=total_requests_count
-                        # total_wifi_count=total_wifi_count,
-                        # active_wifi_count=active_wifi_count,
-                        # total_wifi_price=total_wifi_price,
-                        # wifi_cities_count=wifi_cities_count,
-                        # recent_wifi=recent_wifi,
-                        # wifi_by_city=wifi_by_city
+                        current_user=current_user
     )  
 
 # ========== МАРШРУТЫ ДЛЯ ЭКСПОРТА/ИМПОРТА EXCEL ==========
@@ -237,7 +204,6 @@ def export_data(data_type):
         return redirect(request.referrer or url_for('index'))
 
 @app.route('/import/<data_type>', methods=['GET', 'POST'])
-@admin_required
 def import_data(data_type):
     """Импорт данных из Excel"""
     if request.method == 'POST':
@@ -288,11 +254,6 @@ def import_data(data_type):
                          simple_data_type=simple_data_type,  
                          page_title=f"Импорт {page_titles[data_type]}")
 
-
-
-
-
-
 def get_local_ip():
     """Получает локальный IP-адрес для доступа по сети"""
     try:
@@ -307,11 +268,7 @@ def get_local_ip():
 if __name__ == '__main__':
     local_ip = get_local_ip()
     social_scheduler.start()
-    #with app.app_context():
-    #    print("Зарегистрированные маршруты:")
-    #    for rule in app.url_map.iter_rules():
-    #        print(f"{rule.endpoint}: {rule.rule}")
-
+    
     # Запускаем сервер с доступом из локальной сети
     try:
         app.run(
@@ -321,8 +278,8 @@ if __name__ == '__main__':
             threaded=True    # Для обработки нескольких запросов одновременно
         )
     except KeyboardInterrupt:
-        print("\nОстановка сервера...")
+        logger.info("Остановка сервера...")
         social_scheduler.stop()
     except Exception as e:
-        print(f"Ошибка: {e}")
+        logger.error(f"Ошибка: {e}")
         social_scheduler.stop()
