@@ -158,7 +158,7 @@ def index():
 
     total_cubes_price = 0
     for c in cubes_list:
-        total_cubes_price += c['price']
+        total_cubes_price += c.price
 
     current_user = get_current_user()
     
