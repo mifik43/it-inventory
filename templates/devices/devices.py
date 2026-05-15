@@ -5,6 +5,7 @@ from templates.base.database_helper import db
 from templates.base.requirements import permissions_required
 from templates.roles.permissions import Permissions
 from models import Device
+from logger import logger
 
 bluprint_devices_routes = Blueprint("devices", __name__)
 
@@ -44,11 +45,15 @@ def add_device():
             )
             db.session.add(device)
             db.session.commit()
-            flash('Устройство успешно добавлено!', 'success')
+            message = 'Устройство успешно добавлено!'
+            flash(message, 'success')
+            logger.info(message)
             return redirect(url_for('devices.devices'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка при добавлении устройства: {str(e)}', 'error')
+            message = f'Ошибка при добавлении устройства: {str(e)}'
+            flash(message, 'error')
+            logger.error(message)
 
     return render_template('devices/add_device.html')
 
@@ -71,11 +76,15 @@ def edit_device(device_id):
 
         try:
             db.session.commit()
-            flash('Устройство успешно обновлено!', 'success')
+            message = 'Устройство успешно обновлено!'
+            flash(message, 'success')
+            logger.info(f"{message} id={device.id} name={device.name}")
             return redirect(url_for('devices.devices'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка при обновлении устройства: {str(e)}', 'error')
+            message = f'Ошибка при обновлении устройства: {str(e)}'
+            flash(message, 'error')
+            logger.error(f"{message} id={device.id} name={device.name}")
 
     return render_template('devices/edit_device.html', device=device)
 
@@ -87,10 +96,14 @@ def delete_device(device_id):
     try:
         db.session.delete(device)
         db.session.commit()
-        flash('Устройство успешно удалено!', 'success')
+        message = 'Устройство успешно удалено!'
+        flash(message, 'success')
+        logger.info(f"{message} id={device.id} name={device.name}")
     except Exception as e:
         db.session.rollback()
-        flash(f'Ошибка при удалении устройства: {str(e)}', 'error')
+        message = f'Ошибка при удалении устройства: {str(e)}'
+        flash(message, 'error')
+        logger.error(f"{message} id={device.id} name={device.name}")
 
     return redirect(url_for('devices.devices'))
 
