@@ -1,26 +1,38 @@
 import pandas as pd
 import io
 from datetime import datetime
-from templates.base.database import get_db
+from templates.base.database_helper import db
 from flask import send_file
-
-from sqlalchemy import text
+from models import GuestWifi
+from logger import logger
 
 def export_guest_wifi_to_excel():
     """Экспорт данных гостевого WiFi в Excel"""
-    db = get_db()
+    logger.info('Экспорт гостевого WiFi в Excel')
+    wifi_data = GuestWifi.query.order_by(GuestWifi.city, GuestWifi.organization).all()
     
-    # Получаем данные гостевого WiFi
-    wifi_data = db.execute(text('''
-        SELECT 
-            city, price, organization, status, ssid, 
-            password, ip_range, speed, contract_number,
-            contract_date, contact_person, phone, email,
-            installation_date, renewal_date, notes,
-            created_at, updated_at
-        FROM guest_wifi 
-        ORDER BY city, organization
-    ''')).fetchall()
+    rows = []
+    for wifi in wifi_data:
+        rows.append({
+            'Город': wifi.city,
+            'Стоимость': float(wifi.price) if wifi.price is not None else 0,
+            'Организация': wifi.organization,
+            'Статус': wifi.status,
+            'SSID': wifi.ssid,
+            'Пароль': wifi.password,
+            'IP диапазон': wifi.ip_range,
+            'Скорость': wifi.speed,
+            'Номер договора': wifi.contract_number,
+            'Дата договора': wifi.contract_date,
+            'Контактное лицо': wifi.contact_person,
+            'Телефон': wifi.phone,
+            'Email': wifi.email,
+            'Дата установки': wifi.installation_date,
+            'Дата продления': wifi.renewal_date,
+            'Примечания': wifi.notes,
+            'Дата создания': wifi.created_at,
+            'Дата обновления': wifi.updated_at
+        })
     
     # Преобразуем в DataFrame
     columns = [
@@ -31,12 +43,36 @@ def export_guest_wifi_to_excel():
         'Дата создания', 'Дата обновления'
     ]
     
-    df = pd.DataFrame(wifi_data, columns=columns)
+    df = pd.DataFrame(rows, columns=columns)
     
     # Форматируем числовые колонки
     if 'Стоимость' in df.columns:
         df['Стоимость'] = pd.to_numeric(df['Стоимость'], errors='coerce')
     
+    stats_rows = [
+        {
+            'city': wifi.city,
+            'price': float(wifi.price) if wifi.price is not None else 0,
+            'organization': wifi.organization,
+            'status': wifi.status,
+            'ssid': wifi.ssid,
+            'password': wifi.password,
+            'ip_range': wifi.ip_range,
+            'speed': wifi.speed,
+            'contract_number': wifi.contract_number,
+            'contract_date': wifi.contract_date,
+            'contact_person': wifi.contact_person,
+            'phone': wifi.phone,
+            'email': wifi.email,
+            'installation_date': wifi.installation_date,
+            'renewal_date': wifi.renewal_date,
+            'notes': wifi.notes,
+            'created_at': wifi.created_at,
+            'updated_at': wifi.updated_at
+        }
+        for wifi in wifi_data
+    ]
+
     # Создаем Excel файл в памяти
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -44,7 +80,7 @@ def export_guest_wifi_to_excel():
         df.to_excel(writer, sheet_name='Гостевой WiFi', index=False)
         
         # Лист со статистикой
-        stats_data = generate_wifi_stats(wifi_data)
+        stats_data = generate_wifi_stats(stats_rows)
         stats_df = pd.DataFrame([stats_data])
         stats_df.to_excel(writer, sheet_name='Статистика', index=False)
         
@@ -93,13 +129,10 @@ def generate_wifi_stats(wifi_data):
 
 def import_guest_wifi_from_excel(file):
     """Импорт данных гостевого WiFi из Excel файла"""
-    db = get_db()
-    
     try:
-        # Читаем Excel файл
+        logger.info('Импорт гостевого WiFi из Excel')
         df = pd.read_excel(file)
         
-        # Сопоставляем названия колонок (русские -> английские)
         column_mapping = {
             'Город': 'city',
             'Стоимость': 'price', 
@@ -119,25 +152,18 @@ def import_guest_wifi_from_excel(file):
             'Примечания': 'notes'
         }
         
-        # Переименовываем колонки
         df = df.rename(columns=column_mapping)
-        
-        # Оставляем только нужные колонки
         available_columns = [col for col in column_mapping.values() if col in df.columns]
         df = df[available_columns]
         
-        # Обрабатываем данные перед вставкой
         imported_count = 0
         errors = []
         
         for index, row in df.iterrows():
             try:
-                # Подготавливаем данные
                 row_data = {}
                 for col in available_columns:
                     value = row[col]
-                    
-                    # Обрабатываем специальные случаи
                     if pd.isna(value):
                         value = None
                     elif col == 'price' and value is not None:
@@ -145,45 +171,40 @@ def import_guest_wifi_from_excel(file):
                             value = float(value)
                         except (ValueError, TypeError):
                             value = 0.0
-                    elif isinstance(value, (int, float)) and pd.notna(value):
-                        # Для числовых полей, которые должны быть строками
-                        if col in ['contract_number', 'phone']:
-                            value = str(int(value)) if not pd.isna(value) else None
-                    
+                    elif col in ['contract_number', 'phone'] and value is not None:
+                        if isinstance(value, float) and not pd.isna(value):
+                            value = str(int(value))
+                        else:
+                            value = str(value)
+                    elif isinstance(value, pd.Timestamp):
+                        value = value.strftime('%Y-%m-%d')
                     row_data[col] = value
                 
-                # Проверяем обязательные поля
                 if not row_data.get('city'):
                     errors.append(f"Строка {index + 2}: Отсутствует город")
                     continue
                 
-                # Вставляем данные
-                columns = ', '.join(row_data.keys())
-                placeholders = ', '.join(['?' for _ in row_data])
-                
-                db.execute(
-                    f"INSERT INTO guest_wifi ({columns}) VALUES ({placeholders})",
-                    list(row_data.values())
-                )
+                wifi_record = GuestWifi(**row_data)
+                db.session.add(wifi_record)
                 imported_count += 1
-                
             except Exception as e:
+                logger.error(f'Ошибка при обработке строки {index + 2} импорта гостевого WiFi: {e}', exc_info=True)
                 errors.append(f"Строка {index + 2}: {str(e)}")
                 continue
         
-        db.commit()
+        db.session.commit()
         
         if errors:
             return False, f"Успешно импортировано {imported_count} записей. Ошибки: {'; '.join(errors)}"
-        else:
-            return True, f"Успешно импортировано {imported_count} записей"
-        
+        return True, f"Успешно импортировано {imported_count} записей"
     except Exception as e:
-        db.rollback()
+        db.session.rollback()
+        logger.error(f'Ошибка при импорте гостевого WiFi из Excel: {e}', exc_info=True)
         return False, f"Ошибка при импорте файла: {str(e)}"
 
 def create_wifi_template():
     """Создает шаблон Excel файла для импорта гостевого WiFi"""
+    logger.info('Генерация шаблона Excel для импорта гостевого WiFi')
     
     # Создаем DataFrame с примером данных
     sample_data = {
@@ -248,6 +269,7 @@ def create_wifi_template():
 
 def download_wifi_template():
     """Скачивание шаблона для импорта гостевого WiFi"""
+    logger.info('Скачивание шаблона гостевого WiFi')
     template_file = create_wifi_template()
     
     return send_file(
