@@ -110,6 +110,10 @@ class Permissions(enum.Enum):
             return "Управление чеклистом"
         elif p == Permissions.checklist_export:
             return "Выгрузка чеклиста"
+        elif p == Permissions.VIEW_DASHBOARD:
+            return "дашбор"
+        elif p == Permissions.EDIT_USERS:
+            return "редактирование пользователей"
     
     def get_names():
         names = dict()

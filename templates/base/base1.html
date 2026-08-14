@@ -38,35 +38,33 @@
             z-index: 1050;
             min-width: 300px;
         }
-        /* Для фиксации сайдбара при скролле */
-        .sidebar-sticky {
-            height: 100vh;
-            position: sticky;
-            top: 0;
-        }
     </style>
     {% block styles %}{% endblock %}
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar (только для авторизованных) -->
-            {% if current_user %}
-            <div class="col-md-3 col-lg-2 sidebar bg-light p-0">
-                <div class="d-flex flex-column flex-shrink-0 p-3 sidebar-sticky">
-                    <!-- Logo -->
+            <!-- Sidebar -->
+             <div class="sidebar">
+                {% include "base/navigation.html" %}
+            </div>
+            <!-- End of Sidebar -->
+             {% if current_user %}
+            <div class="col-md-3 col-lg-2 sidebar bg-light">
+                <div class="d-flex flex-column flex-shrink-0 p-3">
+                    <!-- Logo and System Name -->
                     <div class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
                         <i class="bi bi-pc-display-horizontal fs-4 me-2 text-primary"></i>
                         <span class="fs-5 fw-bold">IT Inventory</span>
                     </div>
                     <hr>
                     
-                    <!-- Навигация (пункты меню) -->
+                    <!-- Navigation -->
                     {% include "base/navigation.html" %}
                    
-                    <!-- Блок пользователя внизу -->
+                    <!-- User Info -->
                     <hr>
-                    <div class="dropdown mt-auto">
+                    <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" 
                            data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle fs-5 me-2"></i>
@@ -77,9 +75,6 @@
                                 Роль: <span class="badge bg-secondary">{{ current_user.role }}</span>
                             </span></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('users.profile') }}">
-                                <i class="bi bi-person"></i> Профиль
-                            </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('users.change_password') }}">
                                 <i class="bi bi-key"></i> Сменить пароль
                             </a></li>
@@ -90,14 +85,11 @@
                     </div>
                 </div>
             </div>
-            <!-- Основной контент (с отступом для сайдбара) -->
-            <div class="col-md-9 col-lg-10 main-content p-0">
-            {% else %}
-            <!-- Если пользователь не авторизован — контент на всю ширину -->
-            <div class="col-12 main-content p-0">
             {% endif %}
 
-                <!-- Flash-сообщения -->
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Flash Messages -->
                 <div class="flash-messages">
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
@@ -121,7 +113,7 @@
                     {% endwith %}
                 </div>
 
-                <!-- Основной блок контента -->
+                <!-- Page Content -->
                 <div class="container-fluid py-4">
                     {% block content %}{% endblock %}
                 </div>

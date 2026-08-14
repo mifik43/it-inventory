@@ -11,8 +11,14 @@ class Config:
     POSTGRES_PORT = os.environ.get('POSTGRES_PORT', '5432')
     POSTGRES_DB = os.environ.get('POSTGRES_DB', 'it_inventory')
     POSTGRES_USER = os.environ.get('POSTGRES_USER', 'postgres')
-    POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD', 'password')
-    
+    POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD', '131543/*')
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 10,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True,
+        'max_overflow': 20,
+        'pool_timeout': 60,  # увеличил таймаут
+    }
     SQLALCHEMY_DATABASE_URI = f'postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     

@@ -172,17 +172,17 @@ def checklist():
     tasks_list = []
     for task in tasks:
         tasks_list.append({
-            'id': task['id'],
-            'task_number': task['task_number'],
-            'stage': task['stage'],
-            'category': task['category'],
-            'task_description': task['task_description'],
-            'comment': task['comment'],
-            'status': task['status'],
-            'planned_date': task['planned_date'],
-            'actual_date': task['actual_date'],
-            'responsible': task['responsible'],
-            'created_at': task['created_at']
+            'id': id['id'],
+            'task_number': task_number['task_number'],
+            'stage': stage['stage'],
+            'category': category['category'],
+            'task_description': task_description['task_description'],
+            'comment': comment['comment'],
+            'status': status['status'],
+            'planned_date': planned_date['planned_date'],
+            'actual_date': actual_date['actual_date'],
+            'responsible': responsible['responsible'],
+            'created_at': created_at['created_at']
         })
 
     # Статистика по статусам

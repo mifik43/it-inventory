@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import flash, redirect, url_for, session, abort
+from flask import flash, redirect, url_for, session, abort, request
 from models import User
 import inspect
 
@@ -36,6 +36,8 @@ def login_required(f):
 
 
 def permissions_required(permissions):
+    if not isinstance(permissions, (list, tuple)):
+        permissions = [permissions]
     """Декоратор для проверки наличия хотя бы одного из указанных разрешений"""
     def decorator(f):
         @wraps(f)
@@ -57,6 +59,8 @@ def permissions_required(permissions):
     return decorator
 
 def permissions_required_all(permissions):
+    if not isinstance(permissions, (list, tuple)):
+        permissions = [permissions]
     """Декоратор для проверки наличия всех указанных разрешений"""
     def decorator(f):
         @wraps(f)

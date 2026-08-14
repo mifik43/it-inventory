@@ -122,7 +122,7 @@ def init_db(app):
                 username='admin',
                 password_hash=generate_password_hash('admin123'),
                 role='admin',
-                email='admin@example.com',
+                email='mifik43@yandex.ru',
                 full_name='Администратор',
                 is_active=True
             )

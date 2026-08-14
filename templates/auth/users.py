@@ -32,6 +32,9 @@ def login():
         else:
             flash('Неверное имя пользователя или пароль', 'error')
             logger.error(f"Неудачная попытка входа с именем пользователя: {username}")
+        session['username'] = user.username
+        session['role'] = user.role
+        update_effective_permissions()
     return render_template('auth/login.html')
 @bluprint_user_routes.route('/logout')
 def logout():

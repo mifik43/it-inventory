@@ -104,13 +104,19 @@ def inject_common_variables():
         'menu': create_main_menu()
     }
 
+@app.context_processor
+def inject_user():
+    from templates.base.requirements import get_current_user
+    user = get_current_user()
+    return {'current_user': User}
+
 @app.route('/')
 def index():
-
+    
     if get_current_user() is None:
         logger.info("Перенаправляем на страницу входа")
         return render_template('auth/login.html')
-
+    
     # Основная статистика
     devices_count = Device.query.count()
     active_providers_count = Provider.query.filter_by(status="Активен").count()
@@ -161,7 +167,7 @@ def index():
         total_cubes_price += c.price
 
     current_user = get_current_user()
-    
+
     return render_template('dashboard/index.html',
                         devices_count=devices_count,
                         active_providers_count=active_providers_count,
@@ -254,6 +260,10 @@ def import_data(data_type):
                          simple_data_type=simple_data_type,  
                          page_title=f"Импорт {page_titles[data_type]}")
 
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db.session.remove()
+    
 def get_local_ip():
     """Получает локальный IP-адрес для доступа по сети"""
     try:
