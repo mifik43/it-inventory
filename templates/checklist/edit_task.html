@@ -1,0 +1,90 @@
+{# templates/checklist/edit_task.html #}
+{% extends "base/base.html" %}
+
+{% block title %}Редактировать задачу в чек-листе{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i> Редактировать задачу</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('checklist.edit_checklist_task', task_id=task.id) }}">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="task_number" class="form-label">Номер задачи</label>
+                                <input type="text" class="form-control" id="task_number" name="task_number" 
+                                       value="{{ task.task_number or '' }}" placeholder="Например: 1.1">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="stage" class="form-label">Этап</label>
+                                <select class="form-select" id="stage" name="stage" required>
+                                    <option value="">Выберите этап</option>
+                                    <option value="Договора/подрядчик/закупки" {% if task.stage == 'Договора/подрядчик/закупки' %}selected{% endif %}>Договора/подрядчик/закупки</option>
+                                    <option value="Сервисы" {% if task.stage == 'Сервисы' %}selected{% endif %}>Сервисы</option>
+                                    <option value="Честный знак" {% if task.stage == 'Честный знак' %}selected{% endif %}>Честный знак</option>
+                                    <option value="Карусель" {% if task.stage == 'Карусель' %}selected{% endif %}>Карусель</option>
+                                    <option value="Монтаж" {% if task.stage == 'Монтаж' %}selected{% endif %}>Монтаж</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Категория</label>
+                                <input type="text" class="form-control" id="category" name="category" 
+                                       value="{{ task.category or '' }}" placeholder="Например: Интернет, Закупка">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Статус</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="Не начато" {% if task.status == 'Не начато' %}selected{% endif %}>Не начато</option>
+                                    <option value="В работе" {% if task.status == 'В работе' %}selected{% endif %}>В работе</option>
+                                    <option value="Выполнено" {% if task.status == 'Выполнено' %}selected{% endif %}>Выполнено</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="task_description" class="form-label">Описание задачи</label>
+                            <textarea class="form-control" id="task_description" name="task_description" 
+                                      rows="3" required placeholder="Подробное описание задачи">{{ task.task_description or '' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Комментарий</label>
+                            <textarea class="form-control" id="comment" name="comment" 
+                                      rows="2" placeholder="Дополнительные заметки">{{ task.comment or '' }}</textarea>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="planned_date" class="form-label">Плановая дата</label>
+                                <input type="date" class="form-control" id="planned_date" name="planned_date" 
+                                       value="{{ task.planned_date.strftime('%Y-%m-%d') if task.planned_date else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="responsible" class="form-label">Ответственный</label>
+                                <input type="text" class="form-control" id="responsible" name="responsible" 
+                                       value="{{ task.responsible or '' }}" placeholder="ФИО ответственного">
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i> Сохранить изменения
+                            </button>
+                            <a href="{{ url_for('checklist.checklist') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-2"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

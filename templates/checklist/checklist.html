@@ -13,7 +13,7 @@
             <div class="card text-white bg-primary">
                 <div class="card-body">
                     <h5 class="card-title">Всего задач</h5>
-                    <p class="card-text display-4">{{ stats.total }}</p>
+                    <p class="card-text display-4">{{ status_stats.total }}</p>
                 </div>
             </div>
         </div>
@@ -21,7 +21,7 @@
             <div class="card text-white bg-success">
                 <div class="card-body">
                     <h5 class="card-title">Выполнено</h5>
-                    <p class="card-text display-4">{{ stats.completed }}</p>
+                    <p class="card-text display-4">{{ status_stats.completed }}</p>
                 </div>
             </div>
         </div>
@@ -29,7 +29,7 @@
             <div class="card text-white bg-warning">
                 <div class="card-body">
                     <h5 class="card-title">В работе</h5>
-                    <p class="card-text display-4">{{ stats.in_progress }}</p>
+                    <p class="card-text display-4">{{ stage_stats.in_progress }}</p>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
             <div class="card text-white bg-secondary">
                 <div class="card-body">
                     <h5 class="card-title">Не начато</h5>
-                    <p class="card-text display-4">{{ stats.not_started }}</p>
+                    <p class="card-text display-4">{{ stage_stats.not_started }}</p>
                 </div>
             </div>
         </div>

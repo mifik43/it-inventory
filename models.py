@@ -358,3 +358,30 @@ class Log(db.Model):
     action = Column(String(200), nullable=False)
     user = Column(String(200), nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class ChecklistTask(db.Model):
+    __tablename__ = 'checklist_tasks'
+    
+    id = Column(Integer, primary_key=True)
+    task_number = Column(String(50))
+    stage = Column(String(100), nullable=False)
+    task_description = Column(Text, nullable=False)
+    category = Column(String(100))
+    comment = Column(Text)
+    status = Column(String(50), default='Не начато')
+    planned_date = Column(Date)
+    actual_date = Column(Date)
+    responsible = Column(String(100))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class ChecklistHistory(db.Model):
+    __tablename__ = 'checklist_history'
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('checklist_tasks.id'))
+    changed_field = Column(String(50))
+    old_value = Column(Text)
+    new_value = Column(Text)
+    changed_by = Column(String(100))
+    changed_at = Column(DateTime, default=datetime.utcnow)
