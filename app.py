@@ -107,7 +107,7 @@ def inject_common_variables():
 @app.context_processor
 def inject_user():
     from templates.base.requirements import get_current_user
-    user = get_current_user()
+    User = get_current_user()
     return {'current_user': User}
 
 @app.route('/')
