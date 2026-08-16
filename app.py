@@ -166,6 +166,19 @@ def index():
     for c in cubes_list:
         total_cubes_price += c.price
 
+    
+
+    # Статистика по WiFi
+    total_wifi_count = GuestWifi.query.count()
+    active_wifi_count = GuestWifi.query.filter_by(status='Активен').count()
+    wifi_cities_count = db.session.query(GuestWifi.city).distinct().count()
+    recent_wifi = GuestWifi.query.order_by(GuestWifi.created_at.desc()).limit(5).all()
+    wifi_by_city = db.session.query(
+        GuestWifi.city,
+        func.count(GuestWifi.id).label('count'),
+        func.sum(GuestWifi.price).label('total_price')
+    ).group_by(GuestWifi.city).order_by(func.count(GuestWifi.id).desc()).all()
+
     current_user = get_current_user()
 
     return render_template('dashboard/index.html',
@@ -186,7 +199,14 @@ def index():
                         total_cubes_price=total_cubes_price,
                         today=today,
                         tomorrow=tomorrow,
-                        current_user=current_user
+                        current_user=current_user,
+                        total_wifi_count=total_wifi_count,
+                        active_wifi_count=active_wifi_count,
+                        wifi_cities_count=wifi_cities_count,
+                        recent_wifi=recent_wifi,
+                        wifi_by_city=wifi_by_city
+
+
     )  
 
 # ========== МАРШРУТЫ ДЛЯ ЭКСПОРТА/ИМПОРТА EXCEL ==========
