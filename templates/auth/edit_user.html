@@ -31,10 +31,18 @@
                                 <input type="password" class="form-control" id="new_password" name="new_password">
                                 <div class="form-text">Оставьте пустым, если не хотите менять пароль</div>
                             </div>
+
+                            <div class="mb-3">
+                                <label for="is_active" class="form-label">Статус</label>
+                                <select class="form-select" id="is_active" name="is_active">
+                                    <option value="1" {% if user.is_active %}selected{% endif %}>Активен</option>
+                                    <option value="0" {% if not user.is_active %}selected{% endif %}>Заблокирован</option>
+                                </select>
+                            </div>
                             
                             <div class="btn-group" role="group">
                                 <button type="submit" class="btn btn-primary">Сохранить</button>
-                                <a href="{{ url_for('users.login') }}" class="btn btn-outline-secondary">Отмена</a>
+                                <a href="{{ url_for('users.admin_panel') }}" class="btn btn-outline-secondary">Отмена</a>
                             </div>
                         </div>
                         
@@ -50,5 +58,4 @@
 </div>
 
 {% include "auth/roles_styles.html" %}
-
 {% endblock %}

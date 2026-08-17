@@ -15,6 +15,7 @@ class User(db.Model):
     phone = Column(String(20))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    roles = relationship('Role', secondary='roles_to_user', back_populates='users')
     
     # Relationships
     shifts = relationship('Shift', backref='user', lazy=True)
@@ -328,6 +329,7 @@ class Role(db.Model):
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     permissions = relationship('Permission', secondary='role_permissions', backref='roles')
+    users = relationship('User', secondary='roles_to_user', back_populates='roles')
 
 class Permission(db.Model):
     __tablename__ = 'permissions'
@@ -347,8 +349,8 @@ class RolePermission(db.Model):
 class UserRole(db.Model):
     __tablename__ = 'roles_to_user'
     
-    role_id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, primary_key=True)
+    role_id = Column(Integer, ForeignKey('roles.id'), primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Log(db.Model):

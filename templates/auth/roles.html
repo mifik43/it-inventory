@@ -1,18 +1,25 @@
-
-<div class="roles-container">
-    <h6 class="mb-3">Назначение ролей</h6>
-    <div class="roles-scrollable">
-        {% for role in roles %}
-        <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" name="{{ role.id }}"
-                value="{{ role.id }}" id="role_{{ role.id }}" {{ role.checked
-                }} />
-            <label class="form-check-label" for="role_{{ role.id }}">
-                <span class="fw-semibold">{{ role.name }}</span>
-                <br>
-                <small class="text-muted">{{ role.description }}</small>
-            </label>
-        </div>
-        {% endfor %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Назначение ролей</h5>
+    </div>
+    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+        {% if roles %}
+            {% for role in roles %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" 
+                           id="role_{{ role.id }}" 
+                           name="roles" 
+                           value="{{ role.id }}"
+                           {% if role.checked %}checked{% endif %}>
+                    <label class="form-check-label" for="role_{{ role.id }}">
+                        {{ role.name }}
+                        <span class="badge bg-secondary">{{ role.permissions|length }} разрешений</span>
+                    </label>
+                    <br><small class="text-muted">{{ role.description or 'Нет описания' }}</small>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">Роли не найдены. <a href="{{ url_for('roles.roles') }}">Создайте роль</a></p>
+        {% endif %}
     </div>
 </div>
