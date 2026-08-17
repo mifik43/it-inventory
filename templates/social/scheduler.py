@@ -1,18 +1,17 @@
-import os
 import json
 import time
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 
-from templates.base.database import get_db
+from templates.base.database_helper import db
+from models import ScheduledPost, Article, Note, SocialPost
 from .social_manager import SocialMediaManager
-from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
 class SocialScheduler:
-    """Планировщик для отложенных публикаций"""
+    """Планировщик для отложенных публикаций (на ORM)"""
     
     def __init__(self, app=None):
         self.app = app
@@ -43,7 +42,7 @@ class SocialScheduler:
             try:
                 self._check_scheduled_posts()
             except Exception as e:
-                logger.error(f"Ошибка в планировщике: {str(e)}")
+                logger.error(f"Ошибка в планировщике: {str(e)}", exc_info=True)
             
             # Пауза 60 секунд между проверками
             for _ in range(60):
@@ -52,91 +51,102 @@ class SocialScheduler:
                 time.sleep(1)
     
     def _check_scheduled_posts(self):
-        """Проверка запланированных публикаций"""
+        """Проверка запланированных публикаций (ORM)"""
         with self.app.app_context():
-            db = get_db()
-            
-            # Получаем посты, которые нужно опубликовать
             now = datetime.now()
-            scheduled_posts = db.execute(text('''
-                SELECT sp.*, 
-                       a.content as article_content, a.title as article_title,
-                       n.content as note_content, n.title as note_title
-                FROM scheduled_posts sp
-                LEFT JOIN articles a ON sp.source_type = 'article' AND sp.source_id = a.id
-                LEFT JOIN notes n ON sp.source_type = 'note' AND sp.source_id = n.id
-                WHERE sp.status = 'scheduled' 
-                AND sp.scheduled_time <= ?
-                ORDER BY sp.scheduled_time
-            '''), (now,)).fetchall()
+            
+            # Получаем посты со статусом 'scheduled' и временем <= now
+            scheduled_posts = ScheduledPost.query.filter(
+                ScheduledPost.status == 'scheduled',
+                ScheduledPost.scheduled_time <= now
+            ).order_by(ScheduledPost.scheduled_time).all()
             
             for post in scheduled_posts:
                 try:
-                    # Меняем статус на "обрабатывается"
-                    db.execute('UPDATE scheduled_posts SET status = "processing" WHERE id = ?', 
-                              (post['id'],))
-                    db.commit()
+                    # Меняем статус на 'processing'
+                    post.status = 'processing'
+                    db.session.commit()
                     
-                    # Определяем контент для публикации
-                    if post['source_type'] == 'article':
-                        content = f"{post['article_title']}\n\n{post['article_content'][:500]}..."
+                    # Определяем контент в зависимости от источника
+                    if post.source_type == 'article':
+                        article = Article.query.get(post.source_id)
+                        if article:
+                            content = f"{article.title}\n\n{article.content[:500]}..."
+                        else:
+                            content = "Статья удалена"
+                    else:  # 'note'
+                        note = Note.query.get(post.source_id)
+                        if note:
+                            content = f"{note.title}\n\n{note.content}"
+                        else:
+                            content = "Заметка удалена"
+                    
+                    # Получаем платформы из JSON
+                    platforms_raw = json.loads(post.platforms)
+                    logger.info(f"Raw platforms from DB: {platforms_raw}")
+                    
+                    # Приводим к списку строк (если в БД хранятся словари)
+                    if isinstance(platforms_raw, list) and platforms_raw:
+                        if isinstance(platforms_raw[0], dict):
+                            platforms = []
+                            for p in platforms_raw:
+                                if 'platform' in p:
+                                    platforms.append(p['platform'])
+                                elif 'name' in p:
+                                    platforms.append(p['name'])
+                                else:
+                                    platforms.append(str(p))
+                            logger.info(f"Converted platforms from dicts to strings: {platforms}")
+                        else:
+                            platforms = platforms_raw
                     else:
-                        content = f"{post['note_title']}\n\n{post['note_content']}"
+                        platforms = platforms_raw
                     
-                    # Получаем список платформ
-                    platforms = json.loads(post['platforms'])
+                    logger.info(f"Final platforms list: {platforms}")
                     
-                    # Публикуем
+                    # Публикуем через SocialMediaManager
                     results = self.social_manager.publish_post(content, platforms)
                     
-                    # Сохраняем в историю
-                    if post['source_type'] == 'article':
-                        source_id_field = 'article_id'
+                    # Создаём запись в social_posts
+                    social_post = SocialPost(
+                        content=content,
+                        platforms=json.dumps(platforms),
+                        results=json.dumps(results),
+                        status='published',
+                        user_id=post.user_id,
+                        published_at=now
+                    )
+                    if post.source_type == 'article':
+                        social_post.article_id = post.source_id
                     else:
-                        source_id_field = 'note_id'
+                        social_post.note_id = post.source_id
                     
-                    db.execute(text(f'''
-                        INSERT INTO social_posts 
-                        ({source_id_field}, content, platforms, results, status, user_id, published_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    '''), (post['source_id'], content, json.dumps(platforms), 
-                          json.dumps(results), 'published', post['user_id'], now))
+                    db.session.add(social_post)
                     
                     # Обновляем статус запланированного поста
                     success_count = sum(1 for r in results.values() if r.get('success'))
-                    if success_count > 0:
-                        new_status = 'completed'
-                    else:
-                        new_status = 'failed'
+                    post.status = 'completed' if success_count > 0 else 'failed'
+                    post.completed_at = now
                     
-                    db.execute(text('''
-                        UPDATE scheduled_posts 
-                        SET status = ?, completed_at = ?
-                        WHERE id = ?
-                    '''), (new_status, now, post['id']))
-                    
-                    db.commit()
-                    
-                    logger.info(f"Опубликован запланированный пост {post['id']} в {success_count} платформ")
+                    db.session.commit()
+                    logger.info(f"Опубликован запланированный пост {post.id} в {success_count} платформ")
                     
                 except Exception as e:
-                    logger.error(f"Ошибка при публикации запланированного поста {post['id']}: {str(e)}")
-                    
-                    # Обновляем статус на "ошибка"
-                    db.execute('UPDATE scheduled_posts SET status = "failed" WHERE id = ?', 
-                              (post['id'],))
-                    db.commit()
+                    logger.error(f"Ошибка при публикации запланированного поста {post.id}: {str(e)}", exc_info=True)
+                    post.status = 'failed'
+                    db.session.commit()
     
     def schedule_post(self, source_type, source_id, platforms, scheduled_time, user_id):
-        """Планирование новой публикации"""
+        """Планирование новой публикации (ORM)"""
         with self.app.app_context():
-            db = get_db()
-            
-            db.execute(text('''
-                INSERT INTO scheduled_posts 
-                (source_type, source_id, platforms, scheduled_time, user_id)
-                VALUES (?, ?, ?, ?, ?)
-            '''), (source_type, source_id, json.dumps(platforms), scheduled_time, user_id))
-            
-            db.commit()
+            post = ScheduledPost(
+                source_type=source_type,
+                source_id=source_id,
+                platforms=json.dumps(platforms),
+                scheduled_time=scheduled_time,
+                user_id=user_id,
+                status='scheduled'
+            )
+            db.session.add(post)
+            db.session.commit()
             logger.info(f"Запланирована новая публикация на {scheduled_time}")

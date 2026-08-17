@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response, json
 from config import config
 from logger import setup_logger
 from templates.base.database_helper import db, init_db, get_db
@@ -60,7 +60,6 @@ app.config.from_object(config)
 logger = setup_logger(app)
 
 social_scheduler = SocialScheduler(app)
-# Глобальный объект сканера
 
 app.register_blueprint(bluprint_user_routes)
 app.register_blueprint(bluprint_roles_routes)
@@ -106,9 +105,12 @@ def inject_common_variables():
 
 @app.context_processor
 def inject_user():
-    from templates.base.requirements import get_current_user
-    User = get_current_user()
-    return {'current_user': User}
+    user = get_current_user()
+    return {'current_user': user}
+
+@app.template_filter('from_json')
+def from_json_filter(value):
+    return json.loads(value) if value else []
 
 @app.route('/')
 def index():
@@ -166,8 +168,6 @@ def index():
     for c in cubes_list:
         total_cubes_price += c.price
 
-    
-
     # Статистика по WiFi
     total_wifi_count = GuestWifi.query.count()
     active_wifi_count = GuestWifi.query.filter_by(status='Активен').count()
@@ -205,8 +205,6 @@ def index():
                         wifi_cities_count=wifi_cities_count,
                         recent_wifi=recent_wifi,
                         wifi_by_city=wifi_by_city
-
-
     )  
 
 # ========== МАРШРУТЫ ДЛЯ ЭКСПОРТА/ИМПОРТА EXCEL ==========
@@ -287,7 +285,6 @@ def shutdown_session(exception=None):
 def get_local_ip():
     """Получает локальный IP-адрес для доступа по сети"""
     try:
-        # Создаем временное соединение чтобы определить IP
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
@@ -299,13 +296,12 @@ if __name__ == '__main__':
     local_ip = get_local_ip()
     social_scheduler.start()
     
-    # Запускаем сервер с доступом из локальной сети
     try:
         app.run(
             debug=True, 
-            host='0.0.0.0',  # Доступ со всех интерфейсов
-            port=8000,       # Порт (можно изменить при необходимости)
-            threaded=True    # Для обработки нескольких запросов одновременно
+            host='0.0.0.0',
+            port=8000,
+            threaded=True
         )
     except KeyboardInterrupt:
         logger.info("Остановка сервера...")
