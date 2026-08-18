@@ -1,0 +1,109 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Граф: {{ graph.name }}</h1>
+            <p class="text-muted">
+                {{ graph.organization.name if graph.organization else 'Без организации' }}
+                {{ graph.description or '' }}
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('network_scan.graph_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+
+    <!-- Форма добавления сканирования -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Добавить результаты сканирования</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('network_scan.add_scan_to_graph', graph_id=graph.id) }}" class="row g-3">
+                <div class="col-md-8">
+                    <select class="form-select" name="scan_id" required>
+                        <option value="">Выберите сканирование</option>
+                        {% for scan in scans %}
+                        <option value="{{ scan.id }}">
+                            {{ scan.name }} ({{ scan.created_at.strftime('%d.%m.%Y %H:%M') }}) - {{ scan.devices_found }} устройств
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus"></i> Добавить в граф
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Список устройств в графе -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Устройства в графе ({{ devices|length }})</h5>
+            <span class="badge bg-secondary">IP-адреса</span>
+        </div>
+        <div class="card-body">
+            {% if devices %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>IP</th>
+                            <th>Hostname</th>
+                            <th>Vendor</th>
+                            <th>MAC</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for device in devices %}
+                        <tr>
+                            <td><strong>{{ device.ip_address }}</strong></td>
+                            <td>{{ device.hostname or 'Unknown' }}</td>
+                            <td>{{ device.vendor or 'Unknown' }}</td>
+                            <td><code>{{ device.mac_address or 'Unknown' }}</code></td>
+                            <td>
+                                <form action="{{ url_for('network_scan.remove_device_from_graph', graph_id=graph.id, device_id=device.id) }}" 
+                                      method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Удалить устройство из графа?')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-server fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">В графе нет устройств</h5>
+                <p class="text-muted">Добавьте результаты сканирования, чтобы заполнить граф</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Графическое представление (заготовка) -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Визуализация графа</h5>
+        </div>
+        <div class="card-body" style="min-height: 400px; background: #f8f9fa;">
+            <p class="text-muted text-center py-5">
+                <i class="fas fa-project-diagram fa-3x"></i><br>
+                Здесь будет визуализация графа (в разработке)
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

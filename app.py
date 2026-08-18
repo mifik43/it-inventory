@@ -27,6 +27,9 @@ from templates.social.social_routes import bluprint_social_routes
 from templates.base.requirements import login_required, get_current_user
 from templates.checklist.checklist import bluprint_checklist_routes
 
+from flask_migrate import Migrate
+
+
 from excel_utils import (
     export_any_type_to_exel, import_from_excel
 )
@@ -295,7 +298,7 @@ def get_local_ip():
 if __name__ == '__main__':
     local_ip = get_local_ip()
     social_scheduler.start()
-    
+    migrate = Migrate(app, db)
     try:
         app.run(
             debug=True, 

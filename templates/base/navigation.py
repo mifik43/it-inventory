@@ -130,7 +130,6 @@ def create_simple_menu():
     menu = SimpleMenu(icon="bi-tools")
     menu.add_item(MenuItem(icon="bi-check-square", name="Задачи", url="todo.todo", urls_to_be_active=['todo.todo', 'todo.add_todo', 'todo.edit_todo'], permissions=[Permissions.todo_manage, Permissions.todo_read]))
     menu.add_item(MenuItem(icon="bi-calendar-week", name="График смен", url="shifts.shifts_list", urls_to_be_active=['shifts.shifts_list', 'shifts.add_shift', 'shifts.edit_shift'], permissions=[Permissions.shifts_manage, Permissions.todo_read]))
-    menu.add_item(MenuItem(icon="fa-network-wired", name="Сканирование сети", url="network_scan.network_scan", urls_to_be_active=['network_scan.network_scan'], permissions=[]))
     menu.add_item(MenuItem(icon="fa-terminal", name="Скрипты", url="script.script_list", urls_to_be_active=['script.script_list'], permissions=[]))
     menu.add_item(MenuItem(icon="bi-calendar-week", name="Роли пользователей", url="roles.roles", urls_to_be_active=['roles.roles', 'roles.create_role', 'roles.edir_role'], permissions=[Permissions.roles_manage, Permissions.roles_read]))
     menu.add_item(MenuItem(icon="bi-people", name="Пользователи", url="users.users", urls_to_be_active=['users.users', 'users.create_user', 'users.edit_user'], permissions=[Permissions.users_manage, Permissions.users_read]))
@@ -145,6 +144,7 @@ def create_menu():
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-clock-history", name="История развертываний", url="wtware.wtware_deployments", urls_to_be_active=['wtware.wtware_deployments'], permissions=[]))
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-box", name="Программы", url="cubes.cubes", urls_to_be_active=['cubes.cubes', 'cubes.add_cube', 'cubes.edit_cube'], permissions=[Permissions.cubes_manage, Permissions.cubes_read]))
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-building", name="Организации", url="organizations.organizations", urls_to_be_active=['organizations.organizations', 'organizations.add_organization', 'organizations.edit_organization'], permissions=[Permissions.organizations_manage, Permissions.organizations_read]))
+    
     return main_menu
 
 def create_social_menu():
@@ -169,4 +169,53 @@ def create_main_menu():
     menu.add_item(create_simple_menu())
     menu.add_item(create_social_menu())
     menu.add_item(create_checklist_menu())
+    menu.add_item(create_network_tools_menu())
+    return menu
+
+def create_network_menu():
+    menu = DropDownMenu(name="Сеть", icon="bi-diagram-2")
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-radar",
+        name="Сканирование сети",
+        url="network_scan.network_scan",
+        urls_to_be_active=['network_scan.network_scan', 'network_scan.network_scan_results', 'network_scan.network_devices'],
+        permissions=[Permissions.guest_wifi_read, Permissions.guest_wifi_manage]
+    ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-diagram-3",
+        name="Граф сети",
+        url="network_scan.network_graph",
+        urls_to_be_active=['network_scan.network_graph'],
+        permissions=[Permissions.guest_wifi_read, Permissions.guest_wifi_manage]
+    ))
+    return menu
+
+def create_network_tools_menu():
+    menu = DropDownMenu(name="Сеть", icon="bi-hdd-network")
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-radar",
+        name="Сканирование сети",
+        url="network_scan.network_scan",
+        urls_to_be_active=['network_scan.network_scan'],
+        permissions=[Permissions.guest_wifi_manage]
+    ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-diagram-3",
+        name="Граф сети",
+        url="network_scan.network_graph",
+        urls_to_be_active=['network_scan.network_graph'],
+        permissions=[Permissions.guest_wifi_manage]
+    ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-list-ul",
+        name="Устройства",
+        url="network_scan.network_devices",
+        urls_to_be_active=['network_scan.network_devices'],
+        permissions=[Permissions.guest_wifi_manage]
+    ))
     return menu

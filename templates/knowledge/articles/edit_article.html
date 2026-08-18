@@ -248,14 +248,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function handleFiles(files) {
-        if (files.length > 0) {
+        if ({{ files|length }} > 0) {
             uploadProgress.classList.remove('d-none');
             
             // Здесь можно добавить AJAX-загрузку файлов
             // Пока просто показываем прелоадер
             setTimeout(() => {
                 uploadProgress.classList.add('d-none');
-                alert(`Выбрано ${files.length} файлов. Они будут загружены при сохранении статьи.`);
+                alert(`Выбрано ${{{ files|length }}} файлов. Они будут загружены при сохранении статьи.`);
             }, 1000);
         }
     }
@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Скрываем сообщение "нет скриншотов" если они есть
-    if (screenshotsList.children.length > 0 && noScreenshots) {
+    if (screenshotsList.{{ children|length }} > 0 && noScreenshots) {
         noScreenshots.style.display = 'none';
     }
 });

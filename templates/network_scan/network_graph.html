@@ -1,0 +1,280 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Граф сети</h1>
+        <div>
+            <button class="btn btn-outline-primary" onclick="exportGraph()">
+                <i class="fas fa-download"></i> Экспорт
+            </button>
+            <button class="btn btn-outline-success" onclick="refreshGraph()">
+                <i class="fas fa-sync"></i> Обновить
+            </button>
+        </div>
+    </div>
+
+    <!-- Управление организациями -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-building"></i> Организации</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="btn-group" role="group" aria-label="Организации">
+                        <button class="btn btn-outline-primary active" data-org="all" onclick="filterByOrganization('all')">
+                            <i class="bi bi-globe"></i> Все
+                        </button>
+                        {% for org in organizations %}
+                        <button class="btn btn-outline-secondary" data-org="{{ org.id }}" onclick="filterByOrganization({{ org.id }})">
+                            {{ org.name }}
+                        </button>
+                        {% endfor %}
+                        <button class="btn btn-outline-success" onclick="createOrganization()">
+                            <i class="bi bi-plus-circle"></i> Добавить
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="showLabels" checked>
+                        <label class="form-check-label" for="showLabels">Показывать названия</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="autoLayout" checked>
+                        <label class="form-check-label" for="autoLayout">Авто-раскладка</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Контейнер для графа -->
+    <div class="card">
+        <div class="card-body">
+            <div id="graph-container" style="width: 100%; height: 700px; border: 1px solid #ddd; border-radius: 5px; background: #f8f9fa;"></div>
+        </div>
+    </div>
+
+    <!-- Легенда -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h6>Легенда</h6>
+            <div class="d-flex flex-wrap gap-3">
+                <span><span class="badge bg-success" style="width: 20px; height: 20px; display: inline-block;"></span> Активное устройство</span>
+                <span><span class="badge bg-danger" style="width: 20px; height: 20px; display: inline-block;"></span> Неактивное устройство</span>
+                <span><span class="badge bg-primary" style="width: 20px; height: 20px; display: inline-block;"></span> Шлюз/Маршрутизатор</span>
+                <span><span class="badge bg-warning" style="width: 20px; height: 20px; display: inline-block;"></span> Коммутатор</span>
+                <span><span class="badge bg-info" style="width: 20px; height: 20px; display: inline-block;"></span> Рабочая станция</span>
+                <span><span class="badge bg-secondary" style="width: 20px; height: 20px; display: inline-block;"></span> Неизвестное</span>
+                <span><i class="bi bi-arrow-right"></i> Сетевое соединение</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Библиотеки для графа -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/vis-network.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/dist/vis-network.min.css">
+
+<script>
+let network = null;
+let nodes = new vis.DataSet();
+let edges = new vis.DataSet();
+let currentOrg = 'all';
+
+// Данные для графа (загружаются из API)
+async function loadGraphData(organizationId = null) {
+    const url = organizationId ? `/network_scan/api/graph?org_id=${organizationId}` : '/network_scan/api/graph';
+    const response = await fetch(url);
+    const data = await response.json();
+    return data;
+}
+
+// Построение графа
+async function buildGraph(organizationId = null) {
+    const data = await loadGraphData(organizationId);
+    
+    // Очищаем предыдущий граф
+    nodes.clear();
+    edges.clear();
+    
+    // Добавляем узлы
+    data.nodes.forEach(node => {
+        nodes.add({
+            id: node.id,
+            label: node.label,
+            title: node.title,
+            group: node.group,
+            shape: node.shape || 'dot',
+            size: node.size || 20,
+            color: node.color || '#2B7CE9',
+            borderWidth: node.borderWidth || 2
+        });
+    });
+    
+    // Добавляем рёбра
+    data.edges.forEach(edge => {
+        edges.add({
+            from: edge.from,
+            to: edge.to,
+            label: edge.label || '',
+            title: edge.title || '',
+            color: edge.color || '#848484',
+            width: edge.width || 2,
+            arrows: edge.arrows || 'to'
+        });
+    });
+    
+    // Создаём граф
+    const container = document.getElementById('graph-container');
+    const options = {
+        nodes: {
+            font: {
+                size: 14,
+                face: 'Tahoma'
+            }
+        },
+        edges: {
+            smooth: {
+                type: 'cubicBezier',
+                forceDirection: 'none',
+                roundness: 0.4
+            }
+        },
+        physics: {
+            enabled: document.getElementById('autoLayout').checked,
+            stabilization: {
+                iterations: 100
+            }
+        },
+        interaction: {
+            tooltipDelay: 200,
+            hideEdgesOnDrag: false,
+            navigationButtons: true,
+            keyboard: true
+        }
+    };
+    
+    if (network) {
+        network.destroy();
+    }
+    
+    network = new vis.Network(container, { nodes, edges }, options);
+    
+    // Добавляем обработчики событий
+    network.on('click', function(params) {
+        if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const node = nodes.get(nodeId);
+            showDeviceInfo(nodeId);
+        }
+    });
+    
+    network.on('hoverNode', function(params) {
+        document.body.style.cursor = 'pointer';
+    });
+    
+    network.on('blurNode', function(params) {
+        document.body.style.cursor = 'default';
+    });
+}
+
+// Фильтрация по организации
+function filterByOrganization(orgId) {
+    currentOrg = orgId;
+    // Обновляем активные кнопки
+    document.querySelectorAll('[data-org]').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('btn-outline-secondary');
+        if (btn.getAttribute('data-org') == orgId) {
+            btn.classList.add('active');
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-primary');
+        }
+    });
+    buildGraph(orgId === 'all' ? null : orgId);
+}
+
+// Обновление графа
+function refreshGraph() {
+    buildGraph(currentOrg === 'all' ? null : currentOrg);
+}
+
+// Экспорт графа (скриншот)
+function exportGraph() {
+    const canvas = document.querySelector('#graph-container canvas');
+    if (canvas) {
+        const link = document.createElement('a');
+        link.download = 'network_graph.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+}
+
+// Показать информацию об устройстве
+function showDeviceInfo(nodeId) {
+    // Здесь можно открыть модальное окно с информацией
+    alert(`Информация об устройстве ID: ${nodeId}`);
+}
+
+// Создать организацию
+function createOrganization() {
+    const name = prompt('Введите название организации:');
+    if (name) {
+        fetch('/network_scan/api/organization', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: name })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        });
+    }
+}
+
+// События для переключателей
+document.getElementById('showLabels').addEventListener('change', function() {
+    nodes.forEach(node => {
+        nodes.update({
+            id: node.id,
+            label: this.checked ? node.originalLabel : ''
+        });
+    });
+});
+
+document.getElementById('autoLayout').addEventListener('change', function() {
+    if (network) {
+        network.setOptions({
+            physics: { enabled: this.checked }
+        });
+    }
+});
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    buildGraph();
+});
+</script>
+
+<style>
+#graph-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+.btn-group .btn {
+    margin-right: 2px;
+}
+.vis-network {
+    outline: none;
+}
+</style>
+{% endblock %}

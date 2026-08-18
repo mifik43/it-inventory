@@ -260,7 +260,12 @@ class NetworkScan(db.Model):
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
     notes = Column(Text)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='network_scans')
     devices = relationship('NetworkDevice', backref='scan', lazy=True)
+
+# models.py (добавить/изменить)
 
 class NetworkDevice(db.Model):
     __tablename__ = 'network_devices'
@@ -276,6 +281,22 @@ class NetworkDevice(db.Model):
     status = Column(String(50), default='online')
     response_time = Column(Float)
     last_seen = Column(DateTime, default=datetime.utcnow)
+    graph_entries = relationship('NetworkGraphDevice', backref='device', cascade="all, delete-orphan")
+    
+    # Добавляем отношение к графам
+    graph_entries = relationship('NetworkGraphDevice', backref='device', lazy='dynamic')
+
+class NetworkGraphDevice(db.Model):
+    __tablename__ = 'network_graph_devices'
+    
+    id = Column(Integer, primary_key=True)
+    graph_id = Column(Integer, ForeignKey('network_graphs.id'), nullable=False)
+    device_id = Column(Integer, ForeignKey('network_devices.id'), nullable=False)
+    added_at = Column(DateTime, default=datetime.utcnow)
+    position_x = Column(Integer, default=0)
+    position_y = Column(Integer, default=0)
+    comment = Column(Text, nullable=True)  
+    device_id = Column(Integer, ForeignKey('network_devices.id', ondelete='CASCADE'), nullable=False)
 
 class SocialPost(db.Model):
     __tablename__ = 'social_posts'
@@ -387,3 +408,17 @@ class ChecklistHistory(db.Model):
     new_value = Column(Text)
     changed_by = Column(String(100))
     changed_at = Column(DateTime, default=datetime.utcnow)
+
+class NetworkGraph(db.Model):
+    __tablename__ = 'network_graphs'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    organization_id = Column(Integer, ForeignKey('organizations.id'))
+    description = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    organization = relationship('Organization', backref='network_graphs')
+    devices = relationship('NetworkGraphDevice', backref='graph', lazy='dynamic')
+
