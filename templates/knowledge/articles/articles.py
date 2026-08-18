@@ -1,14 +1,12 @@
-from flask import render_template, request, redirect, url_for, flash, session, Blueprint
-
-from templates.base.database import get_db
-from templates.base.requirements import permission_required, permissions_required_all, permissions_required_any
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from templates.base.database_helper import db
+from templates.base.requirements import permissions_required
 from templates.roles.permissions import Permissions
-
+from models import Article, User, ArticleScreenshot
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
-import jsonify
-
+import uuid
 
 # Настройки для загрузки файлов
 UPLOAD_FOLDER = 'static/uploads'
@@ -16,299 +14,277 @@ SCREENSHOTS_FOLDER = 'static/uploads/screenshots'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# app.config['SCREENSHOTS_FOLDER'] = SCREENSHOTS_FOLDER
-
 # Создаем папки для загрузок при запуске
 os.makedirs(SCREENSHOTS_FOLDER, exist_ok=True)
 
 bluprint_articles_routes = Blueprint("articles", __name__)
 
 @bluprint_articles_routes.route('/articles_list')
-@permission_required(Permissions.articles_read)
+@permissions_required(Permissions.articles_read)
 def articles_list():
-    db = get_db()
-    articles = db.execute('''
-        SELECT a.*, u.username as author_name 
-        FROM articles a 
-        JOIN users u ON a.author_id = u.id 
-        WHERE a.is_published = 1
-        ORDER BY a.updated_at DESC
-    ''').fetchall()
-    
-    # Получаем уникальные категории для фильтра
-    categories = db.execute('SELECT DISTINCT category FROM articles ORDER BY category').fetchall()
-    category_list = [cat['category'] for cat in categories]
-    
-    # Статистика для сегодня
-    today = datetime.now().strftime('%Y-%m-%d')
-    today_updated = db.execute('''
-        SELECT COUNT(*) as count FROM articles 
-        WHERE DATE(updated_at) = ? AND is_published = 1
-    ''', (today,)).fetchone()['count']
-    
-    return render_template('knowledge/articles/articles.html', 
-                         articles=articles, 
-                         categories=category_list,
-                         today_updated=today_updated)
+    # Получаем список статей с автором
+    articles = db.session.query(Article, User.username.label('author_name'))\
+        .join(User, Article.author_id == User.id)\
+        .filter(Article.is_published == True)\
+        .order_by(Article.updated_at.desc())\
+        .all()
 
+    # Уникальные категории (только опубликованные)
+    categories = db.session.query(Article.category)\
+        .filter(Article.is_published == True)\
+        .distinct()\
+        .order_by(Article.category)\
+        .all()
+    category_list = [cat[0] for cat in categories]  # извлекаем значения
+
+    # Статистика: количество статей, обновлённых сегодня
+    today = datetime.now().date()
+    today_updated = db.session.query(db.func.count(Article.id))\
+        .filter(db.func.date(Article.updated_at) == today)\
+        .filter(Article.is_published == True)\
+        .scalar() or 0
+
+    return render_template('knowledge/articles/articles.html',
+                           articles=articles,
+                           categories=category_list,
+                           today_updated=today_updated)
 
 
 @bluprint_articles_routes.route('/add_article', methods=['GET', 'POST'])
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def add_article():
     if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        category = request.form['category']
-        tags = request.form.get('tags', '')
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        category = request.form.get('category', '').strip()
+        tags = request.form.get('tags', '').strip()
         is_published = request.form.get('is_published') == '1'
-        
-        # Валидация
+
         if not title or not content:
             flash('Заголовок и содержание обязательны для заполнения', 'error')
             return render_template('knowledge/articles/add_article.html')
-        
-        db = get_db()
+
+        # Создаём статью через ORM
+        article = Article(
+            title=title,
+            content=content,
+            category=category,
+            tags=tags,
+            author_id=session['user_id'],
+            is_published=is_published
+        )
+        db.session.add(article)
+        db.session.flush()  # чтобы получить article.id до коммита
+
+        # Обработка скриншотов
+        uploaded_count = 0
+        if 'screenshots' in request.files:
+            files = request.files.getlist('screenshots')
+            for file in files:
+                if file and file.filename:
+                    screenshot_info = save_screenshot(file, article.id)
+                    if screenshot_info:
+                        screenshot = ArticleScreenshot(
+                            article_id=article.id,
+                            filename=screenshot_info['filename'],
+                            original_filename=screenshot_info['original_filename'],
+                            file_size=screenshot_info['file_size']
+                        )
+                        db.session.add(screenshot)
+                        uploaded_count += 1
+
         try:
-            # Создаем статью
-            cursor = db.execute('''
-                INSERT INTO articles (title, content, category, tags, author_id, is_published)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (title, content, category, tags, session['user_id'], is_published))
-            article_id = cursor.lastrowid
-            
-            # Обработка загруженных скриншотов
-            if 'screenshots' in request.files:
-                files = request.files.getlist('screenshots')
-                uploaded_count = 0
-                
-                for file in files:
-                    if file and file.filename:  # Проверяем, что файл выбран
-                        screenshot_info = save_screenshot(file, article_id)
-                        if screenshot_info:
-                            db.execute('''
-                                INSERT INTO article_screenshots (article_id, filename, original_filename, file_size)
-                                VALUES (?, ?, ?, ?)
-                            ''', (article_id, screenshot_info['filename'], 
-                                  screenshot_info['original_filename'], screenshot_info['file_size']))
-                            uploaded_count += 1
-                
-                if uploaded_count > 0:
-                    flash(f'Статья успешно создана! Загружено {uploaded_count} скриншотов.', 'success')
-                else:
-                    flash('Статья успешно создана!', 'success')
-            
-            db.commit()
-            return redirect(url_for('articles.view_article', article_id=article_id))
-            
+            db.session.commit()
+            flash(f'Статья успешно создана! {"Загружено " + str(uploaded_count) + " скриншотов." if uploaded_count else ""}', 'success')
+            return redirect(url_for('articles.view_article', article_id=article.id))
         except Exception as e:
-            db.rollback()
+            db.session.rollback()
             flash(f'Ошибка при создании статьи: {str(e)}', 'error')
-    
+
     return render_template('knowledge/articles/add_article.html')
 
 
 @bluprint_articles_routes.route('/delete_article/<int:article_id>')
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def delete_article(article_id):
-    db = get_db()
-    article = db.execute('SELECT * FROM articles WHERE id = ?', (article_id,)).fetchone()
-    
+    article = Article.query.get(article_id)
     if not article:
         flash('Статья не найдена', 'error')
         return redirect(url_for('articles.articles_list'))
-    
-    # Проверяем права доступа
-    if article['author_id'] != session['user_id'] and session['role'] != 'admin':
+
+    # Проверка прав
+    if article.author_id != session['user_id'] and session.get('role') != 'admin':
         flash('У вас нет прав для удаления этой статьи', 'error')
         return redirect(url_for('articles.articles_list'))
-    
+
     try:
-        # Удаляем связанные скриншоты
-        screenshots = db.execute('SELECT * FROM article_screenshots WHERE article_id = ?', (article_id,)).fetchall()
-        for screenshot in screenshots:
-            delete_screenshot(screenshot['id'])
-        
-        # Удаляем статью
-        db.execute('DELETE FROM articles WHERE id = ?', (article_id,))
-        db.commit()
+        # Удаляем связанные скриншоты (файлы и записи)
+        for screenshot in article.screenshots:
+            delete_screenshot_file(screenshot.filename)
+        # Удаляем статью (каскадное удаление скриншотов, если настроено в модели)
+        db.session.delete(article)
+        db.session.commit()
         flash('Статья и все связанные скриншоты успешно удалены!', 'success')
     except Exception as e:
+        db.session.rollback()
         flash(f'Ошибка при удалении статьи: {str(e)}', 'error')
-    
+
     return redirect(url_for('articles.articles_list'))
 
-# ========== МАРШРУТЫ ДЛЯ СКРИНШОТОВ СТАТЕЙ ==========
 
 @bluprint_articles_routes.route('/edit_article/<int:article_id>', methods=['GET', 'POST'])
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def edit_article(article_id):
-    db = get_db()
-    article = db.execute('SELECT * FROM articles WHERE id = ?', (article_id,)).fetchone()
-    
+    article = Article.query.get(article_id)
     if not article:
         flash('Статья не найдена', 'error')
         return redirect(url_for('articles.articles_list'))
-    
-    # Проверяем права доступа
-    if article['author_id'] != session['user_id'] and session['role'] != 'admin':
+
+    if article.author_id != session['user_id'] and session.get('role') != 'admin':
         flash('У вас нет прав для редактирования этой статьи', 'error')
         return redirect(url_for('articles.articles_list'))
-    
+
     if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        category = request.form['category']
-        tags = request.form.get('tags', '')
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        category = request.form.get('category', '').strip()
+        tags = request.form.get('tags', '').strip()
         is_published = request.form.get('is_published') == '1'
-        
+
         if not title or not content:
             flash('Заголовок и содержание обязательны для заполнения', 'error')
-            return render_template('knowledge/articles/edit_article.html', article=article, screenshots=get_article_screenshots(article_id))
-        
+            return render_template('knowledge/articles/edit_article.html',
+                                   article=article,
+                                   screenshots=article.screenshots)
+
+        # Обновляем поля
+        article.title = title
+        article.content = content
+        article.category = category
+        article.tags = tags
+        article.is_published = is_published
+        article.updated_at = datetime.utcnow()
+
+        # Обработка новых скриншотов
+        if 'screenshots' in request.files:
+            files = request.files.getlist('screenshots')
+            for file in files:
+                if file and file.filename:
+                    screenshot_info = save_screenshot(file, article.id)
+                    if screenshot_info:
+                        screenshot = ArticleScreenshot(
+                            article_id=article.id,
+                            filename=screenshot_info['filename'],
+                            original_filename=screenshot_info['original_filename'],
+                            file_size=screenshot_info['file_size']
+                        )
+                        db.session.add(screenshot)
+
         try:
-            db.execute('''
-                UPDATE articles SET 
-                title=?, content=?, category=?, tags=?, is_published=?, updated_at=CURRENT_TIMESTAMP
-                WHERE id=?
-            ''', (title, content, category, tags, is_published, article_id))
-            db.commit()
-            
-            # Обработка загруженных скриншотов
-            if 'screenshots' in request.files:
-                files = request.files.getlist('screenshots')
-                for file in files:
-                    if file and file.filename:  # Проверяем, что файл выбран
-                        screenshot_info = save_screenshot(file, article_id)
-                        if screenshot_info:
-                            db.execute('''
-                                INSERT INTO article_screenshots (article_id, filename, original_filename, file_size)
-                                VALUES (?, ?, ?, ?)
-                            ''', (article_id, screenshot_info['filename'], 
-                                  screenshot_info['original_filename'], screenshot_info['file_size']))
-                            db.commit()
-            
+            db.session.commit()
             flash('Статья успешно обновлена!', 'success')
-            return redirect(url_for('articles.view_article', article_id=article_id))
+            return redirect(url_for('articles.view_article', article_id=article.id))
         except Exception as e:
+            db.session.rollback()
             flash(f'Ошибка при обновлении статьи: {str(e)}', 'error')
-    
-    return render_template('knowledge/articles/edit_article.html', 
-                         article=article, 
-                         screenshots=get_article_screenshots(article_id))
+
+    return render_template('knowledge/articles/edit_article.html',
+                           article=article,
+                           screenshots=article.screenshots)
 
 
 @bluprint_articles_routes.route('/articles/<int:article_id>')
-@permission_required(Permissions.articles_read)
+@permissions_required(Permissions.articles_read)
 def view_article(article_id):
-    db = get_db()
-    
-    # Увеличиваем счетчик просмотров
-    db.execute('UPDATE articles SET views = views + 1 WHERE id = ?', (article_id,))
-    db.commit()
-    
-    article = db.execute('''
-        SELECT a.*, u.username as author_name 
-        FROM articles a 
-        JOIN users u ON a.author_id = u.id 
-        WHERE a.id = ?
-    ''', (article_id,)).fetchone()
-    
+    # Увеличиваем счётчик просмотров
+    article = Article.query.get(article_id)
     if not article:
         flash('Статья не найдена', 'error')
         return redirect(url_for('articles.articles_list'))
-    
-    return render_template('knowledge/articles/view_article.html', 
-                         article=article, 
-                         screenshots=get_article_screenshots(article_id))
+
+    article.views += 1
+    db.session.commit()
+
+    # Получаем автора
+    author = User.query.get(article.author_id)
+
+    return render_template('knowledge/articles/view_article.html',
+                           article=article,
+                           screenshots=article.screenshots,
+                           author_name=author.username if author else 'Неизвестен')
 
 
 @bluprint_articles_routes.route('/articles/screenshot/<int:screenshot_id>/description', methods=['POST'])
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def update_screenshot_description(screenshot_id):
-    """Обновляет описание скриншота"""
-    db = get_db()
     data = request.get_json()
-    
     if not data or 'description' not in data:
         return jsonify({'success': False, 'error': 'Неверные данные'})
-    
-    screenshot = db.execute('SELECT * FROM article_screenshots WHERE id = ?', (screenshot_id,)).fetchone()
+
+    screenshot = ArticleScreenshot.query.get(screenshot_id)
     if not screenshot:
         return jsonify({'success': False, 'error': 'Скриншот не найден'})
-    
-    # Проверяем права доступа
-    article = db.execute('SELECT * FROM articles WHERE id = ?', (screenshot['article_id'],)).fetchone()
-    if article['author_id'] != session['user_id'] and session['role'] != 'admin':
+
+    # Проверка прав
+    article = Article.query.get(screenshot.article_id)
+    if article.author_id != session['user_id'] and session.get('role') != 'admin':
         return jsonify({'success': False, 'error': 'Нет прав доступа'})
-    
+
     try:
-        db.execute('''
-            UPDATE article_screenshots SET description = ? WHERE id = ?
-        ''', (data['description'], screenshot_id))
-        db.commit()
+        screenshot.description = data['description']
+        db.session.commit()
         return jsonify({'success': True})
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
+
 @bluprint_articles_routes.route('/delete_screenshot/<int:screenshot_id>')
-@permission_required(Permissions.articles_manage)
+@permissions_required(Permissions.articles_manage)
 def delete_screenshot(screenshot_id):
-    """Удаляет скриншот"""
-    db = get_db()
-    screenshot = db.execute('SELECT * FROM article_screenshots WHERE id = ?', (screenshot_id,)).fetchone()
-    
+    screenshot = ArticleScreenshot.query.get(screenshot_id)
     if not screenshot:
         flash('Скриншот не найден', 'error')
         return redirect(url_for('articles.articles_list'))
-    
-    # Проверяем права доступа
-    article = db.execute('SELECT * FROM articles WHERE id = ?', (screenshot['article_id'],)).fetchone()
-    if article['author_id'] != session['user_id'] and session['role'] != 'admin':
+
+    article = Article.query.get(screenshot.article_id)
+    if article.author_id != session['user_id'] and session.get('role') != 'admin':
         flash('У вас нет прав для удаления этого скриншота', 'error')
-        return redirect(url_for('articles.view_article', article_id=article['id']))
-    
-    if delete_screenshot(screenshot_id):
+        return redirect(url_for('articles.view_article', article_id=article.id))
+
+    try:
+        # Удаляем файл
+        delete_screenshot_file(screenshot.filename)
+        db.session.delete(screenshot)
+        db.session.commit()
         flash('Скриншот успешно удален!', 'success')
-    else:
-        flash('Ошибка при удалении скриншота', 'error')
-    
-    return redirect(url_for('articles.edit_article', article_id=article['id']))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ошибка при удалении скриншота: {str(e)}', 'error')
+
+    return redirect(url_for('articles.edit_article', article_id=article.id))
+
+
+# ========== Вспомогательные функции ==========
 
 def allowed_file(filename):
-    """Проверяет, разрешено ли расширение файла"""
-    if not '.' in filename:
-        return False
-    
-    ext = filename.rsplit('.', 1)[1].lower()
-    
-    # Проверяем расширение
-    if ext not in ALLOWED_EXTENSIONS:
-        return False
-    
-    return True
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def save_screenshot(file, article_id):
-    """Сохраняет скриншот и возвращает информацию о файле"""
     if file and file.filename and allowed_file(file.filename):
-        # Проверяем размер файла
-        file.seek(0, 2)  # Перемещаемся в конец файла
+        # Проверяем размер
+        file.seek(0, 2)
         file_size = file.tell()
-        file.seek(0)  # Возвращаемся в начало
-        
+        file.seek(0)
         if file_size > MAX_FILE_SIZE:
             raise ValueError(f"Файл слишком большой. Максимальный размер: {MAX_FILE_SIZE // (1024*1024)}MB")
-        
+
         filename = secure_filename(file.filename)
-        # Создаем уникальное имя файла
-        import uuid
         unique_filename = f"{article_id}_{uuid.uuid4().hex[:8]}_{filename}"
         filepath = os.path.join(SCREENSHOTS_FOLDER, unique_filename)
-        
-        # Сохраняем файл
         file.save(filepath)
-        
+
         return {
             'filename': unique_filename,
             'original_filename': filename,
@@ -317,29 +293,10 @@ def save_screenshot(file, article_id):
         }
     return None
 
-def get_article_screenshots(article_id):
-    """Получает все скриншоты для статьи"""
-    db = get_db()
-    return db.execute('''
-        SELECT * FROM article_screenshots 
-        WHERE article_id = ? 
-        ORDER BY upload_order, created_at
-    ''', (article_id,)).fetchall()
 
-def delete_screenshot(screenshot_id):
-    """Удаляет скриншот"""
-    db = get_db()
-    screenshot = db.execute('SELECT * FROM article_screenshots WHERE id = ?', (screenshot_id,)).fetchone()
-    
-    if screenshot:
-        # Удаляем файл
-        try:
-            os.remove(os.path.join(SCREENSHOTS_FOLDER, screenshot['filename']))
-        except OSError:
-            pass  # Файл уже удален или не существует
-        
-        # Удаляем запись из БД
-        db.execute('DELETE FROM article_screenshots WHERE id = ?', (screenshot_id,))
-        db.commit()
-        return True
-    return False
+def delete_screenshot_file(filename):
+    """Удаляет физический файл скриншота"""
+    try:
+        os.remove(os.path.join(SCREENSHOTS_FOLDER, filename))
+    except OSError:
+        pass  

@@ -78,7 +78,7 @@
         <div class="col-md-2">
             <div class="card text-center">
                 <div class="card-body">
-                    <h3 class="text-warning">{{ devices|selectattr('ports', 'defined')|selectattr('ports', 'length')|list|length }}</h3>
+                    <h3 class="text-warning">{{ devices|selectattr('ports', 'defined')|rejectattr('ports', 'equalto', [])|list|length }}</h3>
                     <p class="text-muted mb-0">С портами</p>
                 </div>
             </div>
@@ -228,7 +228,7 @@
     </div>
 </div>
 
-<!-- Модальное окно информации об устройстве -->
+<!-- Модальное окно -->
 <div class="modal fade" id="deviceInfoModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -237,7 +237,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="device-info-content">
-                <!-- Контент будет загружен динамически -->
             </div>
         </div>
     </div>
@@ -261,18 +260,14 @@ function applyFilters() {
     const ipFilter = document.getElementById('filter-ip').value.toLowerCase();
     const vendorFilter = document.getElementById('filter-vendor').value.toLowerCase();
     const statusFilter = document.getElementById('filter-status').value;
-    
     let visibleCount = 0;
-    
     document.querySelectorAll('.device-row').forEach(row => {
         const ip = row.getAttribute('data-ip').toLowerCase();
         const vendor = row.getAttribute('data-vendor').toLowerCase();
         const status = row.getAttribute('data-status');
-        
         const ipMatch = !ipFilter || ip.includes(ipFilter);
         const vendorMatch = !vendorFilter || vendor.includes(vendorFilter);
         const statusMatch = !statusFilter || status === statusFilter;
-        
         if (ipMatch && vendorMatch && statusMatch) {
             row.style.display = '';
             visibleCount++;
@@ -280,7 +275,6 @@ function applyFilters() {
             row.style.display = 'none';
         }
     });
-    
     document.getElementById('device-count').textContent = visibleCount + ' устройств';
 }
 
@@ -294,10 +288,8 @@ function clearFilters() {
 function showDeviceInfo(deviceId) {
     const content = document.getElementById('device-info-content');
     content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-    
     const modal = new bootstrap.Modal(document.getElementById('deviceInfoModal'));
     modal.show();
-    
     fetch('/network_scan/device_info/' + deviceId)
         .then(response => response.json())
         .then(data => {
@@ -323,7 +315,7 @@ function showDeviceInfo(deviceId) {
                             </table>
                         </div>
                     </div>
-                    ${data.device.ports && data.device.ports.length > 0 ? `
+                    ${data.device.ports && data.device.{{ ports|length }} > 0 ? `
                     <div class="mt-3">
                         <h6>Открытые порты</h6>
                         <div class="port-badges">
@@ -343,7 +335,6 @@ function showDeviceInfo(deviceId) {
 
 function pingDevice(ip) {
     alert('Пинг устройства ' + ip + ' выполняется...');
-    // Реализация пинга будет добавлена в следующих версиях
 }
 
 function deleteDevice(deviceId) {
@@ -362,7 +353,6 @@ function deleteDevice(deviceId) {
 
 function exportAllToCSV() {
     let csv = 'IP Address,MAC Address,Hostname,Vendor,Ports,Response Time,Last Seen,Scan\n';
-    
     document.querySelectorAll('#devices-table tbody tr').forEach(row => {
         if (row.style.display !== 'none') {
             const cells = row.querySelectorAll('td');
@@ -374,11 +364,9 @@ function exportAllToCSV() {
             const responseTime = cells[5].textContent.trim();
             const lastSeen = cells[6].textContent.trim();
             const scan = cells[7].textContent.trim();
-            
             csv += `"${ip}","${mac}","${hostname}","${vendor}","${ports}","${responseTime}","${lastSeen}","${scan}"\n`;
         }
     });
-    
     const blob = new Blob([csv], {type: 'text/csv'});
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -390,7 +378,6 @@ function exportAllToCSV() {
     window.URL.revokeObjectURL(url);
 }
 
-// Автоматическое применение фильтров при изменении полей
 document.getElementById('filter-ip').addEventListener('input', applyFilters);
 document.getElementById('filter-vendor').addEventListener('input', applyFilters);
 document.getElementById('filter-status').addEventListener('change', applyFilters);

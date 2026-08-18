@@ -4,36 +4,13 @@
 
 {% block content %}
 <div class="container-fluid">
-    {% if not session.logged_in %}
-        <!-- Гостьовой контент без изменений -->
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card shadow-lg">
-                    <div class="card-body text-center py-5">
-                        <h1 class="display-4">IT Inventory System</h1>
-                        <p class="lead text-muted mb-4">Комплексная система учета IT-оборудования и провайдеров</p>
-                        <div class="alert alert-info">
-                            <h5>Для доступа к системе необходимо войти</h5>
-                            <p class="mb-3">Используйте тестовые учетные записи или обратитесь к администратору</p>
-                            <a href="{{ url_for('users.login') }}" class="btn btn-primary btn-lg">Войти в систему</a>
-                        </div>
-                        <div class="mt-4">
-                            
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% else %}
-        
-
+    {% if current_user %}
         <!-- Заголовок и быстрые действия -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h1 class="h3 mb-1">Дашборд IT Inventory</h1>
                 <p class="text-muted">Обзор системы учета IT-активов</p>
             </div>
-
         </div>
 
         <!-- Основные метрики -->
@@ -46,7 +23,7 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                     Всего устройств</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ devices_count }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ devices_count|default(0) }}</div>
                             </div>
                             <div class="col-auto">
                                 <i class="fas fa-laptop fa-2x text-gray-300"></i>
@@ -64,7 +41,7 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                     Активные провайдеры</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_providers_count }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_providers_count|default(0) }}</div>
                             </div>
                             <div class="col-auto">
                                 <i class="fas fa-wifi fa-2x text-gray-300"></i>
@@ -82,9 +59,9 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                     Гостевой WiFi</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_wifi_count }}/{{ total_wifi_count }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_wifi_count|default(0) }}/{{ total_wifi_count|default(0) }}</div>
                                 <div class="text-xs text-muted mt-1">
-                                    {{ wifi_cities_count }} городов
+                                    {{ wifi_cities_count|default(0) }} городов
                                 </div>
                             </div>
                             <div class="col-auto">
@@ -94,6 +71,7 @@
                     </div>
                 </div>
             </div>
+
             <!-- Стоимость -->
             <div class="col-xl-2 col-md-4 mb-4">
                 <div class="card border-left-info shadow h-100 py-2">
@@ -103,12 +81,8 @@
                                 <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                     Стоимость услуг/мес</div>
                                 <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                    {{ "₽{:,.0f}".format(total_monthly_cost + (total_cubes_price or 0)) }}
+                                    {{ "₽{:,.0f}".format((total_monthly_cost|default(0)) + (total_cubes_price|default(0))) }}
                                 </div>
-                                <!--<div class="text-xs text-muted">
-                                    Интернет: {{ "₽{:,.0f}".format(total_monthly_cost) }}<br>
-                                    ПО: {{ "₽{:,.0f}".format(total_cubes_price or 0) }}
-                                </div>0-->
                             </div>
                             <div class="col-auto">
                                 <i class="fas fa-ruble-sign fa-2x text-gray-300"></i>
@@ -126,7 +100,7 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                     Пользователей</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ users_count }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ users_count|default(0) }}</div>
                             </div>
                             <div class="col-auto">
                                 <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -144,15 +118,12 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                     Статьи</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ articles_count }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ articles_count|default(0) }}</div>
                             </div>
                             <div class="col-auto">
                                 <i class="bi bi-journal-text fa-2x text-gray-300"></i>
                             </div>
                         </div>
-                        <!--<div class="mt-2 text-center">
-                            <a href="{{ url_for('articles.articles_list') }}" class="btn btn-sm btn-outline-danger">Перейти</a>
-                        </div>-->
                     </div>
                 </div>
             </div>
@@ -165,20 +136,18 @@
                             <div class="col mr-2">
                                 <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
                                     Заметки</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ notes_count }}</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ notes_count|default(0) }}</div>
                             </div>
                             <div class="col-auto">
                                 <i class="bi bi-sticky fa-2x text-gray-300"></i>
                             </div>
                         </div>
-                        <!--<div class="mt-2 text-center">
-                            <a href="{{ url_for('notes.notes_list') }}" class="btn btn-sm btn-outline-secondary">Перейти</a>
-                        </div>-->
                     </div>
                 </div>
             </div>
         </div>
-<!-- Ближайшие смены - в самом верху -->
+
+        <!-- Ближайшие смены -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card shadow">
@@ -207,15 +176,15 @@
                                     {% for shift in upcoming_shifts %}
                                     <tr>
                                         <td>
-                                            <strong>{{ shift.username }}</strong>
+                                            <strong>{{ shift.user.username }}</strong>
                                         </td>
                                         <td>
-                                            {% if shift.shift_date == today.strftime('%Y-%m-%d') %}
+                                            {% if shift.shift_date == today %}
                                                 <span class="badge bg-success">Сегодня</span>
-                                            {% elif shift.shift_date == tomorrow.strftime('%Y-%m-%d') %}
+                                            {% elif shift.shift_date == tomorrow %}
                                                 <span class="badge bg-warning">Завтра</span>
                                             {% else %}
-                                                {{ shift.shift_date }}
+                                                {{ shift.shift_date.strftime('%d.%m.%Y') }}
                                             {% endif %}
                                         </td>
                                         <td>
@@ -229,7 +198,7 @@
                                         </td>
                                         <td>
                                             {% if shift.start_time and shift.end_time %}
-                                                {{ shift.start_time[:5] }} - {{ shift.end_time[:5] }}
+                                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
                                             {% else %}
                                                 <span class="text-muted">Не указано</span>
                                             {% endif %}
@@ -253,9 +222,10 @@
                 </div>
             </div>
         </div>
-        <!-- Остальной контент дашборда (устройства, провайдеры и т.д.) -->
+
+        <!-- Остальной контент (устройства, провайдеры и т.д.) -->
         <div class="row">
-            <!-- Левая колонка: Устройства -->
+            <!-- Левая колонка -->
             <div class="col-lg-8">
                 <!-- Последние устройства -->
                 <div class="card shadow mb-4">
@@ -308,7 +278,6 @@
                         </div>
                     </div>
                 </div>
-                # Статистика по Telegram заявкам
 
                 <!-- Распределение по типам и статусам -->
                 <div class="row">
@@ -318,21 +287,19 @@
                                 <h6 class="m-0 font-weight-bold text-primary">Устройства по типам</h6>
                             </div>
                             <div class="card-body">
-                                <div class="chart-pie pt-4 pb-2">
-                                    {% for item in devices_by_type %}
-                                    <div class="mb-2">
-                                        <div class="d-flex justify-content-between">
-                                            <span>{{ item.type }}</span>
-                                            <span class="font-weight-bold">{{ item.count }}</span>
-                                        </div>
-                                        <div class="progress" style="height: 8px;">
-                                            <div class="progress-bar bg-primary" 
-                                                 style="width: {{ (item.count / devices_count * 100) if devices_count > 0 else 0 }}%">
-                                            </div>
+                                {% for item in devices_by_type %}
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span>{{ item.type }}</span>
+                                        <span class="font-weight-bold">{{ item.count }}</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" 
+                                             style="width: {{ (item.count / devices_count * 100) if devices_count > 0 else 0 }}%">
                                         </div>
                                     </div>
-                                    {% endfor %}
                                 </div>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
@@ -366,7 +333,7 @@
                 </div>
             </div>
 
-            <!-- Правая колонка: Провайдеры и WIFI -->
+            <!-- Правая колонка -->
             <div class="col-lg-4">
                 <!-- Активные провайдеры -->
                 <div class="card shadow mb-4">
@@ -394,6 +361,8 @@
                         {% endfor %}
                     </div>
                 </div>
+
+                <!-- Последние точки WiFi -->
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center">
                         <h6 class="m-0 font-weight-bold text-info">Последние точки WiFi</h6>
@@ -435,7 +404,8 @@
                         {% endfor %}
                     </div>
                 </div>
-                <!-- Распределение по городам -->
+
+                <!-- Провайдеры по городам -->
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold text-info">Провайдеры по городам</h6>
@@ -456,6 +426,8 @@
                         {% endfor %}
                     </div>
                 </div>
+
+                <!-- WiFi по городам -->
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold text-info">WiFi по городам</h6>
@@ -483,10 +455,11 @@
                         {% endfor %}
                     </div>
                 </div>
-                <!-- Стоимость по услугам -->
-                <div class="card shadow">
+
+                <!-- Стоимость по интернету -->
+                <div class="card shadow mb-4">
                     <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-warning">Стоимость по интернету {{"₽{:,.0f}".format(total_monthly_cost or 0)}}</h6>
+                        <h6 class="m-0 font-weight-bold text-warning">Стоимость по интернету {{"₽{:,.0f}".format(total_monthly_cost|default(0))}}</h6>
                     </div>
                     <div class="card-body">
                         {% for item in cost_by_service %}
@@ -497,7 +470,7 @@
                             </div>
                             <div class="progress" style="height: 10px;">
                                 <div class="progress-bar bg-warning" 
-                                     style="width: {{ (item.total_cost / total_monthly_cost * 100) if (total_monthly_cost) > 0 else 0 }}%">
+                                     style="width: {{ (item.total_cost / total_monthly_cost * 100) if total_monthly_cost > 0 else 0 }}%">
                                 </div>
                             </div>
                         </div>
@@ -505,10 +478,10 @@
                     </div>
                 </div>
 
-                <!-- Cтоимость по кубику-->
-                   <div class="card shadow">
+                <!-- Стоимость по кубику -->
+                <div class="card shadow">
                     <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-warning">Стоимость по кубику {{"₽{:,.0f}".format(total_cubes_price or 0)}}</h6>
+                        <h6 class="m-0 font-weight-bold text-warning">Стоимость по кубику {{"₽{:,.0f}".format(total_cubes_price|default(0))}}</h6>
                     </div>
                     <div class="card-body">
                         {% for item in cubes_list %}
@@ -525,7 +498,7 @@
                         </div>
                         {% endfor %}
                     </div>
-                </div> 
+                </div>
             </div>
         </div>
 
@@ -551,7 +524,7 @@
                             <div class="col-md-6">
                                 <h6>Административные права:</h6>
                                 <ul class="list-unstyled">
-                                    {% if session.role == 'admin' %}
+                                    {% if current_user.role == 'admin' %}
                                         <li>✅ Добавление и редактирование устройств</li>
                                         <li>✅ Управление провайдерами</li>
                                         <li>✅ Управление пользователями</li>
@@ -573,6 +546,24 @@
                 </div>
             </div>
         </div>
+
+    {% else %}
+        <!-- Гостевой контент (неавторизованный) -->
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-lg">
+                    <div class="card-body text-center py-5">
+                        <h1 class="display-4">IT Inventory System</h1>
+                        <p class="lead text-muted mb-4">Комплексная система учета IT-оборудования и провайдеров</p>
+                        <div class="alert-info">
+                            <h5>Для доступа к системе необходимо войти</h5>
+                            <p class="mb-3">Используйте тестовые учетные записи или обратитесь к администратору</p>
+                            <a href="{{ url_for('users.login') }}" class="btn btn-primary btn-lg">Войти в систему</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     {% endif %}
 </div>
 {% endblock %}
@@ -580,7 +571,6 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Пример простого графика распределения устройств по типам
 document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('devicesChart');
     if (ctx) {
@@ -590,18 +580,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: [{% for item in devices_by_type %}'{{ item.type }}',{% endfor %}],
                 datasets: [{
                     data: [{% for item in devices_by_type %}{{ item.count }},{% endfor %}],
-                    backgroundColor: [
-                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', 
-                        '#e74a3b', '#858796', '#5a5c69'
-                    ]
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#5a5c69']
                 }]
             },
             options: {
                 responsive: true,
                 plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+                    legend: { position: 'bottom' }
                 }
             }
         });

@@ -24,3 +24,8 @@ moviepy
 opencv-python
 flask_babel
 Werkzeug==2.3.7 
+psycopg2-binary
+SQLAlchemy
+flask-sqlalchemy
+alembic
+pytest

@@ -1,0 +1,88 @@
+{% extends "base/base.html" %}
+
+{% block title %}Добавить задачу в чек-лист{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-plus-circle me-2"></i> Добавить задачу в чек-лист</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('checklist.add_checklist_task') }}">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="task_number" class="form-label">Номер задачи</label>
+                                <input type="text" class="form-control" id="task_number" name="task_number" 
+                                       placeholder="Например: 1.1">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="stage" class="form-label">Этап</label>
+                                <select class="form-select" id="stage" name="stage" required>
+                                    <option value="">Выберите этап</option>
+                                    <option value="Договора/подрядчик/закупки">Договора/подрядчик/закупки</option>
+                                    <option value="Сервисы">Сервисы</option>
+                                    <option value="Честный знак">Честный знак</option>
+                                    <option value="Карусель">Карусель</option>
+                                    <option value="Монтаж">Монтаж</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Категория</label>
+                                <input type="text" class="form-control" id="category" name="category" 
+                                       placeholder="Например: Интернет, Закупка">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Статус</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="Не начато">Не начато</option>
+                                    <option value="В работе">В работе</option>
+                                    <option value="Выполнено">Выполнено</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="task_description" class="form-label">Описание задачи</label>
+                            <textarea class="form-control" id="task_description" name="task_description" 
+                                      rows="3" required placeholder="Подробное описание задачи"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Комментарий</label>
+                            <textarea class="form-control" id="comment" name="comment" 
+                                      rows="2" placeholder="Дополнительные заметки"></textarea>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="planned_date" class="form-label">Плановая дата</label>
+                                <input type="date" class="form-control" id="planned_date" name="planned_date">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="responsible" class="form-label">Ответственный</label>
+                                <input type="text" class="form-control" id="responsible" name="responsible" 
+                                       placeholder="ФИО ответственного">
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i> Сохранить задачу
+                            </button>
+                            <a href="{{ url_for('checklist.checklist') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-2"></i> Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

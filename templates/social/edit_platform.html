@@ -1,0 +1,92 @@
+{% extends "base/base.html" %}
+
+{% block title %}Редактировать платформу{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i> Редактировать платформу</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="platform_name" class="form-label">Название платформы *</label>
+                                <input type="text" class="form-control" id="platform_name" name="platform_name" 
+                                       value="{{ platform.platform_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="platform_type" class="form-label">Тип платформы *</label>
+                                <select class="form-select" id="platform_type" name="platform_type" required>
+                                    <option value="">Выберите тип</option>
+                                    <option value="telegram" {% if platform.platform_type == 'telegram' %}selected{% endif %}>Telegram</option>
+                                    <option value="vk" {% if platform.platform_type == 'vk' %}selected{% endif %}>ВКонтакте</option>
+                                    <option value="ok" {% if platform.platform_type == 'ok' %}selected{% endif %}>Одноклассники</option>
+                                    <option value="rutube" {% if platform.platform_type == 'rutube' %}selected{% endif %}>Rutube</option>
+                                    <option value="twitter" {% if platform.platform_type == 'twitter' %}selected{% endif %}>Twitter</option>
+                                    <option value="instagram" {% if platform.platform_type == 'instagram' %}selected{% endif %}>Instagram</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="api_key" class="form-label">API Key</label>
+                                <input type="text" class="form-control" id="api_key" name="api_key" 
+                                       value="{{ platform.api_key or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="api_secret" class="form-label">API Secret</label>
+                                <input type="text" class="form-control" id="api_secret" name="api_secret" 
+                                       value="{{ platform.api_secret or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="access_token" class="form-label">Access Token</label>
+                                <input type="text" class="form-control" id="access_token" name="access_token" 
+                                       value="{{ platform.access_token or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="token_secret" class="form-label">Token Secret</label>
+                                <input type="text" class="form-control" id="token_secret" name="token_secret" 
+                                       value="{{ platform.token_secret or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="group_id" class="form-label">ID группы (для VK)</label>
+                                <input type="text" class="form-control" id="group_id" name="group_id" 
+                                       value="{{ platform.group_id or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="channel_id" class="form-label">ID канала (для Telegram)</label>
+                                <input type="text" class="form-control" id="channel_id" name="channel_id" 
+                                       value="{{ platform.channel_id or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" 
+                                   {% if platform.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">Активна</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i> Сохранить изменения
+                        </button>
+                        <a href="{{ url_for('social.social_platforms') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i> Отмена
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

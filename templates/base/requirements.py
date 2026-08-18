@@ -1,101 +1,87 @@
 from functools import wraps
-from flask import flash, session, redirect, url_for
+from flask import flash, redirect, url_for, session, abort, request
+from models import User
+import inspect
 
-from templates.roles.database_roles import read_roles_for_user
-from templates.roles.permissions import Permissions, Role
+from logger import logger
+from ..roles.database_roles import read_roles_for_user
+from ..roles.permissions import Role
 
-# Декоратор для проверки авторизации
+def get_current_user():
+    user_id = session.get('user_id')
+    if user_id:
+        return User.query.get(int(user_id))
+    return None
+
+def get_current_user_permissions():
+    user = get_current_user()
+    if not user:
+        return []
+    user_roles = read_roles_for_user(user.id)
+    user_permissions = Role.get_effective_permissions(user_roles)
+    return list(user_permissions)
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            flash('Пожалуйста, войдите в систему', 'error')
-            return redirect(url_for('users.login'))
+        if not get_current_user():
+            flash('Требуется авторизация', 'error')
+            abort(401)
         return f(*args, **kwargs)
     return decorated_function
 
-# Декоратор для проверки прав администратора
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            flash('Пожалуйста, войдите в систему', 'error')
-            return redirect(url_for('users.login'))
-        if session.get('role') != 'admin':
-            flash('Недостаточно прав для выполнения этого действия', 'error')
-            return redirect(url_for('index'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-# проверка одного конкретного разрешения
-def permission_required(p:Permissions):
-    def check_permission(function):
-        @wraps(function)
-        def wrapper(*args, **kwargs):
+def permissions_required(permissions):
+    if not isinstance(permissions, (list, tuple)):
+        permissions = [permissions]
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user = get_current_user()
+            # Администратор имеет доступ ко всему
+            if user and user.role == 'admin':
+                return f(*args, **kwargs)
             
-            print(f"Проверяем {p} для пользователя с id={session['user_id']} ({session['username']})")
-            roles:Role = read_roles_for_user(session['user_id'])
-            effective_permissions = Role.get_effective_permissions(roles)
+            user_permissions = get_current_user_permissions()
+            has_permission = any(perm in user_permissions for perm in permissions)
+            if not has_permission:
+                flash('Недостаточно прав для доступа к этой странице', 'error')
+                abort(403)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
-            is_granted = p in effective_permissions
-
-            if (is_granted):
-                print("Можно")
-            else:
-                print("Нельзя")
-                flash('Недостаточно прав для выполнения этого действия', 'error')
-                return redirect(url_for('index'))
-
-            result = function(*args, **kwargs)
-            return result
-        return wrapper
-    return check_permission
-
-# наличие любого разрешения из списка разрешений разрешает действие
-def permissions_required_any(permissions:list[Permissions]):
-    def check_permission(function):
-        @wraps(function)
-        def wrapper(*args, **kwargs):
+def permissions_required_all(permissions):
+    if not isinstance(permissions, (list, tuple)):
+        permissions = [permissions]
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user = get_current_user()
+            if user and user.role == 'admin':
+                return f(*args, **kwargs)
             
-            print(f"Проверяем наличие хотябы одного из {permissions} для пользователя с id={session['user_id']} ({session['username']})")
-            roles:Role = read_roles_for_user(session['user_id'])
-            effective_permissions = Role.get_effective_permissions(roles)
+            user_permissions = get_current_user_permissions()
+            has_all_permissions = all(perm in user_permissions for perm in permissions)
+            if not has_all_permissions:
+                flash('Недостаточно прав для доступа к этой странице', 'error')
+                abort(403)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
-            #
-            is_granted = any(p in effective_permissions for p in permissions)
-            if (is_granted):
-                print("Можно")
-            else:
-                print("Нельзя")
-                flash('Недостаточно прав для выполнения этого действия', 'error')
-                return redirect(url_for('index'))
-
-            result = function(*args, **kwargs)
-            return result
-        return wrapper
-    return check_permission
-
-# требует наличия у пользователя всех разрешений
-def permissions_required_all(permissions:list[Permissions]):
-    def check_permission(function):
-        @wraps(function)
-        def wrapper(*args, **kwargs):
+def permission_required(permission):
+    """Одиночное разрешение (для обратной совместимости)"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user = get_current_user()
+            if user and user.role == 'admin':
+                return f(*args, **kwargs)
             
-            print(f"Проверяем наличие всех разрешений из {permissions} для пользователя с id={session['user_id']} ({session['username']})")
-            roles:Role = read_roles_for_user(session['user_id'])
-
-            effective_permissions = Role.get_effective_permissions(roles)
-
-
-            is_granted = all(p in effective_permissions for p in permissions)
-            if (is_granted):
-                print("Можно")
-            else:
-                print("Нельзя")
-                flash('Недостаточно прав для выполнения этого действия', 'error')
-                return redirect(url_for('index'))
-
-            result = function(*args, **kwargs)
-            return result
-        return wrapper
-    return check_permission
+            user_permissions = get_current_user_permissions()
+            if permission not in user_permissions:
+                flash('Недостаточно прав для доступа к этой странице', 'error')
+                abort(403)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator

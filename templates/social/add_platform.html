@@ -1,0 +1,84 @@
+{% extends "base/base.html" %}
+
+{% block title %}Добавить платформу{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-plus-circle me-2"></i> Добавить социальную платформу</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="platform_name" class="form-label">Название платформы *</label>
+                                <input type="text" class="form-control" id="platform_name" name="platform_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="platform_type" class="form-label">Тип платформы *</label>
+                                <select class="form-select" id="platform_type" name="platform_type" required>
+                                    <option value="">Выберите тип</option>
+                                    <option value="telegram">Telegram</option>
+                                    <option value="vk">ВКонтакте</option>
+                                    <option value="ok">Одноклассники</option>
+                                    <option value="rutube">Rutube</option>
+                                    <option value="twitter">Twitter</option>
+                                    <option value="instagram">Instagram</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="api_key" class="form-label">API Key</label>
+                                <input type="text" class="form-control" id="api_key" name="api_key">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="api_secret" class="form-label">API Secret</label>
+                                <input type="text" class="form-control" id="api_secret" name="api_secret">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="access_token" class="form-label">Access Token</label>
+                                <input type="text" class="form-control" id="access_token" name="access_token">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="token_secret" class="form-label">Token Secret</label>
+                                <input type="text" class="form-control" id="token_secret" name="token_secret">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="group_id" class="form-label">ID группы (для VK)</label>
+                                <input type="text" class="form-control" id="group_id" name="group_id">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="channel_id" class="form-label">ID канала (для Telegram)</label>
+                                <input type="text" class="form-control" id="channel_id" name="channel_id">
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">Активна</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i> Сохранить
+                        </button>
+                        <a href="{{ url_for('social.social_platforms') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i> Отмена
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

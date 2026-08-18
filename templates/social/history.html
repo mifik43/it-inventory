@@ -1,0 +1,157 @@
+{% extends "base/base.html" %}
+
+{% block title %}История публикаций в соцсетях{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-clock-history me-2"></i>История публикаций
+        </h1>
+        <div>
+            <a href="{{ url_for('social.scheduled_posts') }}" class="btn btn-outline-primary">
+                <i class="bi bi-calendar-event"></i> Запланированные
+            </a>
+            <a href="{{ url_for('social.social_platforms') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-gear"></i> Настройки платформ
+            </a>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="platform" class="form-label">Платформа</label>
+                    <select class="form-select" id="platform" name="platform">
+                        <option value="">Все</option>
+                        {% for platform in available_platforms %}
+                        <option value="{{ platform }}" {% if request.args.get('platform') == platform %}selected{% endif %}>
+                            {{ platform|capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Статус</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">Все</option>
+                        <option value="published" {% if request.args.get('status') == 'published' %}selected{% endif %}>Опубликовано</option>
+                        <option value="failed" {% if request.args.get('status') == 'failed' %}selected{% endif %}>Ошибка</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">С даты</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.args.get('date_from', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">По дату</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.args.get('date_to', '') }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Применить фильтры
+                    </button>
+                    <a href="{{ url_for('social.social_history') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Список публикаций -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                Публикации
+                <span class="badge bg-primary ms-2">{{ posts|length }}</span>
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if posts %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Контент</th>
+                            <th>Платформы</th>
+                            <th>Статус</th>
+                            <th>Результат</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in posts %}
+                        <tr>
+                            <td>
+                                <small>
+                                    {{ post.published_at.strftime('%d.%m.%Y %H:%M') if post.published_at else '-' }}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 300px;">
+                                    {{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    {% if post.article_id %}
+                                        <i class="bi bi-journal-text"></i> Статья
+                                    {% elif post.note_id %}
+                                        <i class="bi bi-sticky"></i> Заметка
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% for platform in post.platforms|from_json %}
+                                    <span class="badge bg-secondary">{{ platform }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <span class="badge {% if post.status == 'published' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ post.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if post.results %}
+                                <button class="btn btn-sm btn-outline-info" data-bs-toggle="collapse" data-bs-target="#results{{ post.id }}">
+                                    <i class="bi bi-eye"></i> Показать
+                                </button>
+                                <div class="collapse mt-2" id="results{{ post.id }}">
+                                    <pre class="small text-muted">{{ post.results }}</pre>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Нет данных</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="if(confirm('Удалить эту публикацию?')) window.location.href='{{ url_for('social.delete_post', post_id=post.id) }}'">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Пагинация (если есть) -->
+            {% if pagination %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {{ pagination.links }}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">Нет публикаций</h4>
+                <p class="text-muted">Публикации в соцсетях появятся здесь после их отправки</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

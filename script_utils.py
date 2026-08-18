@@ -3,6 +3,7 @@ import tempfile
 import os
 import time
 from datetime import datetime
+from sqlalchemy import text
 
 def execute_script(script_content, script_type='bat'):
     """
@@ -80,11 +81,11 @@ def save_script_result(db, script_id, result):
     """
     Сохраняет результат выполнения скрипта в базу данных
     """
-    db.execute('''
+    db.execute(text('''
         INSERT INTO script_results 
         (script_id, output, success, error_message, execution_time)
         VALUES (?, ?, ?, ?, ?)
-    ''', (
+    '''), (
         script_id,
         result['output'],
         result['success'],
@@ -97,9 +98,9 @@ def get_script_results(db, script_id, limit=10):
     """
     Получает историю выполнения скрипта
     """
-    return db.execute('''
+    return db.execute(text('''
         SELECT * FROM script_results 
         WHERE script_id = ? 
         ORDER BY executed_at DESC 
         LIMIT ?
-    ''', (script_id, limit)).fetchall()
+    '''), (script_id, limit)).fetchall()

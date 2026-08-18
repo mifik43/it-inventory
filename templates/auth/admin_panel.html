@@ -1,0 +1,157 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-shield-lock me-2"></i>Панель администратора
+        </h1>
+        <a href="{{ url_for('users.create_user') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Создать пользователя
+        </a>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Всего пользователей</h6>
+                            <h2 class="mb-0">{{ users|length }}</h2>
+                        </div>
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Активные</h6>
+                            <h2 class="mb-0">{{ users|selectattr('is_active')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-check-circle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Администраторы</h6>
+                            <h2 class="mb-0">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-shield-shaded fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-info shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Обычные пользователи</h6>
+                            <h2 class="mb-0">{{ users|rejectattr('role', 'equalto', 'admin')|list|length }}</h2>
+                        </div>
+                        <i class="bi bi-person fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица пользователей -->
+    <div class="card shadow">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-table me-2"></i>Список пользователей</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя пользователя</th>
+                            <th>Email</th>
+                            <th>Полное имя</th>
+                            <th>Роль</th>
+                            <th>Статус</th>
+                            <th>Дата регистрации</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>
+                                <strong>{{ user.username }}</strong>
+                                {% if user.id == session.user_id %}
+                                    <span class="badge bg-info ms-1">Вы</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.email or '-' }}</td>
+                            <td>{{ user.full_name or '-' }}</td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                    <span class="badge bg-danger">Администратор</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Пользователь</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Активен</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Заблокирован</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.created_at.strftime('%d.%m.%Y') if user.created_at else '-' }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- Переключение статуса -->
+                                    <form action="{{ url_for('users.toggle_user_active', user_id=user.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-outline-{{ 'success' if user.is_active else 'warning' }}" 
+                                                title="{{ 'Деактивировать' if user.is_active else 'Активировать' }}"
+                                                {% if user.id == session.user_id %}disabled{% endif %}>
+                                            <i class="bi bi-{{ 'toggle-on' if user.is_active else 'toggle-off' }}"></i>
+                                        </button>
+                                    </form>
+
+                                    <a href="{{ url_for('users.edit_user', user_id=user.id) }}" 
+                                       class="btn btn-outline-primary" title="Редактировать">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+
+                                    <form action="{{ url_for('users.delete_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-outline-danger" title="Удалить"
+                                                onclick="return confirm('Вы уверены, что хотите удалить пользователя {{ user.username }}?')"
+                                                {% if user.id == session.user_id %}disabled{% endif %}>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                Пользователи не найдены
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

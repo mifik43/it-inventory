@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:15  # можно заменить на postgres:15, postgres:14 и т.д.
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres      # имя пользователя
+      POSTGRES_PASSWORD: password  # пароль
+      POSTGRES_DB: it_inventory    # название БД по умолчанию
+    ports:
+      - "5432:5432"              # проброс порта (хост:контейнер)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # сохранение данных
+      #- ./init.sql:/docker-entrypoint-initdb.d/init.sql  # опционально: скрипт инициализации
+    restart: unless-stopped
+    networks:
+      - postgres_network
+
+  app:
+      build: .
+      container_name: it_inventory_app
+      ports:
+        - "8000:8000"
+      environment:
+        - POSTGRES_HOST=postgres_db
+        - POSTGRES_PORT=5432
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=password
+        - POSTGRES_DB=it_inventory
+      depends_on:
+        - postgres
+      networks:
+      - postgres_network
+      restart: unless-stopped
+      develop:
+        watch:
+          - path: ./
+            action: rebuild
+
+volumes:
+  postgres_data:  # именованный том для данных
+
+networks:
+  postgres_network:  # изолированная сеть
+    driver: bridge

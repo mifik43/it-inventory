@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function handleFiles(files) {
-        if (files.length > 0) {
+        if ({{ files|length }} > 0) {
             uploadProgress.classList.remove('d-none');
             
             // Обрабатываем файлы
@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateUI() {
-        const count = selectedFiles.length;
+        const count = {{ selectedFiles|length }};
         screenshotsCount.textContent = count;
         
         if (count > 0) {
@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadProgress.innerHTML = `
             <div class="d-flex align-items-center">
                 <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                <span>Создание статьи и загрузка ${selectedFiles.length} скриншотов...</span>
+                <span>Создание статьи и загрузка ${{{ selectedFiles|length }}} скриншотов...</span>
             </div>
         `;
 
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Скрываем сообщение "нет скриншотов" если они есть
-    if (selectedFiles.length > 0) {
+    if ({{ selectedFiles|length }} > 0) {
         noScreenshots.style.display = 'none';
     }
 });
@@ -352,10 +352,10 @@ function validateFilesBeforeUpload(files) {
 
 // Обновите функцию handleFiles
 function handleFiles(files) {
-    if (files.length > 0) {
+    if ({{ files|length }} > 0) {
         const errors = validateFilesBeforeUpload(files);
         
-        if (errors.length > 0) {
+        if ({{ errors|length }} > 0) {
             alert('Ошибки при загрузке файлов:\n' + errors.join('\n'));
             return;
         }
