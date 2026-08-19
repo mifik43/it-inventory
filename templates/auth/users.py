@@ -3,15 +3,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from templates.base.database_helper import db
 from models import User, Role, UserRole
 from templates.base.requirements import login_required, get_current_user, permissions_required
-from ..roles.permissions import Permissions
-from ..roles.database_roles import read_roles_for_user, save_roles_to_user
-from ..roles.permissions import Role as PermRole
+from templates.roles.permissions import Permissions
+from templates.roles.database_roles import read_roles_for_user, save_roles_to_user
+from templates.roles.permissions import Role as PermRole
 from logger import logger
 
 bluprint_user_routes = Blueprint('users', __name__, url_prefix='/users')
 
 def update_effective_permissions():
-    """Обновляет разрешения пользователя в сессии"""
     user_id = session.get('user_id')
     if user_id:
         user_roles = read_roles_for_user(user_id)

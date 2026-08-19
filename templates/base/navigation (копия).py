@@ -1,8 +1,10 @@
+# templates/base/navigation.py
 from .requirements import get_current_user
-from templates.roles.permissions import Permissions, Role
-from templates.roles.database_roles import read_roles_for_user
+from ..roles.permissions import Permissions, Role
+from ..roles.database_roles import read_roles_for_user
 from flask import url_for
 
+# класс родитель-заглушка
 class DrawableMenuItem():
     def __init__(self, icon, button_class="nav-link"):
         self.icon = icon
@@ -27,16 +29,24 @@ class MenuItem(DrawableMenuItem):
         self.permissions = permissions
 
     def is_allowed(self):
+        # Проверяем аутентификацию
         user = get_current_user()
         if not user:
             return False
+            
+        # Если разрешения не указаны, доступ разрешен для всех авторизованных пользователей
         if len(self.permissions) == 0:
             return True
+
+        # Получаем разрешения текущего пользователя
         user_roles = read_roles_for_user(user.id)
         user_permissions = Role.get_effective_permissions(user_roles)
+        
+        # Проверяем наличие хотя бы одного из требуемых разрешений
         for p in self.permissions:
             if p in user_permissions:
                 return True
+        
         return False
 
     def is_active(self, url):
@@ -44,12 +54,15 @@ class MenuItem(DrawableMenuItem):
 
     def draw(self, url):
         active = "active" if self.is_active(url) else ""
+
         if not self.is_allowed():
             return ""
+
         try:
             url_for_result = url_for(self.url) if self.url and self.url != 'index' else '/'
         except:
             url_for_result = '#'
+
         return f"""
             <li>
                 <a
@@ -64,7 +77,7 @@ class MenuItem(DrawableMenuItem):
 class SimpleMenu(DrawableMenuItem):
     def __init__(self, icon:str=""):
         super().__init__(icon)
-        self.items = []
+        self.items = []  # Исправлено!
     
     def add_item(self, item:DrawableMenuItem):
         self.items.append(item)
@@ -76,6 +89,7 @@ class SimpleMenu(DrawableMenuItem):
         return items_presentation
 
     def is_allowed(self):
+        # Меню доступно, если хотя бы один пункт доступен
         return any(i.is_allowed() for i in self.items)
 
     def is_active(self, url):
@@ -90,7 +104,9 @@ class DropDownMenu(SimpleMenu):
     def draw(self, url):
         if not self.is_allowed():
             return ""
+        
         active = "active" if self.is_active(url) else ""
+
         return f"""
         <li class="nav-item dropdown">
             <a 
@@ -110,19 +126,13 @@ def create_knowlege_base_menu():
     menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-sticky", name="Заметки", url="notes.notes_list", urls_to_be_active=['notes.notes_list', 'notes.add_note', 'notes.edit_note'], permissions=[Permissions.notes_manage, Permissions.notes_read]))
     return menu
 
-def create_administration_menu():
-    """Меню администрирования (пользователи + роли)"""
-    menu = DropDownMenu(name="Администрирование", icon="bi-shield-lock")
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-people", name="Пользователи", url="users.users", urls_to_be_active=['users.users', 'users.create_user', 'users.edit_user'], permissions=[Permissions.users_manage, Permissions.users_read]))
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-calendar-week", name="Роли пользователей", url="roles.roles", urls_to_be_active=['roles.roles', 'roles.create_role', 'roles.edit_role'], permissions=[Permissions.roles_manage, Permissions.roles_read]))
-    return menu
-
 def create_simple_menu():
     menu = SimpleMenu(icon="bi-tools")
     menu.add_item(MenuItem(icon="bi-check-square", name="Задачи", url="todo.todo", urls_to_be_active=['todo.todo', 'todo.add_todo', 'todo.edit_todo'], permissions=[Permissions.todo_manage, Permissions.todo_read]))
     menu.add_item(MenuItem(icon="bi-calendar-week", name="График смен", url="shifts.shifts_list", urls_to_be_active=['shifts.shifts_list', 'shifts.add_shift', 'shifts.edit_shift'], permissions=[Permissions.shifts_manage, Permissions.todo_read]))
     menu.add_item(MenuItem(icon="fa-terminal", name="Скрипты", url="script.script_list", urls_to_be_active=['script.script_list'], permissions=[]))
-    # Пункты "Роли пользователей" и "Пользователи" удалены отсюда
+    menu.add_item(MenuItem(icon="bi-calendar-week", name="Роли пользователей", url="roles.roles", urls_to_be_active=['roles.roles', 'roles.create_role', 'roles.edir_role'], permissions=[Permissions.roles_manage, Permissions.roles_read]))
+    menu.add_item(MenuItem(icon="bi-people", name="Пользователи", url="users.users", urls_to_be_active=['users.users', 'users.create_user', 'users.edit_user'], permissions=[Permissions.users_manage, Permissions.users_read]))
     return menu
 
 def create_menu():
@@ -133,23 +143,9 @@ def create_menu():
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-terminal", name="WTware Конфигурации", url="wtware.wtware_list", urls_to_be_active=['wtware.wtware_list', 'add_wtware', 'edit_wtware'], permissions=[]))
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-clock-history", name="История развертываний", url="wtware.wtware_deployments", urls_to_be_active=['wtware.wtware_deployments'], permissions=[]))
     main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-box", name="Программы", url="cubes.cubes", urls_to_be_active=['cubes.cubes', 'cubes.add_cube', 'cubes.edit_cube'], permissions=[Permissions.cubes_manage, Permissions.cubes_read]))
+    main_menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-building", name="Организации", url="organizations.organizations", urls_to_be_active=['organizations.organizations', 'organizations.add_organization', 'organizations.edit_organization'], permissions=[Permissions.organizations_manage, Permissions.organizations_read]))
+    
     return main_menu
-
-def create_organizations_menu():
-    menu = DropDownMenu(name="Организации", icon="bi-building")
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-building", name="Список организаций", url="organizations.organizations", urls_to_be_active=['organizations.organizations', 'organizations.add_organization', 'organizations.edit_organization'], permissions=[Permissions.organizations_manage, Permissions.organizations_read]))
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-diagram-2", name="Иерархия организаций", url="organizations.hierarchy", urls_to_be_active=['organizations.hierarchy'], permissions=[Permissions.organizations_manage]))
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-people", name="Пользователи по организациям", url="organizations.users_by_organization", urls_to_be_active=['organizations.users_by_organization'], permissions=[Permissions.organizations_manage]))
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-bar-chart", name="Отчёт по активности", url="organizations.activity_report", urls_to_be_active=['organizations.activity_report'], permissions=[Permissions.organizations_manage]))
-    return menu
-
-def create_scanning_menu():
-    menu = DropDownMenu(name="Сканирование", icon="bi-radar")
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="fa-network-wired", name="Сканирование сети", url="network_scan.network_scan", urls_to_be_active=['network_scan.network_scan', 'network_scan.network_scan_results', 'network_scan.network_devices'], permissions=[]))
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-shield-lock", name="Сканирование безопасности", url="security_scan.index", urls_to_be_active=['security_scan.index', 'security_scan.task_detail', 'security_scan.whitelist'], permissions=[Permissions.security_scan_read, Permissions.security_scan_manage]))
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-list-check", name="Whitelist подсетей", url="security_scan.whitelist", urls_to_be_active=['security_scan.whitelist'], permissions=[Permissions.security_scan_whitelist]))
-    menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-diagram-3", name="Граф сети", url="network_scan.graph_list", urls_to_be_active=['network_scan.graph_list', 'network_scan.create_graph', 'network_scan.view_graph'], permissions=[]))
-    return menu
 
 def create_social_menu():
     menu = DropDownMenu(name="Соцсети", icon="bi-share")
@@ -159,6 +155,7 @@ def create_social_menu():
     return menu
 
 def create_checklist_menu():
+    """Создает меню для чек-листа открытия площадки"""
     menu = DropDownMenu(name="Чек-лист", icon="bi-clipboard-check")
     menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-clipboard-check", name="Чек-лист", url="checklist.checklist", urls_to_be_active=['checklist.checklist', 'checklist.add_checklist_task', 'checklist.edit_checklist_task'], permissions=[]))
     menu.add_item(MenuItem(button_class="dropdown-item", icon="bi-graph-up", name="Статистика", url="checklist.checklist_stats", urls_to_be_active=['checklist.checklist_stats'], permissions=[]))
@@ -167,12 +164,79 @@ def create_checklist_menu():
 def create_main_menu():
     menu = SimpleMenu(icon="bi-speedometer2")
     menu.add_item(MenuItem(icon="bi-speedometer2", name="Дашборд", url="index", urls_to_be_active=['index'], permissions=[]))
-    menu.add_item(create_menu())                      # На обслуживании
-    menu.add_item(create_organizations_menu())        # Организации
-    menu.add_item(create_knowlege_base_menu())        # База знаний
-    menu.add_item(create_simple_menu())               # Задачи, Смены, Скрипты (без ролей и пользователей)
-    menu.add_item(create_scanning_menu())             # Сканирование
-    menu.add_item(create_social_menu())               # Соцсети
-    menu.add_item(create_checklist_menu())            # Чек-лист
-    menu.add_item(create_administration_menu())       # Администрирование (пользователи + роли)
+    menu.add_item(create_menu())
+    menu.add_item(create_knowlege_base_menu())
+    menu.add_item(create_simple_menu())
+    menu.add_item(create_social_menu())
+    menu.add_item(create_checklist_menu())
+    menu.add_item(create_network_tools_menu())
+    return menu
+
+def create_network_menu():
+    menu = DropDownMenu(name="Сеть", icon="bi-diagram-2")
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-radar",
+        name="Сканирование сети",
+        url="network_scan.network_scan",
+        urls_to_be_active=['network_scan.network_scan', 'network_scan.network_scan_results', 'network_scan.network_devices'],
+        permissions=[Permissions.guest_wifi_read, Permissions.guest_wifi_manage]
+    ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-diagram-3",
+        name="Граф сети",
+        url="network_scan.network_graph",
+        urls_to_be_active=['network_scan.network_graph'],
+        permissions=[Permissions.guest_wifi_read, Permissions.guest_wifi_manage]
+    ))
+    return menu
+
+def create_network_tools_menu():
+    menu = DropDownMenu(name="Сеть", icon="bi-hdd-network")
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-radar",
+        name="Сканирование сети",
+        url="network_scan.network_scan",
+        urls_to_be_active=['network_scan.network_scan'],
+        permissions=[Permissions.guest_wifi_manage]
+    ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-diagram-3",
+        name="Граф сети",
+        url="network_scan.network_graph",
+        urls_to_be_active=['network_scan.network_graph'],
+        permissions=[Permissions.guest_wifi_manage]
+    ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-list-ul",
+        name="Устройства",
+        url="network_scan.network_devices",
+        urls_to_be_active=['network_scan.network_devices'],
+        permissions=[Permissions.guest_wifi_manage]
+    ))
+    return menu
+
+    def create_security_menu():
+    """Создает меню для сканирования безопасности"""
+    menu = DropDownMenu(name="Безопасность", icon="bi-shield-lock")
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-radar",
+        name="Сканирование безопасности",
+        url="security_scan.index",
+        urls_to_be_active=['security_scan.index', 'security_scan.task_detail', 'security_scan.whitelist'],
+        permissions=[Permissions.security_scan_read, Permissions.security_scan_manage]
+    ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-list-check",
+        name="Whitelist подсетей",
+        url="security_scan.whitelist",
+        urls_to_be_active=['security_scan.whitelist'],
+        permissions=[Permissions.security_scan_whitelist]
+    ))
     return menu

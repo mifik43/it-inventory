@@ -59,6 +59,11 @@ class Permissions(enum.Enum):
     checklist_manage = 'checklist_manage'
     checklist_export = 'checklist_export'
 
+    # Разрешения для сканирования безопасности
+    security_scan_read = "security_scan_read"       # просмотр сканирований
+    security_scan_manage = "security_scan_manage"   # запуск и управление сканированиями
+    security_scan_whitelist = "security_scan_whitelist"  # управление whitelist
+
     def to_name(p):
         if p == Permissions.users_read:
             return "Чтение списка пользователей"
@@ -114,7 +119,13 @@ class Permissions(enum.Enum):
             return "дашбор"
         elif p == Permissions.EDIT_USERS:
             return "редактирование пользователей"
-    
+        elif p == Permissions.security_scan_read:
+            return "Просмотр результатов сканирования безопасности"
+        elif p == Permissions.security_scan_manage:
+            return "Запуск и управление сканированиями безопасности"
+        elif p == Permissions.security_scan_whitelist:
+            return "Управление whitelist для сканирования"
+        
     def get_names():
         names = dict()
         for p in Permissions:
@@ -153,23 +164,22 @@ class Role:
     def is_permission_granted(self, p:Permissions):
         return p in self.permissions
     
+    @staticmethod
     def get_effective_permissions(roles):
         permissions = set()
         for role in roles:
             for p in role.permissions:
                 permissions.add(p)
-        
         return permissions
 
     
 # роль со всеми правами
 def create_full_access_role():
     role = Role(id=None, name="SuperAdmin", description="Роль админа по умолчанию", permissions=set())
-
     for p in Permissions:
-        role.add_permission(p)
-    
+        role.add_permission(p)  # Это добавит все разрешения, включая новые
     return role
+
 
 def create_read_only_role():
     role = Role(id=None, name="Reader", description="Роль с правами только на чтение", permissions=set())
@@ -179,3 +189,4 @@ def create_read_only_role():
             role.add_permission(p)
 
     return role
+

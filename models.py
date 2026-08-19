@@ -16,6 +16,7 @@ class User(db.Model):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     roles = relationship('Role', secondary='roles_to_user', back_populates='users')
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     
     # Relationships
     shifts = relationship('Shift', backref='user', lazy=True)
@@ -24,7 +25,8 @@ class User(db.Model):
     social_posts = relationship('SocialPost', backref='user', lazy=True)
     social_platforms = relationship('SocialPlatform', backref='user', lazy=True)
     scheduled_posts = relationship('ScheduledPost', backref='user', lazy=True)
-    
+    organization = relationship('Organization', backref='users')
+
     def get_id(self):
         return str(self.id)
 
@@ -99,7 +101,15 @@ class Organization(db.Model):
     address = Column(String(300))
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    parent_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    # Отношения
     todos = relationship('Todo', backref='organization', lazy=True)
+    
+    # Иерархия
+    parent = relationship('Organization', remote_side=[id], backref='children')
+    
+
 
 class Todo(db.Model):
     __tablename__ = 'todos'
@@ -261,7 +271,6 @@ class NetworkScan(db.Model):
     completed_at = Column(DateTime)
     notes = Column(Text)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
-    
     organization = relationship('Organization', backref='network_scans')
     devices = relationship('NetworkDevice', backref='scan', lazy=True)
 
@@ -422,3 +431,73 @@ class NetworkGraph(db.Model):
     organization = relationship('Organization', backref='network_graphs')
     devices = relationship('NetworkGraphDevice', backref='graph', lazy='dynamic')
 
+class ScanTask(db.Model):
+    __tablename__ = 'scan_tasks'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    scan_type = Column(String(50), nullable=False)  # 'port', 'vuln', 'bruteforce'
+    target = Column(String(200), nullable=False)    # IP, диапазон или подсеть
+    profile = Column(String(50), default='default')
+    status = Column(String(50), default='pending')  # pending, running, completed, failed
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization = relationship('Organization', backref='scan_tasks')
+    raw_output = Column(Text)                       # сырой вывод инструментов
+    error_message = Column(Text)
+    
+    user = relationship('User', backref='scan_tasks')
+    organization = relationship('Organization', backref='scan_tasks')
+    port_results = relationship('PortResult', backref='task', lazy=True)
+    vulnerabilities = relationship('Vulnerability', backref='task', lazy=True)
+    brute_force_results = relationship('BruteForceResult', backref='task', lazy=True)
+
+class PortResult(db.Model):
+    __tablename__ = 'port_results'
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
+    ip = Column(String(50), nullable=False)
+    port = Column(Integer, nullable=False)
+    protocol = Column(String(10), default='tcp')
+    service = Column(String(100))
+    version = Column(String(100))
+    state = Column(String(20), default='open')
+    extra_info = Column(Text)
+
+class Vulnerability(db.Model):
+    __tablename__ = 'vulnerabilities'
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
+    source = Column(String(50))                    # 'nikto', 'wapiti', 'openvas'
+    name = Column(String(200))
+    description = Column(Text)
+    cvss_score = Column(Float)
+    severity = Column(String(20))                  # critical, high, medium, low
+    affected_url = Column(String(500))
+    remediation = Column(Text)
+    extra_data = Column(Text)                     # JSON с доп. данными
+
+class BruteForceResult(db.Model):
+    __tablename__ = 'bruteforce_results'
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
+    service = Column(String(50))                   # ssh, ftp, http, etc.
+    target = Column(String(200))
+    username = Column(String(100))
+    password = Column(String(200))
+    source = Column(String(50))                   # 'hydra', 'medusa'
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+class WhitelistNetwork(db.Model):
+    __tablename__ = 'whitelist_networks'
+    
+    id = Column(Integer, primary_key=True)
+    network = Column(String(50), nullable=False)   # 192.168.1.0/24
+    description = Column(Text)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

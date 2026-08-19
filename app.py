@@ -26,6 +26,7 @@ from templates.scripts.script import bluprint_script_routes
 from templates.social.social_routes import bluprint_social_routes
 from templates.base.requirements import login_required, get_current_user
 from templates.checklist.checklist import bluprint_checklist_routes
+from templates.security_scan.security_scan import bluprint_security_scan
 
 from flask_migrate import Migrate
 
@@ -80,6 +81,7 @@ app.register_blueprint(bluprint_wtware_routes)
 app.register_blueprint(bluprint_script_routes)
 app.register_blueprint(bluprint_social_routes)
 app.register_blueprint(bluprint_checklist_routes)
+app.register_blueprint(bluprint_security_scan)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
@@ -108,6 +110,7 @@ def inject_common_variables():
 
 @app.context_processor
 def inject_user():
+    from templates.base.requirements import get_current_user
     user = get_current_user()
     return {'current_user': user}
 
