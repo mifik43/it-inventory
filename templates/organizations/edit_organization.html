@@ -61,6 +61,19 @@
             </div>
 
             <div class="mb-3">
+                <label for="parent_id" class="form-label">Родительская организация</label>
+                <select class="form-select" id="parent_id" name="parent_id">
+                    <option value="">Нет (корневая организация)</option>
+                    {% for parent_org in organizations %}
+                    <option value="{{ parent_org.id }}" {% if parent_org.id == org.parent_id %}selected{% endif %}>
+                        {{ parent_org.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Выберите родительскую организацию, если данная организация является дочерней.</div>
+            </div>
+
+            <div class="mb-3">
                 <label for="notes" class="form-label">Примечания</label>
                 <textarea class="form-control" id="notes" name="notes" rows="3">{{ org.notes or '' }}</textarea>
             </div>

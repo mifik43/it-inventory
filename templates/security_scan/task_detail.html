@@ -1,0 +1,211 @@
+{% extends "base/base.html" %}
+
+{% block title %}Детали задачи{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Задача: {{ task.name }}</h1>
+        <div>
+            <a href="{{ url_for('security_scan.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Информация</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr><th>ID</th><td>{{ task.id }}</td></tr>
+                        <tr><th>Тип</th><td><span class="badge bg-info">{{ task.scan_type }}</span></td></tr>
+                        <tr><th>Цель</th><td><code>{{ task.target }}</code></td></tr>
+                        <tr><th>Профиль</th><td>{{ task.profile }}</td></tr>
+                        <tr><th>Статус</th>
+                            <td>
+                                {% if task.status == 'pending' %}
+                                <span class="badge bg-secondary">Ожидание</span>
+                                {% elif task.status == 'running' %}
+                                <span class="badge bg-warning">Выполняется</span>
+                                {% elif task.status == 'completed' %}
+                                <span class="badge bg-success">Завершено</span>
+                                {% else %}
+                                <span class="badge bg-danger">Ошибка</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr><th>Организация</th><td>{{ task.organization.name if task.organization else 'Без организации' }}</td></tr>
+                        <tr><th>Запущено</th><td>{{ task.started_at.strftime('%d.%m.%Y %H:%M:%S') }}</td></tr>
+                        {% if task.completed_at %}
+                        <tr><th>Завершено</th><td>{{ task.completed_at.strftime('%d.%m.%Y %H:%M:%S') }}</td></tr>
+                        {% endif %}
+                        {% if task.error_message %}
+                        <tr><th>Ошибка</th><td class="text-danger">{{ task.error_message }}</td></tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Статистика -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Результаты</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h3 class="text-primary">{{ task.port_results|length }}</h3>
+                            <small>Портов</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-danger">{{ task.vulnerabilities|length }}</h3>
+                            <small>Уязвимостей</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-success">{{ task.brute_force_results|length }}</h3>
+                            <small>Учётных записей</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Открытые порты -->
+    {% if task.port_results %}
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-plug"></i> Открытые порты</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>IP</th>
+                            <th>Порт</th>
+                            <th>Протокол</th>
+                            <th>Сервис</th>
+                            <th>Версия</th>
+                            <th>Состояние</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for port in task.port_results %}
+                        <tr>
+                            <td>{{ port.ip }}</td>
+                            <td>{{ port.port }}</td>
+                            <td>{{ port.protocol }}</td>
+                            <td>{{ port.service }}</td>
+                            <td>{{ port.version or '-' }}</td>
+                            <td><span class="badge bg-success">{{ port.state }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Уязвимости -->
+    {% if task.vulnerabilities %}
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Уязвимости</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Источник</th>
+                            <th>Название</th>
+                            <th>CVSS</th>
+                            <th>Severity</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vuln in task.vulnerabilities %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ vuln.source }}</span></td>
+                            <td>{{ vuln.name }}</td>
+                            <td>{{ vuln.cvss_score or '-' }}</td>
+                            <td>
+                                {% if vuln.severity == 'critical' %}
+                                <span class="badge bg-danger">Critical</span>
+                                {% elif vuln.severity == 'high' %}
+                                <span class="badge bg-warning">High</span>
+                                {% elif vuln.severity == 'medium' %}
+                                <span class="badge bg-info">Medium</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Low</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ vuln.affected_url or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Брутфорс результаты -->
+    {% if task.brute_force_results %}
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-key"></i> Найденные учётные записи</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Сервис</th>
+                            <th>Цель</th>
+                            <th>Логин</th>
+                            <th>Пароль</th>
+                            <th>Инструмент</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bf in task.brute_force_results %}
+                        <tr>
+                            <td>{{ bf.service }}</td>
+                            <td>{{ bf.target }}</td>
+                            <td><code>{{ bf.username }}</code></td>
+                            <td><code>{{ bf.password }}</code></td>
+                            <td>{{ bf.source }}</td>
+                            <td>{{ bf.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Сырой вывод -->
+    {% if task.raw_output %}
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-terminal"></i> Сырой вывод</h5>
+        </div>
+        <div class="card-body">
+            <pre class="bg-light p-3" style="max-height: 400px; overflow: auto;">{{ task.raw_output }}</pre>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

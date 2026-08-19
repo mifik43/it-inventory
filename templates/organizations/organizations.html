@@ -14,21 +14,26 @@
                     <i class="bi bi-plus-circle"></i> Добавить организацию
                 </a>
             </div>
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-building me-2"></i>Организации</h2>
-                <div>
-                    <a href="{{ url_for('export_data', data_type='organizations.organizations') }}" class="btn btn-success me-2">
-                        <i class="bi bi-download"></i> Экспорт в Excel
-                    </a>
-                    {% if session.role == 'admin' %}
-                    <a href="{{ url_for('import_data', data_type='organizations.organizations') }}" class="btn btn-primary me-2">
-                        <i class="bi bi-upload"></i> Импорт из Excel
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('organizations.add_organization') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Добавить организацию
-                    </a>
-                </div>
+
+            <!-- Кнопки для дополнительных функций -->
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <a href="{{ url_for('organizations.hierarchy') }}" class="btn btn-outline-info">
+                    <i class="bi bi-diagram-2"></i> Иерархия
+                </a>
+                <a href="{{ url_for('organizations.users_by_organization') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-people"></i> Пользователи по организациям
+                </a>
+                <a href="{{ url_for('organizations.activity_report') }}" class="btn btn-outline-success">
+                    <i class="bi bi-bar-chart"></i> Отчёт по активности
+                </a>
+                <a href="{{ url_for('export_data', data_type='organizations.organizations') }}" class="btn btn-success">
+                    <i class="bi bi-download"></i> Экспорт в Excel
+                </a>
+                {% if session.role == 'admin' %}
+                <a href="{{ url_for('import_data', data_type='organizations.organizations') }}" class="btn btn-primary">
+                    <i class="bi bi-upload"></i> Импорт из Excel
+                </a>
+                {% endif %}
             </div>
 
             <!-- Статистика -->
@@ -138,6 +143,9 @@
                                         <strong>{{ org.name }}</strong>
                                         {% if org.address %}
                                             <br><small class="text-muted">{{ org.address }}</small>
+                                        {% endif %}
+                                        {% if org.parent_id %}
+                                            <br><small class="text-muted">Родитель: {{ org.parent.name if org.parent else 'Не указан' }}</small>
                                         {% endif %}
                                     </td>
                                     <td>
