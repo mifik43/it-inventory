@@ -64,6 +64,10 @@ class Permissions(enum.Enum):
     security_scan_manage = "security_scan_manage"   # запуск и управление сканированиями
     security_scan_whitelist = "security_scan_whitelist"  # управление whitelist
 
+    # пароли
+    password_manager_read = "password_manager_read"
+    password_manager_manage = "password_manager_manage"
+
     def to_name(p):
         if p == Permissions.users_read:
             return "Чтение списка пользователей"
@@ -125,6 +129,10 @@ class Permissions(enum.Enum):
             return "Запуск и управление сканированиями безопасности"
         elif p == Permissions.security_scan_whitelist:
             return "Управление whitelist для сканирования"
+        elif p == Permissions.password_manager_read:
+            return "Просмотр паролей"
+        elif p == Permissions.password_manager_manage:
+            return "Управление паролями"
         
     def get_names():
         names = dict()
