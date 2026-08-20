@@ -1,0 +1,70 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ entry.name }}</h4>
+                    <div>
+                        <a href="{{ url_for('password_manager.edit_entry', entry_id=entry.id) }}" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('password_manager.history', entry_id=entry.id) }}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-clock-history"></i> История
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <tr><th>Логин</th><td>{{ entry.username or '-' }}</td></tr>
+                        <tr><th>URL</th><td><a href="{{ entry.url }}" target="_blank">{{ entry.url or '-' }}</a></td></tr>
+                        <tr>
+                            <th>Пароль</th>
+                            <td>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="password" value="{{ decrypted }}" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" id="copyBtn">
+                                        <i class="bi bi-clipboard"></i> Копировать
+                                    </button>
+                                    <button class="btn btn-outline-secondary" type="button" id="toggleVisible">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr><th>Заметки</th><td>{{ entry.notes or '-' }}</td></tr>
+                        <tr><th>Создал</th><td>{{ entry.creator.username if entry.creator else 'Unknown' }}</td></tr>
+                        <tr><th>Создано</th><td>{{ entry.created_at.strftime('%d.%m.%Y %H:%M') }}</td></tr>
+                        <tr><th>Обновлено</th><td>{{ entry.updated_at.strftime('%d.%m.%Y %H:%M') }}</td></tr>
+                    </table>
+                    <a href="{{ url_for('password_manager.folder_entries', folder_id=entry.folder_id) }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Назад
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('copyBtn').addEventListener('click', function() {
+    const input = document.getElementById('password');
+    input.select();
+    document.execCommand('copy');
+    alert('Пароль скопирован в буфер обмена');
+});
+
+document.getElementById('toggleVisible').addEventListener('click', function() {
+    const input = document.getElementById('password');
+    if (input.type === 'password') {
+        input.type = 'text';
+        this.innerHTML = '<i class="bi bi-eye-slash"></i>';
+    } else {
+        input.type = 'password';
+        this.innerHTML = '<i class="bi bi-eye"></i>';
+    }
+});
+</script>
+{% endblock %}

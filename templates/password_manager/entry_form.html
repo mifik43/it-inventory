@@ -1,0 +1,77 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ 'Редактировать запись' if entry else 'Новая запись' }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Название *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ entry.name if entry else '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Логин</label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ entry.username if entry else '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL</label>
+                            <input type="url" class="form-control" id="url" name="url" 
+                                   value="{{ entry.url if entry else '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Пароль</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="password" name="password" 
+                                       value="{{ decrypted if entry else '' }}" placeholder="Оставьте пустым для генерации">
+                                <button class="btn btn-outline-secondary" type="button" id="generateBtn">
+                                    <i class="bi bi-dice"></i> Сгенерировать
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Будет зашифрован и сохранён в базе данных.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Заметки</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ entry.notes if entry else '' }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                        <a href="{{ url_for('password_manager.folder_entries', folder_id=folder.id) }}" class="btn btn-secondary">Отмена</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('generateBtn').addEventListener('click', function() {
+    const length = 16;
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('password').value = password;
+});
+
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const input = document.getElementById('password');
+    if (input.type === 'password') {
+        input.type = 'text';
+        this.innerHTML = '<i class="bi bi-eye-slash"></i>';
+    } else {
+        input.type = 'password';
+        this.innerHTML = '<i class="bi bi-eye"></i>';
+    }
+});
+</script>
+{% endblock %}

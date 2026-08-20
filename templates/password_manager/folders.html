@@ -1,0 +1,72 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Папки паролей</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFolderModal">
+            <i class="bi bi-folder-plus"></i> Создать папку
+        </button>
+    </div>
+
+    <div class="row">
+        {% for folder in folders %}
+        <div class="col-md-4 col-lg-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-folder text-warning"></i> {{ folder.name }}
+                    </h5>
+                    <p class="card-text text-muted small">
+                        Организация: {{ folder.organization.name if folder.organization else 'Общая' }}
+                    </p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('password_manager.folder_entries', folder_id=folder.id) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-key"></i> Пароли
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">Нет папок. Создайте первую папку для хранения паролей.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Модальное окно создания папки -->
+<div class="modal fade" id="addFolderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('password_manager.add_folder') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Новая папка</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="folder_name" class="form-label">Название папки</label>
+                        <input type="text" class="form-control" id="folder_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="organization_id" class="form-label">Организация</label>
+                        <select class="form-select" id="organization_id" name="organization_id">
+                            <option value="">Общая папка</option>
+                            {% for org in organizations %}
+                            <option value="{{ org.id }}">{{ org.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

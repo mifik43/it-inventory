@@ -501,3 +501,54 @@ class WhitelistNetwork(db.Model):
     description = Column(Text)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class PasswordFolder(db.Model):
+    __tablename__ = 'password_folders'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    parent_id = Column(Integer, ForeignKey('password_folders.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    parent = relationship('PasswordFolder', remote_side=[id], backref='children')
+    organization = relationship('Organization', backref='password_folders')
+    entries = relationship('PasswordEntry', backref='folder', lazy='dynamic')
+
+class PasswordEntry(db.Model):
+    __tablename__ = 'password_entries'
+    id = Column(Integer, primary_key=True)
+    folder_id = Column(Integer, ForeignKey('password_folders.id'), nullable=False)
+    name = Column(String(200), nullable=False)
+    username = Column(String(200))
+    url = Column(String(500))
+    password_encrypted = Column(Text, nullable=False)  # зашифровано
+    notes = Column(Text)
+    created_by = Column(Integer, ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    creator = relationship('User', backref='password_entries')
+    accesses = relationship('PasswordAccess', backref='entry', lazy='dynamic')
+    history = relationship('PasswordHistory', backref='entry', lazy='dynamic')
+
+class PasswordAccess(db.Model):
+    __tablename__ = 'password_access'
+    id = Column(Integer, primary_key=True)
+    entry_id = Column(Integer, ForeignKey('password_entries.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    can_view = Column(Boolean, default=True)
+    can_edit = Column(Boolean, default=False)
+    granted_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship('User', backref='password_accesses')
+
+class PasswordHistory(db.Model):
+    __tablename__ = 'password_history'
+    id = Column(Integer, primary_key=True)
+    entry_id = Column(Integer, ForeignKey('password_entries.id'), nullable=False)
+    old_password_encrypted = Column(Text, nullable=False)
+    changed_by = Column(Integer, ForeignKey('users.id'), nullable=False)
+    changed_at = Column(DateTime, default=datetime.utcnow)
+    
+    changer = relationship('User', backref='password_history_changes')

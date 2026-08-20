@@ -27,6 +27,7 @@ from templates.social.social_routes import bluprint_social_routes
 from templates.base.requirements import login_required, get_current_user
 from templates.checklist.checklist import bluprint_checklist_routes
 from templates.security_scan.security_scan import bluprint_security_scan
+from templates.password_manager.routes import password_bp
 
 from flask_migrate import Migrate
 
@@ -82,6 +83,7 @@ app.register_blueprint(bluprint_script_routes)
 app.register_blueprint(bluprint_social_routes)
 app.register_blueprint(bluprint_checklist_routes)
 app.register_blueprint(bluprint_security_scan)
+app.register_blueprint(password_bp)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
