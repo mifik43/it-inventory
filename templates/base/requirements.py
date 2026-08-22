@@ -4,8 +4,8 @@ from models import User
 import inspect
 
 from logger import logger
-from ..roles.database_roles import read_roles_for_user
-from ..roles.permissions import Role
+from templates.roles.database_roles import read_roles_for_user
+from templates.roles.permissions import Role
 
 def get_current_user():
     user_id = session.get('user_id')
@@ -36,11 +36,6 @@ def permissions_required(permissions):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            user = get_current_user()
-            # Администратор имеет доступ ко всему
-            if user and user.role == 'admin':
-                return f(*args, **kwargs)
-            
             user_permissions = get_current_user_permissions()
             has_permission = any(perm in user_permissions for perm in permissions)
             if not has_permission:
@@ -56,10 +51,6 @@ def permissions_required_all(permissions):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            user = get_current_user()
-            if user and user.role == 'admin':
-                return f(*args, **kwargs)
-            
             user_permissions = get_current_user_permissions()
             has_all_permissions = all(perm in user_permissions for perm in permissions)
             if not has_all_permissions:
@@ -74,10 +65,7 @@ def permission_required(permission):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            user = get_current_user()
-            if user and user.role == 'admin':
-                return f(*args, **kwargs)
-            
+                      
             user_permissions = get_current_user_permissions()
             if permission not in user_permissions:
                 flash('Недостаточно прав для доступа к этой странице', 'error')

@@ -41,14 +41,14 @@
                         <label for="serial_number" class="form-label">Серийный номер *</label>
                         <input type="text" class="form-control" id="serial_number" name="serial_number" required>
                     </div>
-                    
+                </div>
+                
+                <div class="col-md-6">
                     <div class="mb-3">
                         <label for="mac_address" class="form-label">MAC-адрес</label>
                         <input type="text" class="form-control" id="mac_address" name="mac_address" placeholder="00:1B:44:11:3A:B7">
                     </div>
-                </div>
-                
-                <div class="col-md-6">
+                    
                     <div class="mb-3">
                         <label for="ip_address" class="form-label">IP-адрес</label>
                         <input type="text" class="form-control" id="ip_address" name="ip_address" placeholder="192.168.1.100">
@@ -58,7 +58,11 @@
                         <label for="location" class="form-label">Местоположение *</label>
                         <input type="text" class="form-control" id="location" name="location" required>
                     </div>
-                    
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
                     <div class="mb-3">
                         <label for="status" class="form-label">Статус *</label>
                         <select class="form-select" id="status" name="status" required>
@@ -69,13 +73,29 @@
                             <option value="Резерв">Резерв</option>
                         </select>
                     </div>
-                    
+                </div>
+                <div class="col-md-6">
                     <div class="mb-3">
                         <label for="assigned_to" class="form-label">Закреплено за</label>
                         <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="ФИО сотрудника">
                     </div>
                 </div>
             </div>
+
+            <!-- Выбор организации (только для админов) -->
+            
+            <div class="mb-3">
+                <label for="organization_id" class="form-label">Организация</label>
+                <select class="form-select" id="organization_id" name="organization_id">
+                    <option value="">Без организации</option>
+                    {% for org in organizations %}
+                    <option value="{{ org.id }}" {% if org.id == current_org_id %}selected{% endif %}>
+                        {{ org.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
             
             <div class="mb-3">
                 <label for="specifications" class="form-label">Характеристики</label>

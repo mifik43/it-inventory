@@ -1,10 +1,11 @@
-from flask import render_template, request, redirect, url_for, flash, session, Blueprint
+from flask import render_template, request, redirect, url_for, flash, session, Blueprint, current_app
 from sqlalchemy import func, distinct
-
+from logger import logger
 from templates.base.database_helper import db
-from templates.base.requirements import permissions_required
+from templates.base.requirements import permissions_required, login_required, get_current_user, get_current_user_permissions
 from templates.roles.permissions import Permissions
-from models import Organization, User, Log
+from models import Organization, User, Log, Todo
+from templates.base.organization_utils import get_user_visible_organizations, ALL_ORGANIZATIONS
 
 bluprint_organizations_routes = Blueprint("organizations", __name__)
 
@@ -214,3 +215,46 @@ def activity_report():
                            selected_org_id=org_id,
                            date_from=date_from,
                            date_to=date_to)
+
+@bluprint_organizations_routes.route('/switch/<org_id>')
+@login_required
+def switch_organization(org_id):
+    user = get_current_user()
+    user_permissions = get_current_user_permissions()
+    logger.info(f"Переключение организации: пользователь {user.username}, роль {user}, целевая организация {org_id}")
+    if Permissions.organizations_manage_all in user_permissions:
+    # Для суперадмина — доступ ко всему
+        if org_id == ALL_ORGANIZATIONS:
+            session['current_org_id'] = org_id
+            session.modified = True
+            logger.info(f"SESSION после установки (superadmin all): {dict(session)}")
+            return redirect(url_for('index'))
+        org = Organization.query.get(org_id)
+        if org:
+            session['current_org_id'] = org_id
+            session.modified = True
+            logger.info(f"SESSION после установки (superadmin org): {dict(session)}")
+            return redirect(url_for('index'))
+        else:
+            flash('Организация не найдена', 'error')
+            return redirect(url_for('index'))
+
+    # Для остальных — проверка доступа
+    visible = get_user_visible_organizations(user)
+    visible_ids = []
+    for v in visible:
+        if isinstance(v, dict):
+            visible_ids.append(str(v.get('id')))
+        else:
+            visible_ids.append(str(v.id))
+
+    if str(org_id) not in visible_ids:
+        flash('Нет доступа к этой организации', 'error')
+        return redirect(url_for('index'))
+
+    
+
+    session['current_org_id'] = org_id
+    session.modified = True
+    logger.info(f"SESSION после установки (обычный пользователь): {dict(session)}")
+    return redirect(url_for('index'))

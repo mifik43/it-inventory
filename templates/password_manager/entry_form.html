@@ -1,5 +1,7 @@
 {% extends "base/base.html" %}
 
+{% block title %}{{ 'Редактировать запись' if entry else 'Новая запись' }}{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="row justify-content-center">
@@ -9,7 +11,7 @@
                     <h4 class="mb-0">{{ 'Редактировать запись' if entry else 'Новая запись' }}</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="name" class="form-label">Название *</label>
                             <input type="text" class="form-control" id="name" name="name" 
@@ -39,10 +41,41 @@
                             </div>
                             <small class="text-muted">Будет зашифрован и сохранён в базе данных.</small>
                         </div>
+
+                        <!-- НОВЫЕ ПОЛЯ -->
                         <div class="mb-3">
-                            <label for="notes" class="form-label">Заметки</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ entry.notes if entry else '' }}</textarea>
+                            <label for="importance" class="form-label">Важность</label>
+                            <select class="form-select" id="importance" name="importance">
+                                <option value="low" {% if entry and entry.importance == 'low' %}selected{% endif %}>Низкая</option>
+                                <option value="medium" {% if entry and entry.importance == 'medium' %}selected{% endif %}>Средняя</option>
+                                <option value="high" {% if entry and entry.importance == 'high' %}selected{% endif %}>Высокая</option>
+                                <option value="critical" {% if entry and entry.importance == 'critical' %}selected{% endif %}>Критическая</option>
+                            </select>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Теги (через запятую)</label>
+                            <input type="text" class="form-control" id="tags" name="tags" 
+                                   value="{{ entry.tags if entry else '' }}" placeholder="VPN, Сервер, Админка">
+                            <small class="text-muted">Разделяйте теги запятыми.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Комментарий</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3">{{ entry.comment if entry else '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="attachments" class="form-label">Вложения</label>
+                            <input type="file" class="form-control" id="attachments" name="attachments" multiple>
+                            <small class="text-muted">Вы можете прикрепить несколько файлов (макс. 10 МБ каждый).</small>
+                            {% if entry and entry.attachments %}
+                                <div class="mt-2">
+                                    <span class="badge bg-secondary">{{ entry.attachments|length }} файлов прикреплено</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
                         <button type="submit" class="btn btn-primary">Сохранить</button>
                         <a href="{{ url_for('password_manager.folder_entries', folder_id=folder.id) }}" class="btn btn-secondary">Отмена</a>
                     </form>

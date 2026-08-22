@@ -10,7 +10,6 @@
         <a href="{{ url_for('guest_wifi.export_guest_wifi') }}" class="btn btn-success me-2">
             <i class="bi bi-download"></i> Экспорт в Excel
         </a>
-        {% if session.role == 'admin' %}
         <a href="{{ url_for('guest_wifi.import_guest_wifi') }}" class="btn btn-primary me-2">
             <i class="bi bi-upload"></i> Импорт из Excel
         </a>
@@ -20,7 +19,6 @@
         <a href="{{ url_for('guest_wifi.add_guest_wifi') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Добавить WiFi
         </a>
-        {% endif %}
     </div>
 </div>
 <!-- Поиск -->
@@ -154,7 +152,6 @@
                                 <a href="#" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#wifiModal{{ wifi.id }}">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                {% if session.role == 'admin' %}
                                 <a href="{{ url_for('guest_wifi.edit_guest_wifi', wifi_id=wifi.id) }}" class="btn btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -163,7 +160,6 @@
                                    data-confirm="Вы уверены, что хотите удалить гостевой WiFi для {{ wifi.city }}?">
                                     <i class="bi bi-trash"></i>
                                 </a>
-                                {% endif %}
                             </div>
 
                             <!-- Modal -->
@@ -233,11 +229,9 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                                            {% if session.role == 'admin' %}
                                             <a href="{{ url_for('guest_wifi.edit_guest_wifi', wifi_id=wifi.id) }}" class="btn btn-primary">
                                                 <i class="bi bi-pencil"></i> Редактировать
                                             </a>
-                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>

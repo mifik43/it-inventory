@@ -82,6 +82,7 @@
                             <th>Email</th>
                             <th>Полное имя</th>
                             <th>Роль</th>
+                            <th>Организация</th>
                             <th>Статус</th>
                             <th>Дата регистрации</th>
                             <th>Действия</th>
@@ -99,13 +100,8 @@
                             </td>
                             <td>{{ user.email or '-' }}</td>
                             <td>{{ user.full_name or '-' }}</td>
-                            <td>
-                                {% if user.role == 'admin' %}
-                                    <span class="badge bg-danger">Администратор</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Пользователь</span>
-                                {% endif %}
-                            </td>
+                            
+                            <td>{{ user.organization.name if user.organization else 'Без организации' }}</td>
                             <td>
                                 {% if user.is_active %}
                                     <span class="badge bg-success">Активен</span>
@@ -142,7 +138,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="8" class="text-center text-muted">
+                            <td colspan="9" class="text-center text-muted">
                                 <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                                 Пользователи не найдены
                             </td>

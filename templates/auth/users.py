@@ -1,11 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from templates.base.database_helper import db
-from models import User, Role, UserRole
+from models import User, Role, UserRole, Organization
 from templates.base.requirements import login_required, get_current_user, permissions_required
-from templates.roles.permissions import Permissions
-from templates.roles.database_roles import read_roles_for_user, save_roles_to_user
-from templates.roles.permissions import Role as PermRole
+from templates.roles.permissions import Permissions, Role as PermRole
+from templates.roles.database_roles import read_roles_for_user
 from logger import logger
 
 bluprint_user_routes = Blueprint('users', __name__, url_prefix='/users')
@@ -22,23 +21,25 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
-        # Проверка на пустые поля
-        if not username or not password:
-            flash('Введите имя пользователя и пароль', 'error')
-            return render_template('auth/login.html')
-        
         user = User.query.filter_by(username=username).first()
-        if user and user.is_active and check_password_hash(user.password_hash, password):
-            session['user_id'] = user.id
-            session['username'] = user.username
-            session['role'] = user.role
-            update_effective_permissions()
-            flash('Вход выполнен успешно!', 'success')
-            return redirect(url_for('index'))
+        
+        if user and check_password_hash(user.password_hash, password):
+            if user.is_active:
+                session['user_id'] = user.id
+                session['username'] = user.username
+                # Устанавливаем организацию пользователя, если она есть
+                if user.organization_id:
+                    session['current_org_id'] = user.organization_id
+                update_effective_permissions()
+                flash('Вход выполнен успешно!', 'success')
+                logger.info(f"Вход пользователя {username} выполнен успешно")
+                return redirect(url_for('index'))
+            else:
+                flash('Аккаунт отключен', 'error')
+                logger.warning(f"Попытка входа на неактивный аккаунт: {username}")
         else:
             flash('Неверное имя пользователя или пароль', 'error')
-    
+            logger.error(f"Неудачная попытка входа: {username}")
     return render_template('auth/login.html')
 
 @bluprint_user_routes.route('/logout')
@@ -57,30 +58,27 @@ def profile():
 @bluprint_user_routes.route('/change_password', methods=['GET', 'POST'])
 @login_required
 def change_password():
+    user = get_current_user()
     if request.method == 'POST':
-        user = get_current_user()
         old_password = request.form.get('old_password')
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
-        
-        if not old_password or not new_password or not confirm_password:
-            flash('Все поля обязательны для заполнения', 'error')
-            return redirect(url_for('users.change_password'))
-        
+    
         if not check_password_hash(user.password_hash, old_password):
             flash('Неверный старый пароль', 'error')
+            logger.error("Проверка старого пароля не прошла для пользователя %s", user.username)
         elif new_password != confirm_password:
             flash('Новые пароли не совпадают', 'error')
+            logger.warning("Новые пароли не совпадают для пользователя %s", user.username)
         elif len(new_password) < 6:
             flash('Пароль должен быть не менее 6 символов', 'error')
+            logger.error("Пароль слишком короткий для пользователя %s", user.username)
         else:
             user.password_hash = generate_password_hash(new_password)
             db.session.commit()
             flash('Пароль успешно изменен', 'success')
-            return redirect(url_for('users.profile'))
-        
-        return redirect(url_for('users.change_password'))
-    
+            logger.info("Пароль обновлен для пользователя %s", user.username)
+        return redirect(url_for('users.profile'))
     return render_template('auth/change_password.html')
 
 @bluprint_user_routes.route('/admin')
@@ -94,19 +92,21 @@ def admin_panel():
 @permissions_required([Permissions.users_manage])
 def create_user():
     all_roles = Role.query.all()
+    organizations = Organization.query.order_by(Organization.name).all()
     
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        role = request.form.get('role')
         email = request.form.get('email')
         full_name = request.form.get('full_name')
+        organization_id = request.form.get('organization_id')
         selected_roles = request.form.getlist('roles')
         
+        if organization_id and organization_id.isdigit():
+            organization_id = int(organization_id)
+        else:
+            organization_id = None
         
-        if not username or not password:
-            flash('Имя пользователя и пароль обязательны', 'error')
-            return render_template('auth/create_user.html', roles=all_roles)
         if User.query.filter_by(username=username).first():
             flash('Пользователь с таким именем уже существует', 'error')
             logger.error("Попытка создания пользователя с существующим username: %s", username)
@@ -114,15 +114,14 @@ def create_user():
             user = User(
                 username=username,
                 password_hash=generate_password_hash(password),
-                role=role,
                 email=email,
                 full_name=full_name,
-                is_active=True
+                is_active=True,
+                organization_id=organization_id
             )
             db.session.add(user)
             db.session.flush()
             
-            # Назначаем роли
             for role_id in selected_roles:
                 user_role = UserRole(user_id=user.id, role_id=int(role_id))
                 db.session.add(user_role)
@@ -132,36 +131,35 @@ def create_user():
             logger.info("Новый пользователь создан: %s", username)
             return redirect(url_for('users.admin_panel'))
     
-    # Для GET: все роли не отмечены
     for role in all_roles:
         role.checked = False
     
-    return render_template('auth/create_user.html', roles=all_roles)
+    return render_template('auth/create_user.html', roles=all_roles, organizations=organizations)
 
 @bluprint_user_routes.route('/admin/edit/<int:user_id>', methods=['GET', 'POST'])
 @permissions_required([Permissions.users_manage])
 def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     all_roles = Role.query.all()
+    organizations = Organization.query.order_by(Organization.name).all()
     user_role_ids = [ur.role_id for ur in UserRole.query.filter_by(user_id=user.id).all()]
     
     if request.method == 'POST':
         user.username = request.form.get('username')
-        user.role = request.form.get('role')
         user.email = request.form.get('email')
         user.full_name = request.form.get('full_name')
-        # Получаем статус из выпадающего списка
-        is_active_val = request.form.get('is_active')
-        user.is_active = True if is_active_val == '1' else False
+        user.is_active = request.form.get('is_active') == 'on'
+        
+        organization_id = request.form.get('organization_id')
+        if organization_id and organization_id.isdigit():
+            user.organization_id = int(organization_id)
+        else:
+            user.organization_id = None
         
         new_password = request.form.get('new_password')
-        if new_password and len(new_password) >= 6:
+        if new_password:
             user.password_hash = generate_password_hash(new_password)
-        elif new_password and len(new_password) < 6:
-            flash('Новый пароль должен быть не менее 6 символов', 'error')
-            return render_template('auth/edit_user.html', user=user, roles=all_roles)
         
-        # Обновляем роли
         selected_roles = request.form.getlist('roles')
         UserRole.query.filter_by(user_id=user.id).delete()
         for role_id in selected_roles:
@@ -170,12 +168,13 @@ def edit_user(user_id):
         
         db.session.commit()
         flash('Пользователь успешно обновлен', 'success')
+        logger.info("Пользователь %s обновлен", user.username)
         return redirect(url_for('users.admin_panel'))
     
     for role in all_roles:
         role.checked = role.id in user_role_ids
     
-    return render_template('auth/edit_user.html', user=user, roles=all_roles)
+    return render_template('auth/edit_user.html', user=user, roles=all_roles, organizations=organizations)
 
 @bluprint_user_routes.route('/admin/delete/<int:user_id>', methods=['POST'])
 @permissions_required([Permissions.users_manage])
@@ -205,13 +204,10 @@ def users():
 def toggle_user_active(user_id):
     user = User.query.get_or_404(user_id)
     current_user = get_current_user()
-    
     if user.id == current_user.id:
         flash('Вы не можете изменить статус своего собственного аккаунта', 'error')
         return redirect(url_for('users.admin_panel'))
-    
     user.is_active = not user.is_active
     db.session.commit()
-    status = 'активирован' if user.is_active else 'деактивирован'
-    flash(f'Пользователь {user.username} {status}', 'success')
+    flash(f'Пользователь {user.username} {"активирован" if user.is_active else "деактивирован"}', 'success')
     return redirect(url_for('users.admin_panel'))

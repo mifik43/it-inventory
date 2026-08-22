@@ -85,6 +85,20 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Выбор организации (только для админов) -->
+            
+            <div class="mb-3">
+                <label for="organization_id" class="form-label">Организация</label>
+                <select class="form-select" id="organization_id" name="organization_id">
+                    <option value="">Без организации</option>
+                    {% for org in organizations %}
+                    <option value="{{ org.id }}" {% if org.id == device.organization_id %}selected{% endif %}>
+                        {{ org.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
             
             <div class="mb-3">
                 <label for="specifications" class="form-label">Характеристики</label>
@@ -92,7 +106,7 @@
             </div>
             
             <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-            <a href="{{ url_for('devices') }}" class="btn btn-secondary">Отмена</a>
+            <a href="{{ url_for('devices.devices') }}" class="btn btn-secondary">Отмена</a>
         </form>
     </div>
 </div>

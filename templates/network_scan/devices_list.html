@@ -200,13 +200,11 @@
                                             title="Информация">
                                         <i class="fas fa-info-circle"></i>
                                     </button>
-                                    {% if session.role == 'admin' %}
                                     <button class="btn btn-outline-danger" 
                                             onclick="deleteDevice({{ device.id }})"
                                             title="Удалить">
                                         <i class="fas fa-trash"></i>
                                     </button>
-                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

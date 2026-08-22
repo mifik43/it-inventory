@@ -71,9 +71,7 @@
                             <strong>{{ current_user.username }}</strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark shadow">
-                            <li><span class="dropdown-item-text">
-                                Роль: <span class="badge bg-secondary">{{ current_user.role }}</span>
-                            </span></li>
+                            
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('users.change_password') }}">
                                 <i class="bi bi-key"></i> Сменить пароль

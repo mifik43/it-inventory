@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response, json
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, Response, session, json
 from config import config
 from logger import setup_logger
 from templates.base.database_helper import db, init_db, get_db
@@ -26,11 +26,9 @@ from templates.scripts.script import bluprint_script_routes
 from templates.social.social_routes import bluprint_social_routes
 from templates.base.requirements import login_required, get_current_user
 from templates.checklist.checklist import bluprint_checklist_routes
-from templates.security_scan.security_scan import bluprint_security_scan
 from templates.password_manager.routes import password_bp
-
-from flask_migrate import Migrate
-
+from templates.security_scan.security_scan import bluprint_security_scan
+from templates.base.organization_utils import get_user_visible_organizations, ALL_ORGANIZATIONS
 
 from excel_utils import (
     export_any_type_to_exel, import_from_excel
@@ -58,6 +56,7 @@ from models import (
     Shift, Article, Note, GuestWifi, Log, SocialPost, Script
 )
 
+
 app = Flask(__name__)
 app.config.from_object(config)
 
@@ -82,8 +81,8 @@ app.register_blueprint(bluprint_wtware_routes)
 app.register_blueprint(bluprint_script_routes)
 app.register_blueprint(bluprint_social_routes)
 app.register_blueprint(bluprint_checklist_routes)
-app.register_blueprint(bluprint_security_scan)
 app.register_blueprint(password_bp)
+app.register_blueprint(bluprint_security_scan)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
@@ -112,9 +111,26 @@ def inject_common_variables():
 
 @app.context_processor
 def inject_user():
-    from templates.base.requirements import get_current_user
     user = get_current_user()
     return {'current_user': user}
+
+@app.context_processor
+def inject_organization_context():
+    user = get_current_user()
+    if not user:
+        return {}
+    # Приоритет: сначала кука, потом сессия
+    org_id = request.cookies.get('current_org_id') or session.get('current_org_id')
+    if org_id and org_id != ALL_ORGANIZATIONS:
+        current_org = Organization.query.get(org_id)
+    else:
+        current_org = None
+    all_orgs = get_user_visible_organizations(user)
+    return {
+        'visible_organizations': all_orgs,
+        'current_organization': current_org
+    }
+
 
 @app.template_filter('from_json')
 def from_json_filter(value):
@@ -122,7 +138,26 @@ def from_json_filter(value):
 
 @app.route('/')
 def index():
-    
+
+    user = get_current_user()
+    if user is None:
+        return render_template('auth/login.html')
+
+    # Если передан параметр org, сохраняем в сессию и перенаправляем без параметра
+    org_param = request.args.get('org')
+    if org_param:
+        session['current_org_id'] = org_param
+        session.modified = True
+        return redirect(url_for('index'))
+
+    # Если в сессии нет org_id, устанавливаем первую доступную организацию
+    if 'current_org_id' not in session:
+        first_org = Organization.query.first()
+        if first_org:
+            session['current_org_id'] = str(first_org.id)
+            session.modified = True
+
+
     if get_current_user() is None:
         logger.info("Перенаправляем на страницу входа")
         return render_template('auth/login.html')

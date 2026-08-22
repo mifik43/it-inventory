@@ -18,11 +18,26 @@
                                        value="{{ user.username }}" required>
                             </div>
                             
+                           
+
                             <div class="mb-3">
-                                <label for="role" class="form-label">Роль *</label>
-                                <select class="form-select" id="role" name="role" required>
-                                    <option value="user" {% if user.role == 'user' %}selected{% endif %}>Обычный пользователь</option>
-                                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Администратор</option>
+                                <label for="organization_id" class="form-label">Организация</label>
+                                <select class="form-select" id="organization_id" name="organization_id">
+                                    <option value="">Без организации</option>
+                                    {% for org in organizations %}
+                                    <option value="{{ org.id }}" {% if org.id == user.organization_id %}selected{% endif %}>
+                                        {{ org.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Выберите организацию, к которой будет привязан пользователь.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="is_active" class="form-label">Статус</label>
+                                <select class="form-select" id="is_active" name="is_active">
+                                    <option value="1" {% if user.is_active %}selected{% endif %}>Активен</option>
+                                    <option value="0" {% if not user.is_active %}selected{% endif %}>Заблокирован</option>
                                 </select>
                             </div>
                             
@@ -30,14 +45,6 @@
                                 <label for="new_password" class="form-label">Новый пароль</label>
                                 <input type="password" class="form-control" id="new_password" name="new_password">
                                 <div class="form-text">Оставьте пустым, если не хотите менять пароль</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="is_active" class="form-label">Статус</label>
-                                <select class="form-select" id="is_active" name="is_active">
-                                    <option value="1" {% if user.is_active %}selected{% endif %}>Активен</option>
-                                    <option value="0" {% if not user.is_active %}selected{% endif %}>Заблокирован</option>
-                                </select>
                             </div>
                             
                             <div class="btn-group" role="group">

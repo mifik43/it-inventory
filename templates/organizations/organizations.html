@@ -29,11 +29,9 @@
                 <a href="{{ url_for('export_data', data_type='organizations.organizations') }}" class="btn btn-success">
                     <i class="bi bi-download"></i> Экспорт в Excel
                 </a>
-                {% if session.role == 'admin' %}
                 <a href="{{ url_for('import_data', data_type='organizations.organizations') }}" class="btn btn-primary">
                     <i class="bi bi-upload"></i> Импорт из Excel
                 </a>
-                {% endif %}
             </div>
 
             <!-- Статистика -->

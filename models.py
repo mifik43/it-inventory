@@ -1,7 +1,12 @@
+# models.py
 from datetime import datetime
 from templates.base.database_helper import db
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Float, ForeignKey, DECIMAL, Date, Time, Numeric
 from sqlalchemy.orm import relationship
+
+# ============================================================
+# ОСНОВНЫЕ МОДЕЛИ
+# ============================================================
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -9,26 +14,28 @@ class User(db.Model):
     id = Column(Integer, primary_key=True)
     username = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    role = Column(String(50), nullable=False, default='user')
     email = Column(String(100))
     full_name = Column(String(200))
     phone = Column(String(20))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    roles = relationship('Role', secondary='roles_to_user', back_populates='users')
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     
-    # Relationships
+    # Relationships (уже есть)
+    organization = relationship('Organization', backref='users')
     shifts = relationship('Shift', backref='user', lazy=True)
     articles = relationship('Article', backref='author', lazy=True)
     notes = relationship('Note', backref='author', lazy=True)
     social_posts = relationship('SocialPost', backref='user', lazy=True)
     social_platforms = relationship('SocialPlatform', backref='user', lazy=True)
     scheduled_posts = relationship('ScheduledPost', backref='user', lazy=True)
-    organization = relationship('Organization', backref='users')
-
+    password_entries = relationship('PasswordEntry', backref='creator', lazy=True)
+    password_history_changes = relationship('PasswordHistory', backref='changer', lazy=True)
+    scan_tasks = relationship('ScanTask', backref='user', lazy=True)
+    
     def get_id(self):
         return str(self.id)
+
 
 class Device(db.Model):
     __tablename__ = 'devices'
@@ -45,6 +52,10 @@ class Device(db.Model):
     assigned_to = Column(String(200))
     specifications = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='devices')
+
 
 class Provider(db.Model):
     __tablename__ = 'providers'
@@ -65,6 +76,10 @@ class Provider(db.Model):
     status = Column(String(50), nullable=False, default='Активен')
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='providers')
+
 
 class SoftwareCube(db.Model):
     __tablename__ = 'software_cubes'
@@ -87,6 +102,10 @@ class SoftwareCube(db.Model):
     renewal_date = Column(Date)
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='software_cubes')
+
 
 class Organization(db.Model):
     __tablename__ = 'organizations'
@@ -103,12 +122,13 @@ class Organization(db.Model):
     created_at = Column(DateTime, default=datetime.utcnow)
     parent_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     
-    # Отношения
-    todos = relationship('Todo', backref='organization', lazy=True)
-    
     # Иерархия
     parent = relationship('Organization', remote_side=[id], backref='children')
     
+    # Отношения (добавляются через backref из других моделей)
+    # users, devices, providers, software_cubes, guest_wifis, todos, shifts,
+    # articles, notes, network_scans, scan_tasks, checklist_tasks,
+    # social_posts, scripts, wtware_configs, password_folders
 
 
 class Todo(db.Model):
@@ -119,12 +139,15 @@ class Todo(db.Model):
     description = Column(Text)
     status = Column(String(50), default='новая')
     priority = Column(String(50), default='средний')
-    organization_id = Column(Integer, ForeignKey('organizations.id'))
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     due_date = Column(Date)
     completed_at = Column(DateTime)
     is_completed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    organization = relationship('Organization', backref='todos')
+
 
 class Shift(db.Model):
     __tablename__ = 'shifts'
@@ -138,6 +161,10 @@ class Shift(db.Model):
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='shifts')
+
 
 class Article(db.Model):
     __tablename__ = 'articles'
@@ -152,8 +179,12 @@ class Article(db.Model):
     views = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='articles')
     screenshots = relationship('ArticleScreenshot', backref='article', lazy=True)
     social_posts = relationship('SocialPost', backref='article', lazy=True)
+
 
 class Note(db.Model):
     __tablename__ = 'notes'
@@ -166,7 +197,11 @@ class Note(db.Model):
     author_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='note_entries')
     social_posts = relationship('SocialPost', backref='note', lazy=True)
+
 
 class ArticleScreenshot(db.Model):
     __tablename__ = 'article_screenshots'
@@ -180,13 +215,14 @@ class ArticleScreenshot(db.Model):
     upload_order = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class GuestWifi(db.Model):
     __tablename__ = 'guest_wifi'
     
     id = Column(Integer, primary_key=True)
     city = Column(String(100), nullable=False)
     price = Column(DECIMAL(10, 2))
-    organization = Column(String(200))
+    organization = Column(String(200))  # название организации (текстовое поле)
     status = Column(String(50), default='Активен')
     ssid = Column(String(100))
     password = Column(String(100))
@@ -202,6 +238,11 @@ class GuestWifi(db.Model):
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    # Внимание: поле organization (текстовое) конфликтует с отношением, поэтому используем другое имя
+    organization_rel = relationship('Organization', backref='guest_wifis')
+
 
 class WtwareConfig(db.Model):
     __tablename__ = 'wtware_configs'
@@ -223,7 +264,11 @@ class WtwareConfig(db.Model):
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='wtware_configs')
     deployments = relationship('WtwareDeployment', backref='config', lazy=True)
+
 
 class WtwareDeployment(db.Model):
     __tablename__ = 'wtware_deployments'
@@ -235,6 +280,7 @@ class WtwareDeployment(db.Model):
     error_message = Column(Text)
     deployed_at = Column(DateTime, default=datetime.utcnow)
 
+
 class Script(db.Model):
     __tablename__ = 'scripts'
     
@@ -245,7 +291,11 @@ class Script(db.Model):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='scripts')
     results = relationship('ScriptResult', backref='script', lazy=True)
+
 
 class ScriptResult(db.Model):
     __tablename__ = 'script_results'
@@ -257,6 +307,7 @@ class ScriptResult(db.Model):
     success = Column(Boolean)
     error_message = Column(Text)
     execution_time = Column(Float)
+
 
 class NetworkScan(db.Model):
     __tablename__ = 'network_scans'
@@ -271,10 +322,39 @@ class NetworkScan(db.Model):
     completed_at = Column(DateTime)
     notes = Column(Text)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
     organization = relationship('Organization', backref='network_scans')
     devices = relationship('NetworkDevice', backref='scan', lazy=True)
 
-# models.py (добавить/изменить)
+
+class NetworkGraph(db.Model):
+    __tablename__ = 'network_graphs'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    description = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    organization = relationship('Organization', backref='network_graphs')
+    devices = relationship('NetworkGraphDevice', back_populates='graph', lazy='dynamic')
+
+
+class NetworkGraphDevice(db.Model):
+    __tablename__ = 'network_graph_devices'
+    
+    id = Column(Integer, primary_key=True)
+    graph_id = Column(Integer, ForeignKey('network_graphs.id'), nullable=False)
+    device_id = Column(Integer, ForeignKey('network_devices.id', ondelete='CASCADE'), nullable=False)
+    added_at = Column(DateTime, default=datetime.utcnow)
+    position_x = Column(Integer, default=0)
+    position_y = Column(Integer, default=0)
+    comment = Column(Text, nullable=True)
+    
+    graph = relationship('NetworkGraph', back_populates='devices')
+    device = relationship('NetworkDevice', back_populates='graph_entries')
+
 
 class NetworkDevice(db.Model):
     __tablename__ = 'network_devices'
@@ -290,22 +370,8 @@ class NetworkDevice(db.Model):
     status = Column(String(50), default='online')
     response_time = Column(Float)
     last_seen = Column(DateTime, default=datetime.utcnow)
-    graph_entries = relationship('NetworkGraphDevice', backref='device', cascade="all, delete-orphan")
     
-    # Добавляем отношение к графам
-    graph_entries = relationship('NetworkGraphDevice', backref='device', lazy='dynamic')
-
-class NetworkGraphDevice(db.Model):
-    __tablename__ = 'network_graph_devices'
-    
-    id = Column(Integer, primary_key=True)
-    graph_id = Column(Integer, ForeignKey('network_graphs.id'), nullable=False)
-    device_id = Column(Integer, ForeignKey('network_devices.id'), nullable=False)
-    added_at = Column(DateTime, default=datetime.utcnow)
-    position_x = Column(Integer, default=0)
-    position_y = Column(Integer, default=0)
-    comment = Column(Text, nullable=True)  
-    device_id = Column(Integer, ForeignKey('network_devices.id', ondelete='CASCADE'), nullable=False)
+    graph_entries = relationship('NetworkGraphDevice', back_populates='device', cascade='all, delete-orphan')
 
 class SocialPost(db.Model):
     __tablename__ = 'social_posts'
@@ -322,6 +388,10 @@ class SocialPost(db.Model):
     status = Column(String(50), default='draft')
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='social_posts')
+
 
 class SocialPlatform(db.Model):
     __tablename__ = 'social_platforms'
@@ -339,6 +409,7 @@ class SocialPlatform(db.Model):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class ScheduledPost(db.Model):
     __tablename__ = 'scheduled_posts'
     
@@ -351,6 +422,7 @@ class ScheduledPost(db.Model):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class Role(db.Model):
     __tablename__ = 'roles'
     
@@ -359,7 +431,7 @@ class Role(db.Model):
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     permissions = relationship('Permission', secondary='role_permissions', backref='roles')
-    users = relationship('User', secondary='roles_to_user', back_populates='roles')
+
 
 class Permission(db.Model):
     __tablename__ = 'permissions'
@@ -369,12 +441,14 @@ class Permission(db.Model):
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class RolePermission(db.Model):
     __tablename__ = 'role_permissions'
     
     role_id = Column(Integer, ForeignKey('roles.id'), primary_key=True)
     permission_id = Column(Integer, ForeignKey('permissions.id'), primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class UserRole(db.Model):
     __tablename__ = 'roles_to_user'
@@ -383,6 +457,7 @@ class UserRole(db.Model):
     user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class Log(db.Model):
     __tablename__ = 'logs'
     
@@ -390,6 +465,167 @@ class Log(db.Model):
     action = Column(String(200), nullable=False)
     user = Column(String(200), nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+# ============================================================
+# МОДЕЛИ МЕНЕДЖЕРА ПАРОЛЕЙ
+# ============================================================
+
+class PasswordFolder(db.Model):
+    __tablename__ = 'password_folders'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    parent_id = Column(Integer, ForeignKey('password_folders.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    parent = relationship('PasswordFolder', remote_side=[id], backref='children')
+    organization = relationship('Organization', backref='password_folders')
+    entries = relationship('PasswordEntry', backref='folder', lazy='dynamic')
+
+    
+
+class PasswordEntry(db.Model):
+    __tablename__ = 'password_entries'
+    
+    id = Column(Integer, primary_key=True)
+    folder_id = Column(Integer, ForeignKey('password_folders.id'), nullable=False)
+    name = Column(String(200), nullable=False)
+    username = Column(String(200))
+    url = Column(String(500))
+    password_encrypted = Column(Text, nullable=False)
+    notes = Column(Text)
+    created_by = Column(Integer, ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # НОВЫЕ ПОЛЯ
+    importance = Column(String(20), default='low')      # low, medium, high, critical
+    tags = Column(String(500))                          # теги через запятую
+    comment = Column(Text)                              # комментарий к записи
+    
+    # Удаляем color, если он был:
+    # color = Column(String(20), default='#ffffff')   # <-- УДАЛИТЬ
+    
+    accesses = relationship('PasswordAccess', backref='entry', lazy='dynamic')
+    history = relationship('PasswordHistory', backref='entry', lazy='dynamic')
+    attachments = relationship('PasswordAttachment', backref='entry', lazy='dynamic')
+
+class PasswordAccess(db.Model):
+    __tablename__ = 'password_access'
+    
+    id = Column(Integer, primary_key=True)
+    entry_id = Column(Integer, ForeignKey('password_entries.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    can_view = Column(Boolean, default=True)
+    can_edit = Column(Boolean, default=False)
+    granted_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship('User', backref='password_accesses')
+
+
+class PasswordHistory(db.Model):
+    __tablename__ = 'password_history'
+    
+    id = Column(Integer, primary_key=True)
+    entry_id = Column(Integer, ForeignKey('password_entries.id'), nullable=False)
+    old_password_encrypted = Column(Text, nullable=False)
+    changed_by = Column(Integer, ForeignKey('users.id'), nullable=False)
+    changed_at = Column(DateTime, default=datetime.utcnow)
+
+class PasswordAttachment(db.Model):
+    __tablename__ = 'password_attachments'
+    
+    id = Column(Integer, primary_key=True)
+    entry_id = Column(Integer, ForeignKey('password_entries.id'), nullable=False)
+    filename = Column(String(255), nullable=False)
+    filepath = Column(String(500), nullable=False)
+    filesize = Column(Integer)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+# ============================================================
+# МОДЕЛИ БЕЗОПАСНОСТИ (СКАНИРОВАНИЕ, WHITELIST, БРУТФОРС)
+# ============================================================
+
+class WhitelistNetwork(db.Model):
+    __tablename__ = 'whitelist_networks'
+    
+    id = Column(Integer, primary_key=True)
+    network = Column(String(50), nullable=False)   # 192.168.1.0/24
+    description = Column(Text)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ScanTask(db.Model):
+    __tablename__ = 'scan_tasks'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    scan_type = Column(String(50), nullable=False)  # 'port', 'vuln', 'bruteforce'
+    target = Column(String(200), nullable=False)
+    profile = Column(String(50), default='default')
+    status = Column(String(50), default='pending')  # pending, running, completed, failed
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    raw_output = Column(Text)
+    error_message = Column(Text)
+    
+    organization = relationship('Organization', backref='scan_tasks')
+    port_results = relationship('PortResult', backref='task', lazy=True)
+    vulnerabilities = relationship('Vulnerability', backref='task', lazy=True)
+    brute_force_results = relationship('BruteForceResult', backref='task', lazy=True)
+
+
+class PortResult(db.Model):
+    __tablename__ = 'port_results'
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
+    ip = Column(String(50), nullable=False)
+    port = Column(Integer, nullable=False)
+    protocol = Column(String(10), default='tcp')
+    service = Column(String(100))
+    version = Column(String(100))
+    state = Column(String(20), default='open')
+    extra_info = Column(Text)
+
+
+class Vulnerability(db.Model):
+    __tablename__ = 'vulnerabilities'
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
+    source = Column(String(50))                    # 'nikto', 'wapiti', 'openvas'
+    name = Column(String(200))
+    description = Column(Text)
+    cvss_score = Column(Float)
+    severity = Column(String(20))                  # critical, high, medium, low
+    affected_url = Column(String(500))
+    remediation = Column(Text)
+    extra_data = Column(Text)
+
+
+class BruteForceResult(db.Model):
+    __tablename__ = 'bruteforce_results'
+    
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
+    service = Column(String(50))
+    target = Column(String(200))
+    username = Column(String(100))
+    password = Column(String(200))
+    source = Column(String(50))                   # 'hydra', 'medusa'
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+# ============================================================
+# МОДЕЛИ ЧЕК-ЛИСТА
+# ============================================================
 
 class ChecklistTask(db.Model):
     __tablename__ = 'checklist_tasks'
@@ -406,6 +642,10 @@ class ChecklistTask(db.Model):
     responsible = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    
+    organization = relationship('Organization', backref='checklist_tasks')
+
 
 class ChecklistHistory(db.Model):
     __tablename__ = 'checklist_history'
@@ -417,138 +657,3 @@ class ChecklistHistory(db.Model):
     new_value = Column(Text)
     changed_by = Column(String(100))
     changed_at = Column(DateTime, default=datetime.utcnow)
-
-class NetworkGraph(db.Model):
-    __tablename__ = 'network_graphs'
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(200), nullable=False)
-    organization_id = Column(Integer, ForeignKey('organizations.id'))
-    description = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    organization = relationship('Organization', backref='network_graphs')
-    devices = relationship('NetworkGraphDevice', backref='graph', lazy='dynamic')
-
-class ScanTask(db.Model):
-    __tablename__ = 'scan_tasks'
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(200), nullable=False)
-    scan_type = Column(String(50), nullable=False)  # 'port', 'vuln', 'bruteforce'
-    target = Column(String(200), nullable=False)    # IP, диапазон или подсеть
-    profile = Column(String(50), default='default')
-    status = Column(String(50), default='pending')  # pending, running, completed, failed
-    started_at = Column(DateTime, default=datetime.utcnow)
-    completed_at = Column(DateTime)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
-    organization = relationship('Organization', backref='scan_tasks')
-    raw_output = Column(Text)                       # сырой вывод инструментов
-    error_message = Column(Text)
-    
-    user = relationship('User', backref='scan_tasks')
-    organization = relationship('Organization', backref='scan_tasks')
-    port_results = relationship('PortResult', backref='task', lazy=True)
-    vulnerabilities = relationship('Vulnerability', backref='task', lazy=True)
-    brute_force_results = relationship('BruteForceResult', backref='task', lazy=True)
-
-class PortResult(db.Model):
-    __tablename__ = 'port_results'
-    
-    id = Column(Integer, primary_key=True)
-    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
-    ip = Column(String(50), nullable=False)
-    port = Column(Integer, nullable=False)
-    protocol = Column(String(10), default='tcp')
-    service = Column(String(100))
-    version = Column(String(100))
-    state = Column(String(20), default='open')
-    extra_info = Column(Text)
-
-class Vulnerability(db.Model):
-    __tablename__ = 'vulnerabilities'
-    
-    id = Column(Integer, primary_key=True)
-    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
-    source = Column(String(50))                    # 'nikto', 'wapiti', 'openvas'
-    name = Column(String(200))
-    description = Column(Text)
-    cvss_score = Column(Float)
-    severity = Column(String(20))                  # critical, high, medium, low
-    affected_url = Column(String(500))
-    remediation = Column(Text)
-    extra_data = Column(Text)                     # JSON с доп. данными
-
-class BruteForceResult(db.Model):
-    __tablename__ = 'bruteforce_results'
-    
-    id = Column(Integer, primary_key=True)
-    task_id = Column(Integer, ForeignKey('scan_tasks.id'), nullable=False)
-    service = Column(String(50))                   # ssh, ftp, http, etc.
-    target = Column(String(200))
-    username = Column(String(100))
-    password = Column(String(200))
-    source = Column(String(50))                   # 'hydra', 'medusa'
-    timestamp = Column(DateTime, default=datetime.utcnow)
-
-class WhitelistNetwork(db.Model):
-    __tablename__ = 'whitelist_networks'
-    
-    id = Column(Integer, primary_key=True)
-    network = Column(String(50), nullable=False)   # 192.168.1.0/24
-    description = Column(Text)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class PasswordFolder(db.Model):
-    __tablename__ = 'password_folders'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(200), nullable=False)
-    parent_id = Column(Integer, ForeignKey('password_folders.id'), nullable=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    parent = relationship('PasswordFolder', remote_side=[id], backref='children')
-    organization = relationship('Organization', backref='password_folders')
-    entries = relationship('PasswordEntry', backref='folder', lazy='dynamic')
-
-class PasswordEntry(db.Model):
-    __tablename__ = 'password_entries'
-    id = Column(Integer, primary_key=True)
-    folder_id = Column(Integer, ForeignKey('password_folders.id'), nullable=False)
-    name = Column(String(200), nullable=False)
-    username = Column(String(200))
-    url = Column(String(500))
-    password_encrypted = Column(Text, nullable=False)  # зашифровано
-    notes = Column(Text)
-    created_by = Column(Integer, ForeignKey('users.id'), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    creator = relationship('User', backref='password_entries')
-    accesses = relationship('PasswordAccess', backref='entry', lazy='dynamic')
-    history = relationship('PasswordHistory', backref='entry', lazy='dynamic')
-
-class PasswordAccess(db.Model):
-    __tablename__ = 'password_access'
-    id = Column(Integer, primary_key=True)
-    entry_id = Column(Integer, ForeignKey('password_entries.id'), nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    can_view = Column(Boolean, default=True)
-    can_edit = Column(Boolean, default=False)
-    granted_at = Column(DateTime, default=datetime.utcnow)
-    
-    user = relationship('User', backref='password_accesses')
-
-class PasswordHistory(db.Model):
-    __tablename__ = 'password_history'
-    id = Column(Integer, primary_key=True)
-    entry_id = Column(Integer, ForeignKey('password_entries.id'), nullable=False)
-    old_password_encrypted = Column(Text, nullable=False)
-    changed_by = Column(Integer, ForeignKey('users.id'), nullable=False)
-    changed_at = Column(DateTime, default=datetime.utcnow)
-    
-    changer = relationship('User', backref='password_history_changes')

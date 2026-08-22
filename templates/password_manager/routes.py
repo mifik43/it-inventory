@@ -1,12 +1,17 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
 from templates.base.requirements import login_required, get_current_user, permissions_required
 from templates.roles.permissions import Permissions
 from templates.base.database_helper import db
 from models import PasswordFolder, PasswordEntry, PasswordAccess, PasswordHistory, Organization, User
 from .crypto import encrypt_password, decrypt_password, generate_password
 from sqlalchemy import desc
+import os
+from werkzeug.utils import secure_filename
 
 password_bp = Blueprint('password_manager', __name__, url_prefix='/passwords')
+
+UPLOAD_FOLDER = 'static/uploads/passwords'
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar', '7z', 'ovpn', 'conf', 'key'}
 
 def user_can_view_entry(user_id, entry):
     if entry.created_by == user_id:
@@ -28,19 +33,37 @@ def user_can_edit_entry(user_id, entry):
         return True
     return False
 
+
+def save_attachment(file, entry_id):
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Создаём уникальное имя
+        import uuid
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        file.save(filepath)
+        attachment = PasswordAttachment(
+            entry_id=entry_id,
+            filename=unique_filename,
+            original_filename=filename,
+            file_size=file_size,
+            file_path=filepath
+        )
+        db.session.add(attachment)
+        return True
+    return False
+
 @password_bp.route('/folders')
 @login_required
 @permissions_required([Permissions.password_manager_read])
 def folders():
     user = get_current_user()
     organizations = Organization.query.order_by(Organization.name).all()  # добавьте эту строку
-    if user.role == 'admin':
-        folders = PasswordFolder.query.order_by(PasswordFolder.name).all()
-    else:
-        folders = PasswordFolder.query.filter(
-            (PasswordFolder.organization_id == user.organization_id) |
-            (PasswordFolder.organization_id.is_(None))
-        ).order_by(PasswordFolder.name).all()
+    folders = PasswordFolder.query.filter(
+        (PasswordFolder.organization_id == user.organization_id) |
+        (PasswordFolder.organization_id.is_(None))
+    ).order_by(PasswordFolder.name).all()
     return render_template('password_manager/folders.html', folders=folders, organizations=organizations)
 
 @password_bp.route('/folder/<int:folder_id>')
@@ -49,16 +72,10 @@ def folders():
 def folder_entries(folder_id):
     folder = PasswordFolder.query.get_or_404(folder_id)
     user = get_current_user()
-    if folder.organization_id and user.organization_id != folder.organization_id and user.role != 'admin':
+    if folder.organization_id and user.organization_id != folder.organization_id:
         flash('Нет доступа к этой папке', 'error')
         return redirect(url_for('password_manager.folders'))
     entries = PasswordEntry.query.filter_by(folder_id=folder_id).order_by(PasswordEntry.name).all()
-    if user.role != 'admin':
-        visible = []
-        for e in entries:
-            if user_can_view_entry(user.id, e):
-                visible.append(e)
-        entries = visible
     return render_template('password_manager/entries.html', folder=folder, entries=entries)
 
 @password_bp.route('/folder/add', methods=['POST'])
@@ -161,9 +178,6 @@ def edit_entry(entry_id):
 def delete_entry(entry_id):
     entry = PasswordEntry.query.get_or_404(entry_id)
     user = get_current_user()
-    if user.role != 'admin' and entry.created_by != user.id:
-        flash('Нет прав на удаление', 'error')
-        return redirect(url_for('password_manager.folders'))
     folder_id = entry.folder_id
     db.session.delete(entry)
     db.session.commit()

@@ -4,7 +4,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>Папка: {{ folder.name }}</h1>
+            <h1><i class="bi bi-folder-fill text-warning me-2"></i>{{ folder.name }}</h1>
             <p class="text-muted">{{ folder.organization.name if folder.organization else 'Общая папка' }}</p>
         </div>
         <div>
@@ -17,35 +17,72 @@
         </div>
     </div>
 
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input type="text" class="form-control" id="entrySearch" placeholder="Поиск по названию, логину, тегам..." oninput="filterEntries()">
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="importanceFilter" onchange="filterEntries()">
+                <option value="">Все</option>
+                <option value="low">Низкая</option>
+                <option value="medium">Средняя</option>
+                <option value="high">Высокая</option>
+                <option value="critical">Критическая</option>
+            </select>
+        </div>
+    </div>
+
     <div class="card shadow">
         <div class="card-body">
             {% if entries %}
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" id="entriesTable">
                     <thead>
                         <tr>
                             <th>Название</th>
                             <th>Логин</th>
-                            <th>URL</th>
+                            <th>Теги</th>
+                            <th>Важность</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for entry in entries %}
-                        <tr>
+                        <tr class="entry-row" 
+                            data-name="{{ entry.name.lower() }}" 
+                            data-username="{{ entry.username.lower() if entry.username else '' }}"
+                            data-tags="{{ entry.tags.lower() if entry.tags else '' }}"
+                            data-importance="{{ entry.importance or 'low' }}">
                             <td><strong>{{ entry.name }}</strong></td>
                             <td>{{ entry.username or '-' }}</td>
-                            <td><a href="{{ entry.url }}" target="_blank">{{ entry.url[:40] }}{% if entry.url|length > 40 %}...{% endif %}</a></td>
+                            <td>
+                                {% if entry.tags %}
+                                    {% for tag in entry.tags.split(',') %}
+                                        <span class="badge bg-secondary me-1">{{ tag.strip() }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if entry.importance == 'critical' %}bg-danger
+                                    {% elif entry.importance == 'high' %}bg-warning
+                                    {% elif entry.importance == 'medium' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ entry.importance or 'Низкая' }}
+                                </span>
+                            </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ url_for('password_manager.view_entry', entry_id=entry.id) }}" class="btn btn-outline-info">
+                                    <a href="{{ url_for('password_manager.view_entry', entry_id=entry.id) }}" class="btn btn-outline-info" title="Просмотр">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{{ url_for('password_manager.edit_entry', entry_id=entry.id) }}" class="btn btn-outline-warning">
+                                    <a href="{{ url_for('password_manager.edit_entry', entry_id=entry.id) }}" class="btn btn-outline-warning" title="Редактировать">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form method="POST" action="{{ url_for('password_manager.delete_entry', entry_id=entry.id) }}" style="display:inline;">
-                                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Удалить запись?')">
+                                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Удалить запись?')" title="Удалить">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -68,4 +105,25 @@
         </div>
     </div>
 </div>
+
+<script>
+function filterEntries() {
+    const query = document.getElementById('entrySearch').value.toLowerCase();
+    const importance = document.getElementById('importanceFilter').value;
+    const rows = document.querySelectorAll('.entry-row');
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name');
+        const username = row.getAttribute('data-username');
+        const tags = row.getAttribute('data-tags');
+        const imp = row.getAttribute('data-importance');
+        const matchSearch = name.includes(query) || username.includes(query) || tags.includes(query);
+        const matchImportance = !importance || importance === imp;
+        if (matchSearch && matchImportance) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
 {% endblock %}

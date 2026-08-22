@@ -10,14 +10,12 @@
         <a href="{{ url_for('wtware.export_wtware') }}" class="btn btn-success me-2">
             <i class="bi bi-download"></i> Экспорт в Excel
         </a>
-        {% if session.role == 'admin' %}
         <a href="{{ url_for('wtware.import_wtware') }}" class="btn btn-primary me-2">
             <i class="bi bi-upload"></i> Импорт из Excel
         </a>
         <a href="{{ url_for('wtware.add_wtware') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Добавить конфигурацию
         </a>
-        {% endif %}
     </div>
 </div>
 
@@ -152,7 +150,6 @@
                                 <a href="{{ url_for('wtware.wtware_connect', config_id=wtware_config.id) }}" class="btn btn-outline-warning" title="Подключиться к устройству">
                                     <i class="bi bi-plug"></i>
                                 </a>
-                                {% if session.role == 'admin' %}
                                 <a href="{{ url_for('wtware.edit_wtware', config_id=wtware_config.id) }}" class="btn btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -161,7 +158,6 @@
                                    data-confirm="Вы уверены, что хотите удалить конфигурацию '{{ wtware_config.name }}'?">
                                     <i class="bi bi-trash"></i>
                                 </a>
-                                {% endif %}
                             </div>
 
                             <!-- Modal -->
@@ -233,11 +229,9 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                                            {% if session.role == 'admin' %}
                                             <a href="{{ url_for('wtware.edit_wtware', config_id=wtware_config.id) }}" class="btn btn-primary">
                                                 <i class="bi bi-pencil"></i> Редактировать
                                             </a>
-                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>

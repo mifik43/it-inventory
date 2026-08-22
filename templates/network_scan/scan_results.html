@@ -215,13 +215,11 @@
                                             title="Сканировать порты">
                                         <i class="fas fa-search"></i>
                                     </button>
-                                    {% if session.role == 'admin' %}
                                     <button class="btn btn-outline-danger" 
                                             onclick="deleteDevice({{ device.id }})"
                                             title="Удалить устройство">
                                         <i class="fas fa-trash"></i>
                                     </button>
-                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

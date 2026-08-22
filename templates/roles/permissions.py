@@ -33,6 +33,10 @@ class Permissions(enum.Enum):
     # Организации
     organizations_read = 'organizations_read'
     organizations_manage = 'organizations_manage'
+    organizations_read_all = 'organizations_read_all'
+    organizations_manage_all = 'organizations_manage_all'
+    organizations_read_children = 'organizations_read_children'
+    organizations_manage_children = 'organizations_manage_children'
     
     # Статьи
     articles_read = 'articles_read'
@@ -68,6 +72,7 @@ class Permissions(enum.Enum):
     password_manager_read = "password_manager_read"
     password_manager_manage = "password_manager_manage"
 
+    
     def to_name(p):
         if p == Permissions.users_read:
             return "Чтение списка пользователей"
@@ -133,6 +138,12 @@ class Permissions(enum.Enum):
             return "Просмотр паролей"
         elif p == Permissions.password_manager_manage:
             return "Управление паролями"
+        elif p == Permissions.organizations_read_all:
+            return "Чтение всех организаций"
+        elif p == Permissions.organizations_manage_all:
+            return "Управление всеми организациями"
+        else:
+            return str(p)
         
     def get_names():
         names = dict()

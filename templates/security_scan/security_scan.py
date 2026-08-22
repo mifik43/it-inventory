@@ -221,9 +221,6 @@ def start_scan():
 def task_detail(task_id):
     user = get_current_user()
     task = ScanTask.query.get_or_404(task_id)
-    if task.user_id != user.id and user.role != 'admin':
-        flash('Нет прав', 'error')
-        return redirect(url_for('security_scan.index'))
     return render_template('security_scan/task_detail.html', task=task)
 
 @bluprint_security_scan.route('/task/<int:task_id>/delete', methods=['POST'])
@@ -232,9 +229,7 @@ def task_detail(task_id):
 def delete_task(task_id):
     user = get_current_user()
     task = ScanTask.query.get_or_404(task_id)
-    if task.user_id != user.id and user.role != 'admin':
-        flash('Нет прав', 'error')
-        return redirect(url_for('security_scan.index'))
+
     db.session.delete(task)
     db.session.commit()
     flash('Задача удалена', 'success')

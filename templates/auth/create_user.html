@@ -23,17 +23,22 @@
                                 <div class="form-text">Пароль должен быть не менее 6 символов</div>
                             </div>
                             
+                            
+
                             <div class="mb-3">
-                                <label for="role" class="form-label">Роль *</label>
-                                <select class="form-select" id="role" name="role" required>
-                                    <option value="user">Обычный пользователь</option>
-                                    <option value="admin">Администратор</option>
+                                <label for="organization_id" class="form-label">Организация</label>
+                                <select class="form-select" id="organization_id" name="organization_id">
+                                    <option value="">Без организации</option>
+                                    {% for org in organizations %}
+                                    <option value="{{ org.id }}">{{ org.name }}</option>
+                                    {% endfor %}
                                 </select>
+                                <div class="form-text">Выберите организацию, к которой будет привязан пользователь.</div>
                             </div>
                             
                             <div class="btn-group" role="group">
                                 <button type="submit" class="btn btn-primary">Сохранить</button>
-                                <a href="{{ url_for('users.login') }}" class="btn btn-outline-secondary">Отмена</a>
+                                <a href="{{ url_for('users.admin_panel') }}" class="btn btn-outline-secondary">Отмена</a>
                             </div>
                         </div>
 
@@ -49,5 +54,4 @@
 </div>
 
 {% include "auth/roles_styles.html" %}
-
 {% endblock %}
