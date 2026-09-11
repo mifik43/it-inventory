@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-md-10">
         <h2>Редактировать провайдера</h2>
         
         <form method="POST">
@@ -34,6 +34,16 @@
                         <label for="contract_date" class="form-label">Дата договора</label>
                         <input type="date" class="form-control" id="contract_date" name="contract_date" value="{{ provider.contract_date or '' }}">
                     </div>
+                    
+                    <div class="mb-3">
+                        <label for="site" class="form-label">Площадка</label>
+                        <input type="text" class="form-control" id="site" name="site" value="{{ provider.site or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Адрес</label>
+                        <input type="text" class="form-control" id="address" name="address" value="{{ provider.address or '' }}">
+                    </div>
                 </div>
                 
                 <div class="col-md-6">
@@ -43,13 +53,28 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="speed" class="form-label">Скорость</label>
+                        <label for="speed" class="form-label">Скорость (мБ/с)</label>
                         <input type="text" class="form-control" id="speed" name="speed" value="{{ provider.speed or '' }}">
                     </div>
                     
                     <div class="mb-3">
                         <label for="price" class="form-label">Стоимость в месяц (₽)</label>
                         <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ provider.price or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="tm" class="form-label">ТМ (торговая марка)</label>
+                        <input type="text" class="form-control" id="tm" name="tm" value="{{ provider.tm or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="legal_entity_site" class="form-label">Юр. Лицо площадка</label>
+                        <input type="text" class="form-control" id="legal_entity_site" name="legal_entity_site" value="{{ provider.legal_entity_site or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="legal_entity_internet" class="form-label">Юр. Лицо интернет</label>
+                        <input type="text" class="form-control" id="legal_entity_internet" name="legal_entity_internet" value="{{ provider.legal_entity_internet or '' }}">
                     </div>
                 </div>
             </div>
@@ -70,7 +95,7 @@
             </div>
 
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
                         <label for="status" class="form-label">Статус *</label>
                         <select class="form-select" id="status" name="status" required>
@@ -80,31 +105,62 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
                         <label for="contact_person" class="form-label">Контактное лицо</label>
                         <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ provider.contact_person or '' }}">
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
                         <label for="phone" class="form-label">Телефон</label>
                         <input type="tel" class="form-control" id="phone" name="phone" value="{{ provider.phone or '' }}">
                     </div>
                 </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="email" name="email" value="{{ provider.email or '' }}">
                     </div>
                 </div>
             </div>
-            
+
+            <!-- Новые поля -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="payment_date" class="form-label">Дата оплаты</label>
+                        <input type="date" class="form-control" id="payment_date" name="payment_date" value="{{ provider.payment_date or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="commercial_start" class="form-label">Начало коммерческой деятельности</label>
+                        <input type="date" class="form-control" id="commercial_start" name="commercial_start" value="{{ provider.commercial_start or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="lk_login" class="form-label">ЛК Логин</label>
+                        <input type="text" class="form-control" id="lk_login" name="lk_login" value="{{ provider.lk_login or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="lk_password" class="form-label">ЛК Пароль</label>
+                        <input type="text" class="form-control" id="lk_password" name="lk_password" value="{{ lk_password_decrypted or '' }}">
+                        <small class="text-muted">Оставьте пустым, если не хотите менять</small>
+                    </div>
+                </div>
+            </div>
+
             <div class="mb-3">
-                <label for="notes" class="form-label">Примечания</label>
+                <label for="lk_email" class="form-label">E-Mail ЛК</label>
+                <input type="email" class="form-control" id="lk_email" name="lk_email" value="{{ provider.lk_email or '' }}">
+            </div>
+
+            <div class="mb-3">
+                <label for="notes" class="form-label">Комментарий</label>
                 <textarea class="form-control" id="notes" name="notes" rows="3">{{ provider.notes or '' }}</textarea>
             </div>
             

@@ -1,0 +1,428 @@
+{% extends "base/base.html" %}
+
+{% block title %}Мониторинг БД{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="bi bi-database me-2"></i>Мониторинг базы данных</h1>
+            <p class="text-muted mb-0">Обновлено: <span id="lastUpdate">—</span></p>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary" onclick="refreshAll()">
+                <i class="bi bi-arrow-clockwise"></i> Обновить
+            </button>
+            <div class="form-check form-switch d-inline-block ms-2">
+                <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                <label class="form-check-label" for="autoRefresh">Авто (10с)</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрые метрики -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="bi bi-hdd me-2"></i>Размер БД</h6>
+                    <h2 class="mb-1" id="dbSize">—</h2>
+                    <small class="text-muted">все данные + индексы</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="bi bi-plug me-2"></i>Соединения</h6>
+                    <h2 class="mb-1" id="connTotal">—</h2>
+                    <div class="progress mb-2" style="height: 6px;">
+                        <div class="progress-bar bg-info" id="connBar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="connInfo">—</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="bi bi-speedometer me-2"></i>Cache Hit</h6>
+                    <h2 class="mb-1" id="cacheRatio">—</h2>
+                    <small class="text-muted">процент попаданий в кэш</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="bi bi-lightning me-2"></i>Активные запросы</h6>
+                    <h2 class="mb-1" id="activeQueries">—</h2>
+                    <small class="text-muted">выполняются сейчас</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Соединения -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header"><h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Соединения по состоянию</h6></div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0" id="connStates">
+                        <tbody><tr><td class="text-muted text-center">Загрузка...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header"><h6 class="mb-0"><i class="bi bi-person-badge me-2"></i>Соединения по пользователям</h6></div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0" id="connUsers">
+                        <tbody><tr><td class="text-muted text-center">Загрузка...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Активные запросы -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Активные запросы</h6>
+                    <small class="text-muted" id="activeTimestamp"></small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>PID</th>
+                                    <th>Пользователь</th>
+                                    <th>Клиент</th>
+                                    <th>Состояние</th>
+                                    <th>Длительность</th>
+                                    <th>Запрос</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activeBody">
+                                <tr><td colspan="6" class="text-muted text-center">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Медленные запросы -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-hourglass-split me-2"></i>Медленные запросы</h6>
+                    <small class="text-muted">требуется расширение pg_stat_statements</small>
+                </div>
+                <div class="card-body" id="slowContainer">
+                    <div class="text-center text-muted py-3">Загрузка...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблицы -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header"><h6 class="mb-0"><i class="bi bi-table me-2"></i>Топ таблиц по размеру</h6></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Таблица</th>
+                                    <th>Размер</th>
+                                    <th>Индексы</th>
+                                    <th>Строк</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topTablesBody">
+                                <tr><td colspan="4" class="text-muted text-center">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header"><h6 class="mb-0"><i class="bi bi-activity me-2"></i>Статистика таблиц</h6></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Таблица</th>
+                                    <th>INSERT</th>
+                                    <th>UPDATE</th>
+                                    <th>DELETE</th>
+                                    <th>Dead</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableStatsBody">
+                                <tr><td colspan="5" class="text-muted text-center">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Индексы -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header"><h6 class="mb-0"><i class="bi bi-list-ol me-2"></i>Самые большие индексы</h6></div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0" id="biggestIndexes">
+                        <tbody><tr><td class="text-muted text-center">Загрузка...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100 border-warning">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Неиспользуемые индексы</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0" id="unusedIndexes">
+                        <tbody><tr><td class="text-muted text-center">Загрузка...</td></tr></tbody>
+                    </table>
+                    <small class="text-muted d-block mt-2">
+                        Индексы, к которым ни разу не обращались. Их можно удалить для экономии места.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const REFRESH_INTERVAL = 10000;
+let refreshTimer = null;
+
+function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function refreshSummary() {
+    fetch('/monitoring/db/api/summary')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('dbSize').textContent = data.size.size_pretty;
+            document.getElementById('connTotal').textContent = data.connections.total;
+            const pct = data.connections.percent;
+            document.getElementById('connBar').style.width = pct + '%';
+            const cls = pct > 80 ? 'bg-danger' : pct > 60 ? 'bg-warning' : 'bg-info';
+            document.getElementById('connBar').className = 'progress-bar ' + cls;
+            document.getElementById('connInfo').textContent =
+                `${data.connections.total} / ${data.connections.max} (${pct}%)`;
+            document.getElementById('cacheRatio').textContent = data.cache.ratio + '%';
+
+            // Состояния
+            let html = '';
+            data.connections.by_state.forEach(s => {
+                html += `<tr><td>${escapeHtml(s.state)}</td><td class="text-end"><strong>${s.cnt}</strong></td></tr>`;
+            });
+            document.getElementById('connStates').querySelector('tbody').innerHTML = html || '<tr><td class="text-muted text-center">Нет данных</td></tr>';
+
+            // Пользователи
+            html = '';
+            data.connections.by_user.forEach(u => {
+                html += `<tr><td>${escapeHtml(u.usename)}</td><td class="text-end"><strong>${u.cnt}</strong></td></tr>`;
+            });
+            document.getElementById('connUsers').querySelector('tbody').innerHTML = html || '<tr><td class="text-muted text-center">Нет данных</td></tr>';
+
+            document.getElementById('lastUpdate').textContent = data.timestamp;
+        })
+        .catch(err => console.error(err));
+}
+
+function refreshQueries() {
+    fetch('/monitoring/db/api/queries')
+        .then(r => r.json())
+        .then(data => {
+            // Активные
+            const active = data.active || [];
+            document.getElementById('activeQueries').textContent = active.length;
+            let html = '';
+            active.forEach(q => {
+                const dur = parseFloat(q.duration_sec);
+                const durCls = dur > 10 ? 'text-danger fw-bold' :
+                              dur > 3 ? 'text-warning' : '';
+                html += `
+                    <tr>
+                        <td><code>${q.pid}</code></td>
+                        <td>${escapeHtml(q.username)}</td>
+                        <td><small>${escapeHtml(q.client_addr || '—')}</small></td>
+                        <td><span class="badge bg-secondary">${escapeHtml(q.state)}</span></td>
+                        <td class="${durCls}">${dur.toFixed(2)} с</td>
+                        <td><small class="text-muted">${escapeHtml(q.query)}</small></td>
+                    </tr>`;
+            });
+            document.getElementById('activeBody').innerHTML = html ||
+                '<tr><td colspan="6" class="text-muted text-center">Нет активных запросов</td></tr>';
+            document.getElementById('activeTimestamp').textContent =
+                'Обновлено: ' + new Date().toLocaleTimeString();
+
+            // Медленные
+            const slow = data.slow || {};
+            const slowContainer = document.getElementById('slowContainer');
+            if (!slow.installed) {
+                slowContainer.innerHTML = `
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Расширение <code>pg_stat_statements</code> не установлено.
+                        Для включения мониторинга медленных запросов выполните в PostgreSQL:
+                        <pre class="mb-0 mt-2 small">CREATE EXTENSION pg_stat_statements;
+-- затем добавьте в postgresql.conf:
+-- shared_preload_libraries = 'pg_stat_statements'
+-- и перезапустите PostgreSQL</pre>
+                    </div>`;
+                return;
+            }
+            const slowQueries = slow.queries || [];
+            if (!slowQueries.length) {
+                slowContainer.innerHTML = '<div class="text-muted text-center py-3">Медленных запросов не найдено</div>';
+                return;
+            }
+            let sHtml = `<div class="table-responsive"><table class="table table-sm table-hover mb-0">
+                <thead><tr>
+                    <th>Вызовов</th>
+                    <th>Среднее</th>
+                    <th>Максимум</th>
+                    <th>Всего</th>
+                    <th>Строк</th>
+                    <th>Запрос</th>
+                </tr></thead><tbody>`;
+            slowQueries.forEach(q => {
+                sHtml += `
+                    <tr>
+                        <td>${q.calls}</td>
+                        <td class="text-warning">${q.mean_time_ms} мс</td>
+                        <td>${q.max_time_ms} мс</td>
+                        <td>${q.total_time_ms} мс</td>
+                        <td>${q.rows}</td>
+                        <td><small class="text-muted">${escapeHtml(q.query)}</small></td>
+                    </tr>`;
+            });
+            sHtml += '</tbody></table></div>';
+            slowContainer.innerHTML = sHtml;
+        })
+        .catch(err => console.error(err));
+}
+
+function refreshTables() {
+    fetch('/monitoring/db/api/tables')
+        .then(r => r.json())
+        .then(data => {
+            // Топ таблиц
+            let html = '';
+            (data.top_tables || []).forEach(t => {
+                html += `
+                    <tr>
+                        <td><strong>${escapeHtml(t.table_name)}</strong></td>
+                        <td>${escapeHtml(t.total_size)}</td>
+                        <td><small class="text-muted">${escapeHtml(t.indexes_size)}</small></td>
+                        <td>${t.row_count}</td>
+                    </tr>`;
+            });
+            document.getElementById('topTablesBody').innerHTML = html ||
+                '<tr><td colspan="4" class="text-muted text-center">Нет данных</td></tr>';
+
+            // Статистика
+            html = '';
+            (data.table_stats || []).forEach(t => {
+                const deadCls = t.dead_rows > 1000 ? 'text-warning fw-bold' : '';
+                html += `
+                    <tr>
+                        <td><small>${escapeHtml(t.table_name)}</small></td>
+                        <td>${t.inserts}</td>
+                        <td>${t.updates}</td>
+                        <td>${t.deletes}</td>
+                        <td class="${deadCls}">${t.dead_rows}</td>
+                    </tr>`;
+            });
+            document.getElementById('tableStatsBody').innerHTML = html ||
+                '<tr><td colspan="5" class="text-muted text-center">Нет данных</td></tr>';
+        })
+        .catch(err => console.error(err));
+}
+
+function refreshIndexes() {
+    fetch('/monitoring/db/api/indexes')
+        .then(r => r.json())
+        .then(data => {
+            let html = '';
+            (data.biggest || []).forEach(i => {
+                html += `<tr>
+                    <td><small>${escapeHtml(i.index_name)}</small></td>
+                    <td>${escapeHtml(i.size)}</td>
+                    <td>${i.scans}</td>
+                </tr>`;
+            });
+            document.getElementById('biggestIndexes').querySelector('tbody').innerHTML = html ||
+                '<tr><td class="text-muted text-center">Нет данных</td></tr>';
+
+            html = '';
+            (data.unused || []).forEach(i => {
+                html += `<tr>
+                    <td><small>${escapeHtml(i.index_name)}</small></td>
+                    <td>${escapeHtml(i.size)}</td>
+                </tr>`;
+            });
+            document.getElementById('unusedIndexes').querySelector('tbody').innerHTML = html ||
+                '<tr><td class="text-muted text-center">Все индексы используются</td></tr>';
+        })
+        .catch(err => console.error(err));
+}
+
+function refreshAll() {
+    refreshSummary();
+    refreshQueries();
+    refreshTables();
+    refreshIndexes();
+}
+
+function startAutoRefresh() {
+    stopAutoRefresh();
+    refreshTimer = setInterval(refreshAll, REFRESH_INTERVAL);
+}
+
+function stopAutoRefresh() {
+    if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    refreshAll();
+    startAutoRefresh();
+    document.getElementById('autoRefresh').addEventListener('change', function() {
+        this.checked ? startAutoRefresh() : stopAutoRefresh();
+    });
+});
+</script>
+{% endblock %}

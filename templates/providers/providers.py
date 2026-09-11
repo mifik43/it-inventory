@@ -9,6 +9,8 @@ from templates.roles.permissions import Permissions
 from logger import logger
 from models import Provider
 
+from templates.password_manager.crypto import encrypt_password, decrypt_password
+
 bluprint_provider_routes = Blueprint("providers", __name__)
 
 

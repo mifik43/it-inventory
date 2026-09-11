@@ -1,0 +1,374 @@
+{% extends "base/base.html" %}
+
+{% block title %}Мониторинг системы{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="bi bi-activity me-2"></i>Мониторинг системы</h1>
+            <p class="text-muted mb-0">
+                Обновлено: <span id="lastUpdate">{{ info.hostname }}</span>
+            </p>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary" onclick="refreshAll()">
+                <i class="bi bi-arrow-clockwise"></i> Обновить
+            </button>
+            <div class="form-check form-switch d-inline-block ms-2">
+                <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                <label class="form-check-label" for="autoRefresh">Авто (5с)</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрые метрики -->
+    <div class="row mb-4">
+        <!-- CPU -->
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="bi bi-cpu me-2"></i>CPU</h6>
+                    <h2 class="mb-2" id="cpuPercent">—</h2>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-primary" id="cpuBar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="cpuCores">—</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAM -->
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="bi bi-memory me-2"></i>Память</h6>
+                    <h2 class="mb-2" id="memPercent">—</h2>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" id="memBar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="memInfo">—</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Диск -->
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="bi bi-hdd me-2"></i>Диск</h6>
+                    <h2 class="mb-2" id="diskPercent">—</h2>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-warning" id="diskBar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="diskInfo">—</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Сессии -->
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="bi bi-people me-2"></i>Активные сессии</h6>
+                    <h2 class="mb-2" id="sessionsCount">—</h2>
+                    <small class="text-muted">за последние 30 минут</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Система -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Информация о системе</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr><th width="40%">Имя хоста</th><td>{{ info.hostname }}</td></tr>
+                        <tr><th>ОС</th><td>{{ info.platform }} {{ info.platform_release }}</td></tr>
+                        <tr><th>Архитектура</th><td>{{ info.architecture }}</td></tr>
+                        <tr><th>Процессор</th><td>{{ info.processor or '—' }}</td></tr>
+                        <tr><th>Ядер (физ/лог)</th><td>{{ info.cpu_count_physical }} / {{ info.cpu_count }}</td></tr>
+                        <tr><th>Python</th><td>{{ info.python_version }}</td></tr>
+                        <tr><th>Загрузка системы</th><td>{{ info.boot_time }}</td></tr>
+                        <tr><th>Время работы</th><td>{{ info.uptime }}</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-hdd-stack me-2"></i>Дисковые разделы</h6>
+                </div>
+                <div class="card-body">
+                    <div id="disksList">
+                        <div class="text-muted text-center py-3">Загрузка...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сеть -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-ethernet me-2"></i>Сеть</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center" id="networkInfo">
+                        <div class="col-md-3">
+                            <h5 id="netSent">—</h5>
+                            <small class="text-muted">Отправлено</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 id="netRecv">—</h5>
+                            <small class="text-muted">Получено</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 id="netErrorsIn">—</h5>
+                            <small class="text-muted">Ошибки входящие</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 id="netErrorsOut">—</h5>
+                            <small class="text-muted">Ошибки исходящие</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Процессы -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-list-task me-2"></i>Топ процессов</h6>
+                    <small class="text-muted" id="procTimestamp"></small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="procTable">
+                            <thead>
+                                <tr>
+                                    <th>PID</th>
+                                    <th>Имя</th>
+                                    <th>Пользователь</th>
+                                    <th>CPU %</th>
+                                    <th>RAM %</th>
+                                    <th>RAM MB</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody id="procBody">
+                                <tr><td colspan="7" class="text-center text-muted">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Активные сессии -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-person-check me-2"></i>Активные сессии</h6>
+                    <small class="text-muted">Пользователи, которые входили за последние 30 минут</small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" id="sessTable">
+                            <thead>
+                                <tr>
+                                    <th>Пользователь</th>
+                                    <th>ФИО</th>
+                                    <th>Роль</th>
+                                    <th>Организация</th>
+                                    <th>Последняя активность</th>
+                                    <th>Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessBody">
+                                <tr><td colspan="6" class="text-center text-muted">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card { border: 1px solid var(--border-color, #dee2e6); }
+    #cpuPercent, #memPercent, #diskPercent, #sessionsCount {
+        font-weight: 600;
+    }
+    .progress { background-color: rgba(0,0,0,0.05); }
+    [data-theme="dark"] .progress { background-color: rgba(255,255,255,0.1); }
+</style>
+
+<script>
+const REFRESH_INTERVAL = 5000;
+let refreshTimer = null;
+
+function formatBytes(gb) {
+    return gb + ' GB';
+}
+
+function refreshSummary() {
+    fetch('/monitoring/api/summary')
+        .then(r => r.json())
+        .then(data => {
+            // CPU
+            document.getElementById('cpuPercent').textContent = data.cpu.percent.toFixed(1) + '%';
+            document.getElementById('cpuBar').style.width = data.cpu.percent + '%';
+            let coresText = `${data.cpu.per_cpu.length} ядер`;
+            if (data.cpu.freq_current) {
+                coresText += ` • ${data.cpu.freq_current} MHz`;
+            }
+            document.getElementById('cpuCores').textContent = coresText;
+
+            // RAM
+            document.getElementById('memPercent').textContent = data.memory.percent.toFixed(1) + '%';
+            document.getElementById('memBar').style.width = data.memory.percent + '%';
+            document.getElementById('memInfo').textContent =
+                `${data.memory.used_gb} / ${data.memory.total_gb} GB`;
+
+            // Диски — берём первый корневой
+            if (data.disks.length > 0) {
+                const rootDisk = data.disks[0];
+                document.getElementById('diskPercent').textContent = rootDisk.percent.toFixed(1) + '%';
+                document.getElementById('diskBar').style.width = rootDisk.percent + '%';
+                document.getElementById('diskInfo').textContent =
+                    `${rootDisk.used_gb} / ${rootDisk.total_gb} GB (${rootDisk.mountpoint})`;
+            }
+
+            // Диски — список
+            let disksHtml = '';
+            data.disks.forEach(d => {
+                const cls = d.percent > 90 ? 'bg-danger'
+                          : d.percent > 75 ? 'bg-warning'
+                          : 'bg-success';
+                disksHtml += `
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <strong>${d.mountpoint}</strong>
+                            <span>${d.used_gb} / ${d.total_gb} GB (${d.percent}%)</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar ${cls}" style="width: ${d.percent}%"></div>
+                        </div>
+                        <small class="text-muted">${d.device} (${d.fstype})</small>
+                    </div>
+                `;
+            });
+            document.getElementById('disksList').innerHTML = disksHtml || '<div class="text-muted">Нет данных</div>';
+
+            // Сеть
+            document.getElementById('netSent').textContent = data.network.bytes_sent_gb + ' GB';
+            document.getElementById('netRecv').textContent = data.network.bytes_recv_gb + ' GB';
+            document.getElementById('netErrorsIn').textContent = data.network.errors_in;
+            document.getElementById('netErrorsOut').textContent = data.network.errors_out;
+
+            document.getElementById('lastUpdate').textContent = data.timestamp;
+        })
+        .catch(err => console.error('Ошибка summary:', err));
+}
+
+function refreshProcesses() {
+    fetch('/monitoring/api/processes')
+        .then(r => r.json())
+        .then(data => {
+            let html = '';
+            data.processes.forEach(p => {
+                const cpuCls = (p.cpu_percent || 0) > 50 ? 'text-danger fw-bold' : '';
+                html += `
+                    <tr>
+                        <td><code>${p.pid}</code></td>
+                        <td>${p.name}</td>
+                        <td><small>${p.username || '—'}</small></td>
+                        <td class="${cpuCls}">${(p.cpu_percent || 0).toFixed(1)}%</td>
+                        <td>${(p.memory_percent || 0).toFixed(1)}%</td>
+                        <td>${p.memory_mb} MB</td>
+                        <td><span class="badge bg-secondary">${p.status}</span></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('procBody').innerHTML = html ||
+                '<tr><td colspan="7" class="text-center text-muted">Нет данных</td></tr>';
+            document.getElementById('procTimestamp').textContent =
+                'Обновлено: ' + new Date().toLocaleTimeString();
+        })
+        .catch(err => console.error('Ошибка процессов:', err));
+}
+
+function refreshSessions() {
+    fetch('/monitoring/api/sessions')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('sessionsCount').textContent = data.sessions.length;
+            let html = '';
+            data.sessions.forEach(s => {
+                const roleCls = s.role === 'admin' || s.role === 'superadmin' ? 'bg-danger'
+                              : s.role === 'user' ? 'bg-secondary'
+                              : 'bg-info';
+                html += `
+                    <tr>
+                        <td><strong>${s.username}</strong></td>
+                        <td>${s.full_name}</td>
+                        <td><span class="badge ${roleCls}">${s.role}</span></td>
+                        <td>${s.organization}</td>
+                        <td><small>${s.last_seen}</small></td>
+                        <td><small class="text-muted">${s.action}</small></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('sessBody').innerHTML = html ||
+                '<tr><td colspan="6" class="text-center text-muted">Нет активных сессий</td></tr>';
+        })
+        .catch(err => console.error('Ошибка сессий:', err));
+}
+
+function refreshAll() {
+    refreshSummary();
+    refreshProcesses();
+    refreshSessions();
+}
+
+function startAutoRefresh() {
+    stopAutoRefresh();
+    refreshTimer = setInterval(refreshAll, REFRESH_INTERVAL);
+}
+
+function stopAutoRefresh() {
+    if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    refreshAll();
+    startAutoRefresh();
+
+    document.getElementById('autoRefresh').addEventListener('change', function() {
+        if (this.checked) {
+            startAutoRefresh();
+        } else {
+            stopAutoRefresh();
+        }
+    });
+});
+</script>
+{% endblock %}

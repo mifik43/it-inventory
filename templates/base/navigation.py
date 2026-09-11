@@ -235,6 +235,23 @@ def create_administration_menu():
         urls_to_be_active=['admin_modules.modules_list'],
         permissions=[Permissions.roles_manage]
     ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-activity",
+        name="Мониторинг",
+        url="monitoring.index",
+        urls_to_be_active=['monitoring.index'],
+        permissions=[Permissions.roles_manage]
+    ))
+    menu.add_item(MenuItem(
+        button_class="dropdown-item",
+        icon="bi-database",
+        name="Мониторинг БД",
+        url="db_monitoring.index",
+        urls_to_be_active=['db_monitoring.index'],
+        permissions=[Permissions.roles_manage],
+        module_key="monitoring"
+    ))
     return menu
 
 

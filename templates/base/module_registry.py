@@ -20,6 +20,7 @@ MODULES = [
     {'key': 'wtware',         'name': 'WTware',                  'icon': 'bi-terminal'},
     {'key': 'scripts',        'name': 'Скрипты',                 'icon': 'bi-terminal'},
     {'key': 'network_graph',  'name': 'Граф сети',               'icon': 'bi-diagram-3'},
+    {'key': 'monitoring', 'name': 'Мониторинг системы', 'icon': 'bi-activity'},
 ]
 
 

@@ -30,6 +30,8 @@ from templates.password_manager.routes import password_bp
 from templates.security_scan.security_scan import bluprint_security_scan
 from templates.base.organization_utils import get_user_visible_organizations, ALL_ORGANIZATIONS
 from templates.admin.module_routes import bluprint_admin_modules
+from templates.monitoring.monitoring import bluprint_monitoring_routes
+from templates.monitoring.db_monitoring import bluprint_db_monitoring
 
 from excel_utils import (
     export_any_type_to_exel, import_from_excel
@@ -89,6 +91,8 @@ app.register_blueprint(password_bp)
 app.register_blueprint(bluprint_security_scan)
 app.register_blueprint(bluprint_help_routes)
 app.register_blueprint(bluprint_admin_modules)
+app.register_blueprint(bluprint_monitoring_routes)
+app.register_blueprint(bluprint_db_monitoring)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
