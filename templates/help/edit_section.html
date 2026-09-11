@@ -1,0 +1,138 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ 'Редактировать' if section else 'Новый' }} раздел справки{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil-square me-2"></i>
+                        {{ 'Редактировать' if section else 'Создать' }} раздел справки
+                    </h4>
+                    <a href="{{ url_for('help.index') }}" class="btn btn-sm btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Назад
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+
+                    <form method="POST" id="helpForm">
+                        {% if not section %}
+                        <div class="mb-3">
+                            <label for="key" class="form-label">Ключ раздела *</label>
+                            <input type="text" class="form-control" id="key" name="key" required
+                                   placeholder="например, devices">
+                            <div class="form-text">Уникальный идентификатор, строчными буквами без пробелов. Используется для связи с endpoint-ами.</div>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Название *</label>
+                            <input type="text" class="form-control" id="title" name="title" required
+                                   value="{{ section.title if section else '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="icon" class="form-label">Иконка (Bootstrap Icons)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi {{ section.icon if section else 'bi-question-circle' }}" id="iconPreview"></i></span>
+                                <input type="text" class="form-control" id="icon" name="icon"
+                                       value="{{ section.icon if section else 'bi-question-circle' }}"
+                                       placeholder="bi-question-circle"
+                                       oninput="document.getElementById('iconPreview').className = 'bi ' + this.value">
+                            </div>
+                            <div class="form-text">
+                                Список иконок: <a href="https://icons.getbootstrap.com/" target="_blank">icons.getbootstrap.com</a>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Краткое описание</label>
+                            <textarea class="form-control" id="description" name="description" rows="2">{{ section.description if section else '' }}</textarea>
+                        </div>
+
+                        <hr>
+                        <h5 class="mb-3">Подразделы</h5>
+                        <p class="text-muted small">Каждый подраздел состоит из заголовка и текста. Порядок сохраняется как в форме.</p>
+
+                        <div id="blocksContainer">
+                            {% if section and section.blocks.count() > 0 %}
+                                {% for b in section.blocks %}
+                                <div class="card mb-2 block-item">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <input type="text" class="form-control form-control-sm me-2" 
+                                                   name="block_title[]" value="{{ b.title }}" 
+                                                   placeholder="Заголовок подраздела">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBlock(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        <textarea class="form-control" name="block_content[]" rows="3" 
+                                                  placeholder="Текст подраздела">{{ b.content }}</textarea>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="addBlock()">
+                            <i class="bi bi-plus-circle"></i> Добавить подраздел
+                        </button>
+
+                        <div class="d-flex justify-content-between border-top pt-3">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Сохранить
+                                </button>
+                                <a href="{{ url_for('help.index') }}" class="btn btn-secondary">Отмена</a>
+                            </div>
+                            {% if section %}
+                            <form method="POST" action="{{ url_for('help.delete_section', key=section.key) }}"
+                                  onsubmit="return confirm('Удалить раздел «{{ section.title }}»?');" style="display:inline;">
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Удалить раздел
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="blockTemplate">
+    <div class="card mb-2 block-item">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <input type="text" class="form-control form-control-sm me-2" 
+                       name="block_title[]" placeholder="Заголовок подраздела">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBlock(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <textarea class="form-control" name="block_content[]" rows="3" 
+                      placeholder="Текст подраздела"></textarea>
+        </div>
+    </div>
+</template>
+
+<script>
+function addBlock() {
+    const template = document.getElementById('blockTemplate');
+    const clone = template.content.cloneNode(true);
+    document.getElementById('blocksContainer').appendChild(clone);
+}
+
+function removeBlock(btn) {
+    btn.closest('.block-item').remove();
+}
+</script>
+{% endblock %}

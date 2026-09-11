@@ -76,10 +76,21 @@ class Provider(db.Model):
     status = Column(String(50), nullable=False, default='Активен')
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     
+    # НОВЫЕ ПОЛЯ
+    site = Column(String(200), nullable=True)                         # Площадка
+    address = Column(String(300), nullable=True)                      # Адрес
+    tm = Column(String(100), nullable=True)                           # ТМ (торговая марка)
+    legal_entity_site = Column(String(200), nullable=True)            # Юр. Лицо площадка
+    legal_entity_internet = Column(String(200), nullable=True)        # Юр. Лицо интернет
+    payment_date = Column(Date, nullable=True)                        # Дата оплаты
+    commercial_start = Column(Date, nullable=True)                    # Начало коммерческой деятельности
+    lk_login = Column(String(100), nullable=True)                     # ЛК Логин
+    lk_password_encrypted = Column(Text, nullable=True)               # ЛК Пароль (зашифрованный)
+    lk_email = Column(String(100), nullable=True)                     # E-Mail ЛК
+    
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     organization = relationship('Organization', backref='providers')
-
 
 class SoftwareCube(db.Model):
     __tablename__ = 'software_cubes'
@@ -657,3 +668,40 @@ class ChecklistHistory(db.Model):
     new_value = Column(Text)
     changed_by = Column(String(100))
     changed_at = Column(DateTime, default=datetime.utcnow)
+
+class ModuleSettings(db.Model):
+    __tablename__ = 'module_settings'
+    
+    id = Column(Integer, primary_key=True)
+    module_key = Column(String(100), unique=True, nullable=False)  # например, 'social', 'security_scan'
+    display_name = Column(String(200), nullable=False)             # «Соцсети», «Безопасность»
+    is_enabled = Column(Boolean, default=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class HelpSection(db.Model):
+    __tablename__ = 'help_sections'
+    
+    id = Column(Integer, primary_key=True)
+    key = Column(String(100), unique=True, nullable=False)      # dashboard, devices, ...
+    title = Column(String(200), nullable=False)
+    icon = Column(String(100), default='bi-question-circle')
+    description = Column(Text)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    
+    blocks = relationship('HelpBlock', backref='section', lazy='dynamic',
+                          cascade='all, delete-orphan',
+                          order_by='HelpBlock.order_index')
+    editor = relationship('User', foreign_keys=[updated_by])
+
+
+class HelpBlock(db.Model):
+    __tablename__ = 'help_blocks'
+    
+    id = Column(Integer, primary_key=True)
+    section_id = Column(Integer, ForeignKey('help_sections.id'), nullable=False)
+    title = Column(String(300), nullable=False)
+    content = Column(Text, nullable=False)
+    order_index = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

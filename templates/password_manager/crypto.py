@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 
+
 MASTER_PASSWORD = os.environ.get('PASSWORD_MANAGER_KEY', 'default-key-change-me!')
 SALT = os.environ.get('PASSWORD_MANAGER_SALT', 'salt_1234567890').encode()
 

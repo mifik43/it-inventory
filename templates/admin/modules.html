@@ -1,0 +1,54 @@
+{% extends "base/base.html" %}
+
+{% block title %}Управление модулями{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="bi bi-toggles me-2"></i>Управление модулями</h1>
+            <p class="text-muted mb-0">Отключайте неиспользуемые разделы — они исчезнут из меню.</p>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        Отключение модуля скрывает его пункт из меню и блокирует прямой доступ к страницам.
+        Данные в базе при этом сохраняются — можно включить обратно в любой момент.
+    </div>
+
+    <div class="row">
+        {% for m in modules %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100 {% if not m.enabled %}border-secondary opacity-75{% endif %}">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">
+                            <i class="bi {{ m.icon }} me-2 {% if m.enabled %}text-primary{% else %}text-muted{% endif %}"></i>
+                            {{ m.name }}
+                        </h5>
+                        <small class="text-muted">
+                            {% if m.enabled %}
+                                <span class="badge bg-success">Включён</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Отключён</span>
+                            {% endif %}
+                        </small>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin_modules.toggle_module', module_key=m.key) }}">
+                        <button type="submit"
+                                class="btn btn-sm {% if m.enabled %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                            {% if m.enabled %}
+                                <i class="bi bi-power"></i> Отключить
+                            {% else %}
+                                <i class="bi bi-power"></i> Включить
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

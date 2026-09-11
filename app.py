@@ -29,6 +29,7 @@ from templates.checklist.checklist import bluprint_checklist_routes
 from templates.password_manager.routes import password_bp
 from templates.security_scan.security_scan import bluprint_security_scan
 from templates.base.organization_utils import get_user_visible_organizations, ALL_ORGANIZATIONS
+from templates.admin.module_routes import bluprint_admin_modules
 
 from excel_utils import (
     export_any_type_to_exel, import_from_excel
@@ -49,6 +50,9 @@ from network_scanner import NetworkScanner
 from templates.base.navigation import create_main_menu
 
 from templates.social.scheduler import SocialScheduler
+
+from templates.help.help_routes import bluprint_help_routes
+from templates.help.help_data import get_help_for_endpoint, HELP_CONTENT
 
 # Импортируем модели
 from models import (
@@ -83,6 +87,8 @@ app.register_blueprint(bluprint_social_routes)
 app.register_blueprint(bluprint_checklist_routes)
 app.register_blueprint(password_bp)
 app.register_blueprint(bluprint_security_scan)
+app.register_blueprint(bluprint_help_routes)
+app.register_blueprint(bluprint_admin_modules)
 
 # Инициализация БД при запуске приложения
 with app.app_context():
@@ -131,6 +137,16 @@ def inject_organization_context():
         'current_organization': current_org
     }
 
+@app.context_processor
+def inject_help_context():
+    from flask import request
+    endpoint = request.endpoint or ''
+    help_key = get_help_for_endpoint(endpoint)
+    help_section = HELP_CONTENT.get(help_key) if help_key else None
+    return {
+        'current_help_key': help_key,
+        'current_help_title': help_section['title'] if help_section else None,
+    }
 
 @app.template_filter('from_json')
 def from_json_filter(value):
@@ -338,7 +354,7 @@ def get_local_ip():
 if __name__ == '__main__':
     local_ip = get_local_ip()
     social_scheduler.start()
-    migrate = Migrate(app, db)
+    #migrate = Migrate(app, db)
     try:
         app.run(
             debug=True, 

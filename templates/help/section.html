@@ -1,0 +1,75 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ section.title }} — Справка{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="bi {{ section.icon }} me-2"></i>{{ section.title }}</h1>
+            <p class="text-muted">{{ section.description or '' }}</p>
+        </div>
+        <div>
+            {% if current_user and current_user.role in ('admin', 'superadmin') %}
+            <a href="{{ url_for('help.edit_section', key=section.key) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Редактировать
+            </a>
+            {% endif %}
+            <a href="{{ url_for('help.index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Все разделы
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            {% for b in section.blocks %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ b.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0" style="white-space: pre-line;">{{ b.content }}</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">В этом разделе пока нет описания.</div>
+            {% endfor %}
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Информация</h6>
+                </div>
+                <div class="card-body small">
+                    <p class="mb-1"><strong>Ключ:</strong> <code>{{ section.key }}</code></p>
+                    {% if section.updated_at %}
+                    <p class="mb-1"><strong>Обновлено:</strong> {{ section.updated_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                    {% endif %}
+                    {% if section.editor %}
+                    <p class="mb-1"><strong>Автор правки:</strong> {{ section.editor.username }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Другие разделы</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        {% for other in help_all %}
+                            {% if other.key != section.key %}
+                            <li class="mb-1">
+                                <a href="{{ url_for('help.section', key=other.key) }}" class="text-decoration-none small">
+                                    <i class="bi {{ other.icon }} me-1"></i>{{ other.title }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

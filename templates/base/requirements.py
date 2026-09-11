@@ -6,6 +6,7 @@ import inspect
 from logger import logger
 from templates.roles.database_roles import read_roles_for_user
 from templates.roles.permissions import Role
+from .module_registry import is_module_enabled
 
 def get_current_user():
     user_id = session.get('user_id')
@@ -70,6 +71,20 @@ def permission_required(permission):
             if permission not in user_permissions:
                 flash('Недостаточно прав для доступа к этой странице', 'error')
                 abort(403)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def module_enabled(module_key):
+    from functools import wraps
+    from flask import flash, redirect, url_for
+    """Блокирует доступ к страницам отключённого модуля."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not is_module_enabled(module_key):
+                flash('Этот модуль отключён администратором', 'warning')
+                return redirect(url_for('index'))
             return f(*args, **kwargs)
         return decorated_function
     return decorator

@@ -1,0 +1,13 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="alert alert-warning">
+        <h4><i class="bi bi-exclamation-triangle"></i> Раздел справки не найден</h4>
+        <p>Запрошенный раздел «{{ key }}» отсутствует.</p>
+        <a href="{{ url_for('help.index') }}" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Вернуться к списку разделов
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,177 @@
+/* static/css/theme.css */
+
+/* Светлая тема (по умолчанию) */
+:root {
+    --bg-body: #f8f9fa;
+    --bg-card: #ffffff;
+    --bg-sidebar: #f8f9fa;
+    --bg-topbar: #ffffff;
+    --bg-input: #ffffff;
+    --bg-hover: #e9ecef;
+    --text-primary: #212529;
+    --text-muted: #6c757d;
+    --border-color: #dee2e6;
+    --link-color: #0d6efd;
+    --table-striped: rgba(0,0,0,.02);
+    --table-hover: rgba(0,0,0,.05);
+}
+
+/* Тёмная тема */
+[data-theme="dark"] {
+    --bg-body: #121212;
+    --bg-card: #1e1e1e;
+    --bg-sidebar: #181818;
+    --bg-topbar: #1e1e1e;
+    --bg-input: #2a2a2a;
+    --bg-hover: #2a2a2a;
+    --text-primary: #e4e4e4;
+    --text-muted: #a0a0a0;
+    --border-color: #2e2e2e;
+    --link-color: #6ea8fe;
+    --table-striped: rgba(255,255,255,.03);
+    --table-hover: rgba(255,255,255,.07);
+}
+
+/* Применение переменных */
+body {
+    background-color: var(--bg-body) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.main-content {
+    background-color: var(--bg-body) !important;
+    color: var(--text-primary) !important;
+}
+
+.sidebar {
+    background-color: var(--bg-sidebar) !important;
+    color: var(--text-primary) !important;
+}
+
+.sidebar .nav-link {
+    color: var(--text-primary) !important;
+}
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: var(--bg-hover) !important;
+    color: var(--link-color) !important;
+}
+
+.card {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+.card-header, .card-footer {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.bg-white, .bg-light {
+    background-color: var(--bg-card) !important;
+}
+.border-bottom, .border-top, .border {
+    border-color: var(--border-color) !important;
+}
+
+h1, h2, h3, h4, h5, h6 { color: var(--text-primary) !important; }
+.text-dark { color: var(--text-primary) !important; }
+.text-muted { color: var(--text-muted) !important; }
+
+/* Таблицы */
+.table {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+.table thead th {
+    background-color: var(--bg-sidebar) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: var(--table-striped) !important;
+    color: var(--text-primary) !important;
+}
+.table-hover > tbody > tr:hover > * {
+    background-color: var(--table-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Формы */
+.form-control, .form-select {
+    background-color: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+.form-control:focus, .form-select:focus {
+    background-color: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--link-color) !important;
+    box-shadow: 0 0 0 0.2rem rgba(110, 168, 254, 0.25);
+}
+.form-control::placeholder { color: var(--text-muted) !important; }
+.form-label { color: var(--text-primary) !important; }
+
+/* Dropdown */
+.dropdown-menu {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+}
+.dropdown-item {
+    color: var(--text-primary) !important;
+}
+.dropdown-item:hover, .dropdown-item:focus {
+    background-color: var(--bg-hover) !important;
+    color: var(--link-color) !important;
+}
+.dropdown-divider { border-color: var(--border-color) !important; }
+
+/* Модальные окна */
+.modal-content {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+.modal-header, .modal-footer {
+    border-color: var(--border-color) !important;
+}
+
+/* Ссылки */
+a { color: var(--link-color); }
+a:hover { color: var(--link-color); opacity: 0.8; }
+
+/* Alerts — оставляем цветными, но с тёмным текстом поверх */
+.alert-info { background-color: #0d3a4e; color: #b6eaff; border-color: #0a2d3d; }
+.alert-success { background-color: #14432a; color: #b6f0c8; border-color: #0f3320; }
+.alert-warning { background-color: #4a3c12; color: #ffe7a4; border-color: #3a2f0e; }
+.alert-danger { background-color: #4a1a1a; color: #ffc4c4; border-color: #3a1414; }
+
+/* Кнопки — минимальные изменения, чтобы не ломать цвета */
+.btn-outline-secondary {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+.btn-outline-secondary:hover {
+    background-color: var(--bg-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Переключатель темы */
+.theme-toggle {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.theme-toggle:hover {
+    background-color: var(--bg-hover);
+}
